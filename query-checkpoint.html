@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>卡口车辆管理 · 查询统计</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html" class="active">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link active" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">🛂 卡口车辆管理</div>
+          <div class="page-desc">闸口出入区记录与手动抬杆操作，含场所通道 &lt;516&gt; 越南拼车出场统计</div>
+        </div>
+        <button class="btn btn-primary" id="exportBtn">📥 导出卡口记录</button>
+      </div>
+
+      <div class="stat-grid mb-24" id="cpStats"></div>
+
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input grow" id="cpKw" placeholder="🔍 车牌 / 货物 / 通道">
+          <select class="select" id="cpGate">
+            <option value="">全部闸口</option>
+            <option>闸口A</option><option>闸口B边小</option>
+          </select>
+          <select class="select" id="cpAction">
+            <option value="">全部动作</option>
+            <option>入区</option><option>出区</option><option>过驳</option>
+          </select>
+          <select class="select" id="cpType">
+            <option value="">全部类型</option>
+            <option>重车</option><option>空车</option>
+          </select>
+          <select class="select" id="cpResult">
+            <option value="">全部结果</option>
+            <option>放行</option><option>抬杆</option><option>待核</option>
+          </select>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="cpTable"></div>
+          <div class="table-footer">
+            <span class="total"></span>
+            <span class="flex gap-8">
+              <button class="btn btn-line btn-sm" id="batchLift">✓ 批量抬杆</button>
+              <span id="cpPager"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 批量抬杆确认 -->
+  <div class="modal-mask" id="liftModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-hd">确认抬杆</div>
+      <div class="modal-bd">
+        <p id="liftInfo">确定对所选车辆执行抬杆放行？</p>
+        <p class="text-3 mt-8" style="font-size:12.5px">提示：正式环境需校验核放单与海关指令，演示模式直接放行。</p>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" id="liftConfirm">确认抬杆</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const records = M.checkpointVehicles.map(r => ({ ...r }));
+
+    /* 统计 */
+    const ch516 = records.filter(r => r.channel === "<516>").length;
+    const inCnt = records.filter(r => r.action === "入区").length;
+    const outCnt = records.filter(r => r.action === "出区").length;
+    const guo = records.filter(r => r.action === "过驳").length;
+    document.getElementById("cpStats").innerHTML = `
+      <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${inCnt}</div><div class="stat-label">今日入区（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${outCnt}</div><div class="stat-label">今日出区（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple">🛂</div><div><div class="stat-value">${ch516}</div><div class="stat-label">通道&lt;516&gt;出场（车）</div></div></div>`;
+
+    const table = new App.DataTable({
+      el: "#cpTable", data: records, pageSize: 8, pager: "#cpPager",
+      keywordEl: "#cpKw", searchKeys: ["plate", "goods", "channel", "action"],
+      selectable: true, rowKey: "plate",
+      filters: [
+        { key: "gate", el: "#cpGate" },
+        { key: "action", el: "#cpAction" },
+        { key: "type", el: "#cpType" },
+        { key: "result", el: "#cpResult" }
+      ],
+      columns: [
+        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "gate", title: "闸口", sortable: true },
+        { key: "channel", title: "场所通道", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+        { key: "goods", title: "货物", sortable: true },
+        {
+          key: "action", title: "动作", sortable: true, render: v =>
+            `<span class="badge ${v === "入区" ? "badge-ok" : v === "出区" ? "badge-info" : "badge-warn"}">${v}</span>`
+        },
+        { key: "time", title: "时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        {
+          key: "result", title: "核放结果", sortable: true, render: v =>
+            `<span class="badge ${v === "待核" ? "badge-err" : "badge-ok"}">${App.esc(v)}</span>`
+        }
+      ]
+    });
+
+    /* 批量抬杆 */
+    const modal = document.getElementById("liftModal");
+    document.getElementById("batchLift").addEventListener("click", () => {
+      const sel = table.selectedRows();
+      if (!sel.length) return App.toast("请先勾选车辆", "warn");
+      document.getElementById("liftInfo").textContent = `确定对所选 ${sel.length} 辆车执行抬杆放行？`;
+      modal.classList.add("show");
+    });
+    document.getElementById("liftConfirm").addEventListener("click", () => {
+      const sel = table.selectedRows();
+      sel.forEach(r => { if (r.result === "待核") r.result = "抬杆"; });
+      modal.classList.remove("show");
+      table.clearSelected();
+      App.toast(`已对 ${sel.length} 辆车执行抬杆（演示）`, "ok");
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      App.exportCSV("卡口车辆记录.csv", ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "结果"],
+        table.filtered.map(r => [r.plate, r.gate, r.channel, r.type, r.goods, r.action, r.time, r.result]));
+    });
+  </script>
+</body>
+</html>

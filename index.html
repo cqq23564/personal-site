@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>林运维 · 个人主页 | 园区数字化 / 数据可视化</title>
+  <meta name="description" content="林运维的个人主页：园区数字化系统建设、数据可视化与全栈实践。">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ============ 顶部导航 ============ -->
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html" class="active">首页</a>
+        <a href="index.html#about">关于我</a>
+        <a href="index.html#gallery">生活相册</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt="头像"><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <a href="files.html">📁 文件管理</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <div class="hero-bg"><img src="assets/img/banner1.png" alt="山间云海"></div>
+    <div class="hero-inner">
+      <h1>你好，我是 <span class="grad">林运维</span><br>园区数字化建设者</h1>
+      <p>专注进出口场站数字化：车辆在场监管 · 卡口核放 · 每日报表 · 数据可视化。<br>把复杂的通关场站数据，变成一眼看懂的驾驶舱。</p>
+      <div class="hero-btns">
+        <a class="btn btn-primary btn-lg" href="dashboard.html">进入数据看板 →</a>
+        <a class="btn btn-line btn-lg" href="index.html#message">给我留言</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="v"><span data-count="1286">0</span></div><div class="k">累计登录天数</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="120000">0</span>+</div><div class="k">处理申报单</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="9">0</span></div><div class="k">上线系统模块</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="38">0</span>%</div><div class="k">时效提升</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 轮播图 ============ -->
+  <section class="section-tight" id="dongtai">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title" style="font-size:20px">近期动态</h2></div>
+      <div class="carousel reveal">
+        <div class="carousel-viewport">
+          <div class="carousel-track">
+            <div class="slide">
+              <img src="assets/img/banner1.png" alt="云海日出">
+              <div class="slide-cap"><h3>驾驶舱 2.0 上线</h3><p>入区 / 出卡 / 滞留 / 核放四类指标一屏总览，日报自动生成</p></div>
+            </div>
+            <div class="slide">
+              <img src="assets/img/banner2.png" alt="城市夜景">
+              <div class="slide-cap"><h3>卡口核放自动化</h3><p>一线放行（过驳）抬杆记录自动归档，异常实时预警</p></div>
+            </div>
+            <div class="slide">
+              <img src="assets/img/banner3.png" alt="科技背景">
+              <div class="slide-cap"><h3>数据中台改造</h3><p>7 项每日查询标准化落库，字段映射可配置</p></div>
+            </div>
+          </div>
+        </div>
+        <button class="carousel-btn prev">‹</button>
+        <button class="carousel-btn next">›</button>
+        <div class="carousel-dots"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 关于我 ============ -->
+  <section class="section" id="about">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">关于我</h2></div>
+      <div class="about-grid reveal">
+        <div class="about-photo">
+          <img src="assets/img/gallery3.png" alt="工作照">
+          <div class="exp"><b>9</b><span>年行业经验</span></div>
+        </div>
+        <div>
+          <h3 style="font-size:19px">把场站数据「管起来、用起来」</h3>
+          <p class="text-2 mt-8">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
+          <ul class="info-list">
+            <li><span class="k">姓名</span><span class="v">林运维</span></li>
+            <li><span class="k">岗位</span><span class="v">系统管理员</span></li>
+            <li><span class="k">部门</span><span class="v">园区运营中心</span></li>
+            <li><span class="k">城市</span><span class="v">广西 · 凭祥</span></li>
+            <li><span class="k">邮箱</span><span class="v">linops@example.cn</span></li>
+            <li><span class="k">状态</span><span class="v"><span class="badge badge-ok">在职</span></span></li>
+          </ul>
+          <div class="mt-16 flex gap-8" style="flex-wrap:wrap">
+            <a class="btn btn-primary" href="dashboard.html">查看我的看板</a>
+            <a class="btn btn-line" href="query-reports.html">每日报表</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 技能 ============ -->
+  <section class="section" style="background:var(--surface)">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">技能矩阵</h2></div>
+      <div class="grid-2 reveal">
+        <div class="card"><div class="card-bd">
+          <div class="skill-row"><span class="name">数据可视化</span><div class="progress"><i style="width:92%"></i></div><span class="val">92%</span></div>
+          <div class="skill-row"><span class="name">前端开发</span><div class="progress"><i style="width:88%"></i></div><span class="val">88%</span></div>
+          <div class="skill-row"><span class="name">通关业务</span><div class="progress"><i style="width:95%"></i></div><span class="val">95%</span></div>
+          <div class="skill-row"><span class="name">数据治理</span><div class="progress"><i style="width:85%"></i></div><span class="val">85%</span></div>
+        </div></div>
+        <div class="card"><div class="card-bd">
+          <div class="skill-row"><span class="name">系统运维</span><div class="progress"><i style="width:80%"></i></div><span class="val">80%</span></div>
+          <div class="skill-row"><span class="name">自动化脚本</span><div class="progress"><i style="width:90%"></i></div><span class="val">90%</span></div>
+          <div class="skill-row"><span class="name">项目管理</span><div class="progress"><i style="width:76%"></i></div><span class="val">76%</span></div>
+          <div class="skill-row"><span class="name">培训分享</span><div class="progress"><i style="width:82%"></i></div><span class="val">82%</span></div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 相册 ============ -->
+  <section class="section" id="gallery">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">生活相册</h2><span class="section-sub">工作之外，也爱记录路上的风景</span></div>
+      <div class="gallery reveal">
+        <div class="gallery-item"><img src="assets/img/gallery1.png" alt="樱花"><div class="cap">🌸 春日樱花大道</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery2.png" alt="灯塔"><div class="cap">🌅 海边灯塔日落</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery3.png" alt="书桌"><div class="cap">☕ 一个人的工位</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery4.png" alt="雪山"><div class="cap">🏔️ 雪山与湖</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 视频 ============ -->
+  <section class="section" style="background:var(--surface)">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">视频分享</h2></div>
+      <div class="grid-2 reveal">
+        <div class="video-card">
+          <img class="poster" src="assets/img/banner3.png" alt="视频封面">
+          <div class="video-play"><button class="ring" id="playBtn">▶</button></div>
+        </div>
+        <div>
+          <h3>《园区的一天》纪录短片</h3>
+          <p class="text-2 mt-8">凌晨五点的闸口、上午的查验场、下午的报关大厅——用 3 分钟记录边境场站的日常节奏。视频文件位于 <code class="mono">assets/video/demo.mp4</code>，放入后即可自动播放（当前为演示占位）。</p>
+          <ul class="text-2 mt-16" style="line-height:2">
+            <li>🎬 时长：03:12 · 拍摄于闸口B边小</li>
+            <li>🎵 配乐：原创轻音乐</li>
+            <li>📅 更新：2026-10-28</li>
+          </ul>
+          <div class="mt-16"><button class="btn btn-line" id="playBtn2">▶ 播放视频</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 时间线 ============ -->
+  <section class="section">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">成长经历</h2></div>
+      <div class="card reveal"><div class="card-bd">
+        <div class="timeline">
+          <div class="timeline-item"><div class="timeline-date">2026 - 至今</div><div class="timeline-title">园区运营中心 · 系统管理员</div><div class="timeline-text">负责进出口场站数字化系统建设，主导车辆在场监管、卡口核放、每日报表三条主线从 0 到 1 落地。</div></div>
+          <div class="timeline-item done"><div class="timeline-date">2023 - 2026</div><div class="timeline-title">通关服务部 · 报关专员</div><div class="timeline-text">深耕互市贸易通关实务，累计处理边民申报超 12 万单，推动申报时效平均缩短 38%。</div></div>
+          <div class="timeline-item done"><div class="timeline-date">2021 - 2023</div><div class="timeline-title">某科技公司 · 前端工程师</div><div class="timeline-text">负责数据可视化与中后台系统开发，沉淀了一套可复用的组件与图表体系。</div></div>
+          <div class="timeline-item done"><div class="timeline-date">2017 - 2021</div><div class="timeline-title">大学 · 软件工程</div><div class="timeline-text">主修软件工程，任技术社团负责人，两次省级程序设计竞赛奖项。</div></div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ 留言 ============ -->
+  <section class="section" id="message" style="background:var(--surface)">
+    <div class="wrap-wide">
+      <div class="title-bar reveal"><h2 class="section-title">留言板</h2></div>
+      <div class="grid-2 reveal">
+        <div class="card"><div class="card-hd">写下你的想法</div><div class="card-bd">
+          <form data-validate data-done="留言提交成功（演示）" id="msgForm" novalidate>
+            <div class="form-row">
+              <div class="field"><label>昵称<span class="req">*</span></label><input class="input" id="msgName" data-rule="required|min:2" placeholder="怎么称呼你"><div class="field-msg"></div></div>
+              <div class="field"><label>邮箱</label><input class="input" id="msgMail" data-rule="email" placeholder="选填，方便回复"><div class="field-msg"></div></div>
+            </div>
+            <div class="field"><label>留言内容<span class="req">*</span></label><textarea class="textarea" id="msgText" data-rule="required|min:5" placeholder="想说的话……（至少 5 个字）"></textarea><div class="field-msg"></div></div>
+            <button class="btn btn-primary" type="submit">提交留言</button>
+          </form>
+        </div></div>
+        <div class="card"><div class="card-hd">最新留言 <span class="sub" id="msgCount"></span></div><div class="card-bd" id="msgList" style="max-height:380px;overflow-y:auto"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 页脚 ============ -->
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand"><span class="nav-logo">林</span>林运维 · 个人主页</div>
+          <p class="footer-text">园区数字化建设者。把复杂的通关场站数据，变成一眼看懂的驾驶舱。本站为个人作品集 + 工具集，所有数据均为演示数据。</p>
+        </div>
+        <div>
+          <h4>快速导航</h4>
+          <a href="index.html#about">关于我</a>
+          <a href="dashboard.html">数据看板</a>
+          <a href="system-menus.html">系统管理</a>
+          <a href="query-vehicles.html">查询统计</a>
+          <a href="files.html">文件管理</a>
+        </div>
+        <div>
+          <h4>常用功能</h4>
+          <a href="query-checkpoint.html">卡口车辆管理</a>
+          <a href="query-records.html">核放记录查询</a>
+          <a href="query-reports.html">每日报表导出</a>
+          <a href="system-logs.html">操作日志</a>
+          <a href="profile.html">个人中心</a>
+        </div>
+        <div>
+          <h4>联系方式</h4>
+          <p class="footer-text">📧 linops@example.cn</p>
+          <p class="footer-text">📍 广西凭祥 · 边境经济合作区</p>
+          <div class="footer-qr">
+            <div class="qr">微信<br>二维码占位</div>
+            <div class="qr">公众号<br>二维码占位</div>
+          </div>
+        </div>
+      </div>
+      <div class="copyright">
+        <span>© 2026 林运维 · 个人主页 · 仅作学习与演示用途</span>
+        <span>桂ICP备XXXXXXXX号-1</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    /* 留言板渲染与提交 */
+    (function () {
+      const list = document.getElementById("msgList");
+      const msgs = (window.MOCK.messages || []).slice();
+      function render() {
+        document.getElementById("msgCount").textContent = msgs.length + " 条";
+        list.innerHTML = msgs.map(m => `
+          <div style="padding:12px 0;border-bottom:1px dashed var(--border)">
+            <div class="flex-between"><b>${App.esc(m.name)}</b><span class="text-3" style="font-size:12px">${App.esc(m.time)}</span></div>
+            <p class="text-2" style="font-size:13px;margin-top:4px">${App.esc(m.text)}</p>
+          </div>`).join("") || '<div class="empty"><div class="ico">💬</div>还没有留言</div>';
+      }
+      render();
+      document.getElementById("msgForm").addEventListener("submit", function () {
+        const name = document.getElementById("msgName").value.trim();
+        const text = document.getElementById("msgText").value.trim();
+        if (!name || text.length < 5) return;
+        msgs.unshift({ name, time: "刚刚", text });
+        render();
+        this.reset();
+        document.querySelectorAll(".field-msg").forEach(el => el.textContent = "");
+      });
+
+      /* 视频播放占位 */
+      function playTip() { App.toast("演示站点：将视频文件放到 assets/video/demo.mp4 后即可播放", "warn"); }
+      document.getElementById("playBtn").addEventListener("click", playTip);
+      document.getElementById("playBtn2").addEventListener("click", playTip);
+    })();
+  </script>
+</body>
+</html>

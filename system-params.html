@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>参数管理 · 系统管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html" class="active">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link active" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">🔧 参数管理</div>
+          <div class="page-desc">系统运行参数配置，修改后立即生效（演示）</div>
+        </div>
+        <button class="btn btn-primary" id="addParamBtn">＋ 新增参数</button>
+      </div>
+
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input" id="paramKw" placeholder="🔍 参数名称 / 键名">
+          <select class="select" id="paramGroup">
+            <option value="">全部分组</option>
+            <option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option>
+          </select>
+          <div class="grow"></div>
+          <button class="btn btn-line btn-sm" id="exportParams">📥 导出</button>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="paramTable"></div>
+          <div class="table-footer"><span class="total"></span><span id="paramPager"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 参数弹窗 -->
+  <div class="modal-mask" id="paramModal">
+    <div class="modal">
+      <div class="modal-hd"><span id="paramModalTitle">编辑参数</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <form data-validate data-done="参数保存成功（演示）" id="paramForm" novalidate>
+          <div class="form-row">
+            <div class="field"><label>参数名称<span class="req">*</span></label><input class="input" data-rule="required" placeholder="如：滞留预警阈值"><div class="field-msg"></div></div>
+            <div class="field"><label>参数键名<span class="req">*</span></label><input class="input mono" data-rule="required" placeholder="如：vehicle.stranded.hours"><div class="field-msg"></div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>参数值<span class="req">*</span></label><input class="input" data-rule="required" placeholder="如：72"><div class="field-msg"></div></div>
+            <div class="field"><label>单位</label><input class="input" placeholder="小时 / 秒 / MB"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>分组</label>
+              <select class="select"><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
+            <div class="field"><label>系统内置</label>
+              <select class="select"><option>否</option><option>是</option></select></div>
+          </div>
+          <div class="field"><label>备注</label><textarea class="textarea" style="min-height:70px" placeholder="参数说明"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" onclick="document.getElementById('paramForm').requestSubmit()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const params = M.params.map(p => ({ ...p }));
+
+    const table = new App.DataTable({
+      el: "#paramTable", data: params, pageSize: 8, pager: "#paramPager",
+      keywordEl: "#paramKw", searchKeys: ["name", "key", "remark"],
+      filters: [{ key: "group", el: "#paramGroup" }],
+      columns: [
+        { key: "name", title: "参数名称", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
+        { key: "key", title: "参数键名", render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        { key: "value", title: "参数值", sortable: true, render: (v, r) => `<span class="badge badge-info plain mono">${App.esc(v)}${r.unit ? " " + App.esc(r.unit) : ""}</span>` },
+        { key: "group", title: "分组", sortable: true, render: v => `<span class="tag">${App.esc(v)}</span>` },
+        { key: "remark", title: "备注", wrap: true, render: v => `<span class="text-2">${App.esc(v)}</span>` },
+        {
+          key: "id", title: "操作", render: (v, r) => `
+            <button class="btn-link" onclick="App.toast('编辑 ${App.esc(r.name)}（演示）','ok')">编辑</button>
+            <button class="btn-link danger" onclick="delParam(${v})">删除</button>`
+        }
+      ]
+    });
+
+    window.delParam = function (id) {
+      const i = params.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const name = params[i].name;
+      params.splice(i, 1);
+      table.render();
+      App.toast(`已删除参数「${name}」（演示）`, "ok");
+    };
+
+    document.getElementById("addParamBtn").addEventListener("click", () => {
+      document.getElementById("paramModalTitle").textContent = "新增参数";
+      App.openModal("paramModal");
+    });
+
+    document.getElementById("exportParams").addEventListener("click", () => {
+      App.exportCSV("系统参数.csv", ["参数名称", "键名", "参数值", "单位", "分组", "备注"],
+        params.map(p => [p.name, p.key, p.value, p.unit, p.group, p.remark]));
+    });
+  </script>
+</body>
+</html>

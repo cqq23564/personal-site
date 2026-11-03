@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据看板 · 林运维个人主页</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html" class="active">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <a href="files.html">📁 文件管理</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ============ 侧边栏 ============ -->
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link active" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <!-- ============ 主内容 ============ -->
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">📊 首页驾驶舱</div>
+          <div class="page-desc">数据截至 <span id="nowTime"></span> · 演示数据，非真实业务</div>
+        </div>
+        <div class="flex gap-8" style="flex-wrap:wrap">
+          <button class="btn btn-line" onclick="App.toast('已刷新（演示）','ok')">🔄 刷新</button>
+          <button class="btn btn-primary" id="exportDash">📥 导出今日日报</button>
+        </div>
+      </div>
+
+      <!-- KPI 卡片 -->
+      <div class="stat-grid mb-24" id="kpiGrid"></div>
+
+      <!-- 趋势 + 货物构成 -->
+      <div class="grid-2 mb-24">
+        <div class="card">
+          <div class="card-hd">30 日入区 / 出卡趋势 <span class="sub">单位：车</span></div>
+          <div class="card-bd"><div class="chart-box" id="trendChart"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">今日货物构成 <span class="sub">按车数占比</span></div>
+          <div class="card-bd"><div class="chart-box" id="goodsDonut"></div></div>
+        </div>
+      </div>
+
+      <!-- 闸口流量 + 园区示意图 -->
+      <div class="grid-2 mb-24">
+        <div class="card">
+          <div class="card-hd">今日闸口流量（分时） <span class="sub">单位：车</span></div>
+          <div class="card-bd"><div class="chart-box" id="gateChart"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">园区平面示意 <span class="sub">悬停查看车辆数</span></div>
+          <div class="card-bd flush">
+            <div class="map-schematic" id="parkMap" style="position:relative"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 在场车辆简表 -->
+      <div class="card">
+        <div class="card-hd">在场车辆（实时） <span class="sub">前 8 条，完整列表见「在场车辆查询」</span>
+          <a class="btn-link" href="query-vehicles.html">查看全部 →</a>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="onSiteTable"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+
+    /* 时间 */
+    function fmtNow() {
+      const d = new Date(), p = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+    document.getElementById("nowTime").textContent = fmtNow();
+    setInterval(() => document.getElementById("nowTime").textContent = fmtNow(), 1000);
+
+    /* KPI 卡 */
+    document.getElementById("kpiGrid").innerHTML = M.kpis.map(k => `
+      <div class="stat-card">
+        <div class="stat-icon ${k.color}">${k.icon}</div>
+        <div style="flex:1">
+          <div class="stat-value"><span data-count="${k.value}">0</span> <span style="font-size:12px;color:var(--text-3)">${k.unit}</span></div>
+          <div class="stat-label">${k.label}</div>
+        </div>
+        <div class="stat-trend ${k.up ? "up" : "down"}">${k.up ? "▲" : "▼"} ${k.trend}</div>
+      </div>`).join("");
+
+    /* 图表 */
+    App.renderLineChart("#trendChart", {
+      labels: M.trend30.map(t => t.date),
+      series: [
+        { name: "入区", data: M.trend30.map(t => t.in), color: "#3b6ef5", area: true },
+        { name: "出卡", data: M.trend30.map(t => t.out), color: "#d97706", area: true }
+      ]
+    });
+    App.renderDonut("#goodsDonut", M.goodsPie, { label: "货物构成", unit: "%" });
+    App.renderBarChart("#gateChart", {
+      labels: M.gateFlow.map(g => g.hour),
+      series: [
+        { name: "入区", data: M.gateFlow.map(g => g.in), color: "#3b6ef5" },
+        { name: "出卡", data: M.gateFlow.map(g => g.out), color: "#7c5cff" }
+      ]
+    });
+
+    /* 园区示意图 */
+    App.renderParkMap("#parkMap", M.mapMarkers);
+
+    /* 在场车辆简表 */
+    new App.DataTable({
+      el: "#onSiteTable",
+      data: M.vehiclesOnSite,
+      pageSize: 8,
+      searchKeys: ["plate", "goods", "driver", "gate"],
+      columns: [
+        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+        { key: "goods", title: "货物" },
+        { key: "gate", title: "闸口" },
+        { key: "nation", title: "国籍" },
+        { key: "dwell", title: "在场时长(h)", sortable: true, align: "right", render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>` },
+        { key: "status", title: "状态", sortable: true, render: v => `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>` }
+      ]
+    });
+
+    /* 导出日报 */
+    document.getElementById("exportDash").addEventListener("click", () => {
+      const t = M.trend30[M.trend30.length - 1];
+      App.exportCSV("园区日报_" + new Date().toISOString().slice(0, 10) + ".csv",
+        ["日期", "入区车数", "出卡车数", "在场车辆", "边民申报"],
+        [[t.date, t.in, t.out, M.kpis[0].value, M.kpis[5].value]]);
+    });
+  </script>
+</body>
+</html>

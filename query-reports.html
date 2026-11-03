@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日报表 · 查询统计</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html" class="active">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link active" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">📈 每日报表</div>
+          <div class="page-desc">入区 / 出卡 / 核放 / 申报日报，支持明细导出</div>
+        </div>
+        <div class="flex gap-8" style="flex-wrap:wrap">
+          <button class="btn btn-line" id="exportDetail">📄 导出行车明细</button>
+          <button class="btn btn-primary" id="exportReport">📥 导出报表数据</button>
+        </div>
+      </div>
+
+      <!-- 今日概览 -->
+      <div class="stat-grid mb-24" id="todayStats"></div>
+
+      <!-- 报表趋势 -->
+      <div class="card mb-24">
+        <div class="card-hd">近 7 日报警趋势 <span class="sub">入区 / 出卡 / 边民申报</span></div>
+        <div class="card-bd"><div class="chart-box" id="reportChart"></div></div>
+      </div>
+
+      <!-- 报表表格 -->
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input" id="rpKw" placeholder="🔍 日期（如 11-03）">
+          <select class="select" id="rpSort">
+            <option value="">默认排序</option>
+            <option value="inTotal-desc">入区最多</option>
+            <option value="outTotal-desc">出卡最多</option>
+            <option value="decl-desc">申报最多</option>
+            <option value="abnormal-desc">异常最多</option>
+          </select>
+          <div class="grow"></div>
+          <span class="text-3" style="font-size:12.5px">💡 导出格式：CSV（Excel 可直接打开）</span>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="rpTable"></div>
+          <div class="table-footer"><span class="total"></span><span id="rpPager"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const reports = M.dailyReports.map(r => ({ ...r }));
+    const today = reports[0];
+
+    document.getElementById("todayStats").innerHTML = `
+      <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${today.inTotal}</div><div class="stat-label">今日入区（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${today.inHeavy}</div><div class="stat-label">其中重车（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${today.outTotal}</div><div class="stat-label">今日出卡（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple">📋</div><div><div class="stat-value">${today.decl}</div><div class="stat-label">边民申报（单）</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan">✅</div><div><div class="stat-value">${today.release}</div><div class="stat-label">一线放行（车）</div></div></div>
+      <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${today.abnormal}</div><div class="stat-label">异常（次）</div></div></div>`;
+
+    /* 趋势图（时间倒序 → 正序） */
+    const asc = reports.slice().reverse();
+    App.renderLineChart("#reportChart", {
+      labels: asc.map(r => r.date.slice(5)),
+      series: [
+        { name: "入区", data: asc.map(r => r.inTotal), color: "#3b6ef5", area: true },
+        { name: "出卡", data: asc.map(r => r.outTotal), color: "#d97706", area: true },
+        { name: "边民申报", data: asc.map(r => r.decl), color: "#16a34a" }
+      ]
+    });
+
+    const table = new App.DataTable({
+      el: "#rpTable", data: reports, pageSize: 7, pager: "#rpPager",
+      keywordEl: "#rpKw", searchKeys: ["date"],
+      columns: [
+        { key: "date", title: "日期", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "inTotal", title: "入区总数", sortable: true, align: "right" },
+        { key: "inHeavy", title: "重车", sortable: true, align: "right" },
+        { key: "inEmpty", title: "空车", sortable: true, align: "right" },
+        { key: "outTotal", title: "出卡总数", sortable: true, align: "right" },
+        { key: "outHeavy", title: "重车", sortable: true, align: "right" },
+        { key: "outEmpty", title: "空车", sortable: true, align: "right" },
+        { key: "release", title: "一线放行", sortable: true, align: "right" },
+        { key: "decl", title: "边民申报", sortable: true, align: "right" },
+        {
+          key: "abnormal", title: "异常", sortable: true, align: "right",
+          render: v => `<span class="${v > 3 ? "stat-trend down" : ""}">${v}</span>`
+        },
+        {
+          key: "date", title: "操作", render: v => `
+            <button class="btn-link" onclick="App.toast('查看 ${App.esc(v)} 明细（演示）','ok')">明细</button>
+            <button class="btn-link" onclick="App.toast('已导出 ${App.esc(v)} 报表','ok')">导出</button>`
+        }
+      ]
+    });
+
+    /* 排序快捷方式 */
+    document.getElementById("rpSort").addEventListener("change", function () {
+      const [k, dir] = this.value.split("-");
+      if (!k) { table.sortKey = null; }
+      else { table.sortKey = k; table.sortAsc = dir === "asc"; }
+      table.render();
+    });
+
+    document.getElementById("exportReport").addEventListener("click", () => {
+      App.exportCSV("每日报表.csv",
+        ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
+        table.filtered.map(r => [r.date, r.inTotal, r.inHeavy, r.inEmpty, r.outTotal, r.outHeavy, r.outEmpty, r.release, r.decl, r.abnormal]));
+    });
+
+    document.getElementById("exportDetail").addEventListener("click", () => {
+      App.exportCSV("行车明细.csv",
+        ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "核放结果"],
+        M.checkpointVehicles.map(r => [r.plate, r.gate, r.channel, r.type, r.goods, r.action, r.time, r.result]));
+    });
+  </script>
+</body>
+</html>

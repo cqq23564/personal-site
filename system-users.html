@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 · 系统管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html" class="active">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link active" href="system-users.html"><span class="ico">👤</span>用户管理<span class="badge-dot">2</span></a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">👤 用户管理</div>
+          <div class="page-desc">用户账号维护与注册审核</div>
+        </div>
+        <button class="btn btn-primary" id="addUserBtn">＋ 新增用户</button>
+      </div>
+
+      <div data-tabs-scope>
+        <div class="tabs">
+          <button class="tab active" data-tab="list">用户列表 <span class="cnt" id="userCnt"></span></button>
+          <button class="tab" data-tab="audit">注册审核 <span class="cnt" id="auditCnt"></span></button>
+        </div>
+
+        <!-- 用户列表 -->
+        <div data-tab-pane="list">
+          <div class="card">
+            <div class="table-toolbar">
+              <input class="input" id="userKw" placeholder="🔍 账号 / 姓名 / 电话">
+              <select class="select" id="userRole">
+                <option value="">全部角色</option>
+                <option>系统管理员</option><option>场站操作员</option><option>报关专员</option><option>数据统计员</option>
+              </select>
+              <select class="select" id="userStatus">
+                <option value="">全部状态</option>
+                <option>正常</option><option>禁用</option>
+              </select>
+              <div class="grow"></div>
+              <button class="btn btn-line btn-sm" id="exportUsers">📥 导出</button>
+            </div>
+            <div class="card-bd flush">
+              <div class="table-wrap" id="userTable"></div>
+              <div class="table-footer"><span class="total"></span><span id="userPager"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 注册审核 -->
+        <div data-tab-pane="audit" class="hidden">
+          <div class="card">
+            <div class="table-toolbar">
+              <input class="input" id="appKw" placeholder="🔍 企业 / 联系人 / 电话">
+              <select class="select" id="appStatus">
+                <option value="">全部状态</option>
+                <option>待审核</option><option>已通过</option><option>已驳回</option>
+              </select>
+              <div class="grow"></div>
+              <button class="btn btn-line btn-sm" id="batchPass">✓ 批量通过</button>
+            </div>
+            <div class="card-bd flush">
+              <div class="table-wrap" id="appTable"></div>
+              <div class="table-footer"><span class="total"></span><span id="appPager"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 用户弹窗 -->
+  <div class="modal-mask" id="userModal">
+    <div class="modal">
+      <div class="modal-hd"><span>新增用户</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <form data-validate data-done="用户创建成功（演示）" id="userForm" novalidate>
+          <div class="form-row">
+            <div class="field"><label>账号<span class="req">*</span></label><input class="input" data-rule="required|account" placeholder="字母开头 4-16 位"><div class="field-msg"></div></div>
+            <div class="field"><label>姓名<span class="req">*</span></label><input class="input" data-rule="required|min:2" placeholder="真实姓名"><div class="field-msg"></div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>手机号<span class="req">*</span></label><input class="input" data-rule="required|phone" maxlength="11" placeholder="11 位手机号"><div class="field-msg"></div></div>
+            <div class="field"><label>角色<span class="req">*</span></label>
+              <select class="select" data-rule="required"><option value="">请选择</option><option>系统管理员</option><option>场站操作员</option><option>报关专员</option><option>数据统计员</option></select>
+              <div class="field-msg"></div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>部门<span class="req">*</span></label>
+              <select class="select" data-rule="required"><option value="">请选择</option><option>园区运营中心</option><option>卡口管理部</option><option>通关服务部</option></select>
+              <div class="field-msg"></div></div>
+            <div class="field"><label>初始密码<span class="req">*</span></label><input class="input" data-rule="required|pwd" placeholder="6-18 位含字母数字"><div class="field-msg"></div></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" onclick="document.getElementById('userForm').requestSubmit()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const users = M.users.map(u => ({ ...u }));
+    const apps = M.registerApps.map(a => ({ ...a }));
+
+    document.getElementById("userCnt").textContent = users.length;
+    document.getElementById("auditCnt").textContent = apps.filter(a => a.status === "待审核").length;
+
+    const userTable = new App.DataTable({
+      el: "#userTable", data: users, pageSize: 8, pager: "#userPager",
+      keywordEl: "#userKw", searchKeys: ["account", "name", "phone", "dept"],
+      filters: [{ key: "role", el: "#userRole" }, { key: "status", el: "#userStatus" }],
+      columns: [
+        { key: "account", title: "账号", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "name", title: "姓名", sortable: true },
+        { key: "role", title: "角色", sortable: true, render: v => `<span class="badge badge-info plain">${App.esc(v)}</span>` },
+        { key: "dept", title: "部门", sortable: true },
+        { key: "phone", title: "手机号", render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "last", title: "最近登录", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        {
+          key: "status", title: "状态", sortable: true, render: v =>
+            `<span class="badge ${v === "正常" ? "badge-ok" : "badge-err"}">${v}</span>`
+        },
+        {
+          key: "id", title: "操作", render: (v, r) => `
+            <button class="btn-link" onclick="App.toast('编辑 ${App.esc(r.name)}（演示）','ok')">编辑</button>
+            <button class="btn-link" onclick="toggleUser(${v})">${r.status === "正常" ? "禁用" : "启用"}</button>
+            <button class="btn-link" onclick="App.toast('密码已重置为 123456（演示）','warn')">重置密码</button>
+            <button class="btn-link danger" onclick="delUser(${v})">删除</button>`
+        }
+      ]
+    });
+
+    window.toggleUser = function (id) {
+      const u = users.find(x => x.id === id);
+      if (!u) return;
+      u.status = u.status === "正常" ? "禁用" : "正常";
+      userTable.render();
+      App.toast(`「${u.name}」已${u.status === "正常" ? "启用" : "禁用"}`, "ok");
+    };
+    window.delUser = function (id) {
+      const i = users.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const name = users[i].name;
+      users.splice(i, 1);
+      document.getElementById("userCnt").textContent = users.length;
+      userTable.render();
+      App.toast(`已删除用户「${name}」（演示）`, "ok");
+    };
+
+    const appTable = new App.DataTable({
+      el: "#appTable", data: apps, pageSize: 8, pager: "#appPager",
+      keywordEl: "#appKw", searchKeys: ["name", "contact", "phone", "id"],
+      filters: [{ key: "status", el: "#appStatus" }],
+      columns: [
+        { key: "id", title: "申请编号", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "name", title: "申请主体", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
+        { key: "type", title: "用户类型", render: v => `<span class="badge badge-gray">${App.esc(v)}</span>` },
+        { key: "contact", title: "联系人" },
+        { key: "phone", title: "联系电话", render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "applied", title: "申请时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        {
+          key: "status", title: "审核状态", sortable: true, render: v =>
+            `<span class="badge ${v === "待审核" ? "badge-warn" : v === "已通过" ? "badge-ok" : "badge-err"}">${v}</span>`
+        },
+        {
+          key: "id", title: "操作", render: (v, r) => r.status === "待审核" ? `
+            <button class="btn-link" onclick="audit('${v}',true)">通过</button>
+            <button class="btn-link danger" onclick="audit('${v}',false)">驳回</button>`
+            : '<span class="text-3">已处理</span>'
+        }
+      ]
+    });
+
+    window.audit = function (id, pass) {
+      const a = apps.find(x => x.id === id);
+      if (!a) return;
+      a.status = pass ? "已通过" : "已驳回";
+      document.getElementById("auditCnt").textContent = apps.filter(x => x.status === "待审核").length;
+      appTable.render();
+      App.toast(`「${a.name}」审核${pass ? "通过" : "驳回"}`, pass ? "ok" : "warn");
+    };
+
+    document.getElementById("batchPass").addEventListener("click", () => {
+      let n = 0;
+      apps.forEach(a => { if (a.status === "待审核") { a.status = "已通过"; n++; } });
+      document.getElementById("auditCnt").textContent = 0;
+      appTable.render();
+      App.toast(n ? `已批量通过 ${n} 条申请` : "没有待审核的申请", n ? "ok" : "warn");
+    });
+
+    document.getElementById("exportUsers").addEventListener("click", () => {
+      App.exportCSV("用户列表.csv", ["账号", "姓名", "角色", "部门", "手机号", "状态"],
+        users.map(u => [u.account, u.name, u.role, u.dept, u.phone, u.status]));
+    });
+
+    document.getElementById("addUserBtn").addEventListener("click", () => App.openModal("userModal"));
+  </script>
+</body>
+</html>

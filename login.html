@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · 林运维个人主页</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-line btn-sm" href="register.html">注册</a>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="auth-page">
+    <div class="auth-visual">
+      <img src="assets/img/banner2.png" alt="城市夜景">
+      <div class="slogan">
+        <h2>欢迎回来 👋</h2>
+        <p>登录后可查看数据看板、管理车辆与申报数据。演示账号：admin / 任意密码 + 验证码。</p>
+      </div>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-box">
+        <h1>账号登录</h1>
+        <p class="sub">还没有账号？<a href="register.html">立即注册 →</a></p>
+        <form data-validate data-done="登录成功，正在进入看板…" id="loginForm" novalidate>
+          <div class="field">
+            <label>账号<span class="req">*</span></label>
+            <input class="input" id="loginAccount" data-rule="required|account" placeholder="字母开头，4-16 位">
+            <div class="field-msg"></div>
+          </div>
+          <div class="field">
+            <label>密码<span class="req">*</span></label>
+            <input class="input" type="password" id="loginPwd" data-rule="required|pwd" placeholder="6-18 位，含字母和数字">
+            <div class="field-msg"></div>
+          </div>
+          <div class="field">
+            <label>验证码<span class="req">*</span></label>
+            <div class="captcha-row">
+              <input class="input" id="loginCaptcha" data-rule="required|captcha" maxlength="4" placeholder="4 位验证码">
+              <div class="captcha-img" title="点击刷新">A7K9</div>
+            </div>
+            <div class="field-msg"></div>
+          </div>
+          <div class="flex-between mb-16">
+            <label class="checkline"><input type="checkbox" checked>记住我</label>
+            <a href="#" class="btn-link" onclick="App.toast('演示站点：请联系管理员重置','warn');return false">忘记密码？</a>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" type="submit">登 录</button>
+        </form>
+        <div class="auth-tip">🔒 本站为纯前端演示，不会上传任何信息；正式环境请对接后端认证接口。</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none;justify-content:center">
+        <span>© 2026 林运维 · 个人主页 · 仅作学习与演示用途</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function () {
+      const btn = this.querySelector("button[type=submit]");
+      btn.disabled = true; btn.textContent = "登录中…";
+      setTimeout(() => location.href = "dashboard.html", 900);
+    });
+  </script>
+</body>
+</html>

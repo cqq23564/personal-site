@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在场车辆查询 · 查询统计</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html" class="active">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link active" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">🚛 在场车辆查询</div>
+          <div class="page-desc">当前园区内全部车辆，支持按车牌 / 货物 / 司机搜索，按在场时长排序</div>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-line" onclick="App.toast('已刷新（演示）','ok')">🔄 刷新</button>
+          <button class="btn btn-primary" id="exportBtn">📥 导出在场车辆</button>
+        </div>
+      </div>
+
+      <!-- 汇总 -->
+      <div class="stat-grid mb-24" id="vehStats"></div>
+
+      <!-- 滞留 72 小时预警 -->
+      <div class="card mb-24" style="border-color:#fecaca">
+        <div class="card-hd" style="color:var(--danger)">⚠️ 滞留超 72 小时重车（边小卡四入场未出区 · 中国车出口）</div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="strandedTable"></div>
+        </div>
+      </div>
+
+      <!-- 在场车辆 -->
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input grow" id="vehKw" placeholder="🔍 车牌 / 货物 / 司机 / 闸口">
+          <select class="select" id="vehType">
+            <option value="">全部类型</option>
+            <option>重车</option><option>空车</option>
+          </select>
+          <select class="select" id="vehGate">
+            <option value="">全部闸口</option>
+            <option>闸口A</option><option>闸口B边小</option>
+          </select>
+          <select class="select" id="vehNation">
+            <option value="">全部国籍</option>
+            <option>中国</option><option>越南</option>
+          </select>
+          <select class="select" id="vehStatus">
+            <option value="">全部状态</option>
+            <option>在场</option><option>滞留预警</option>
+          </select>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="vehTable"></div>
+          <div class="table-footer"><span class="total"></span><span id="vehPager"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const vehicles = M.vehiclesOnSite.map(v => ({ ...v }));
+
+    /* 汇总卡 */
+    const heavy = vehicles.filter(v => v.type === "重车").length;
+    document.getElementById("vehStats").innerHTML = `
+      <div class="stat-card"><div class="stat-icon blue">🚛</div><div><div class="stat-value">${vehicles.length}</div><div class="stat-label">在场总数（辆）</div></div></div>
+      <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${heavy}</div><div class="stat-label">重车（辆）</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange">🫗</div><div><div class="stat-value">${vehicles.length - heavy}</div><div class="stat-label">空车（辆）</div></div></div>
+      <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${M.stranded.length}</div><div class="stat-label">滞留超 72h（辆）</div></div></div>`;
+
+    /* 滞留表 */
+    new App.DataTable({
+      el: "#strandedTable", data: M.stranded, pageSize: 5,
+      columns: [
+        { key: "plate", title: "车牌号码", render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "goods", title: "货物" },
+        { key: "entry", title: "入场时间", render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "dwell", title: "滞留时长(h)", align: "right", sortable: true, render: v => `<b style="color:var(--danger)">${v}</b>` },
+        { key: "reason", title: "滞留原因", wrap: true },
+        { key: "contact", title: "跟进人", render: v => `<span class="mono">${App.esc(v)}</span>` }
+      ],
+      emptyText: "🎉 当前没有滞留超 72 小时的车辆"
+    });
+
+    /* 在场车辆表 */
+    const table = new App.DataTable({
+      el: "#vehTable", data: vehicles, pageSize: 8, pager: "#vehPager",
+      keywordEl: "#vehKw", searchKeys: ["plate", "goods", "driver", "gate", "nation"],
+      filters: [
+        { key: "type", el: "#vehType" },
+        { key: "gate", el: "#vehGate" },
+        { key: "nation", el: "#vehNation" },
+        { key: "status", el: "#vehStatus" }
+      ],
+      columns: [
+        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+        { key: "goods", title: "货物", sortable: true },
+        { key: "gate", title: "入区闸口", sortable: true },
+        { key: "nation", title: "国籍", sortable: true },
+        { key: "driver", title: "司机", sortable: true },
+        { key: "entry", title: "入场时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        {
+          key: "dwell", title: "在场时长(h)", sortable: true, align: "right",
+          render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>`
+        },
+        {
+          key: "status", title: "状态", sortable: true, render: v =>
+            `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>`
+        }
+      ]
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      App.exportCSV("在场车辆.csv", ["车牌", "类型", "货物", "闸口", "国籍", "司机", "入场时间", "在场时长(h)", "状态"],
+        table.filtered.map(v => [v.plate, v.type, v.goods, v.gate, v.nation, v.driver, v.entry, v.dwell, v.status]));
+    });
+  </script>
+</body>
+</html>

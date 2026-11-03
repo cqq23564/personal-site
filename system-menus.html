@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>菜单管理 · 系统管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html" class="active">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link active" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">📑 菜单管理</div>
+          <div class="page-desc">维护系统菜单、目录与按钮权限，支持显示/隐藏与排序</div>
+        </div>
+        <button class="btn btn-primary" id="addMenuBtn">＋ 新增菜单</button>
+      </div>
+
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input" id="menuKw" placeholder="🔍 菜单名称 / 路径">
+          <select class="select" id="menuType">
+            <option value="">全部类型</option>
+            <option value="目录">目录</option>
+            <option value="菜单">菜单</option>
+            <option value="按钮">按钮</option>
+          </select>
+          <select class="select" id="menuVisible">
+            <option value="">显示状态</option>
+            <option value="1">显示中</option>
+            <option value="0">已隐藏</option>
+          </select>
+          <div class="grow"></div>
+          <button class="btn btn-line btn-sm" id="expandAll">展开/折叠</button>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="menuTable"></div>
+          <div class="table-footer">
+            <span class="total"></span>
+            <span class="text-3" style="font-size:12.5px">💡 子菜单通过「上级菜单」列归属，类型为「按钮」的项不展示在导航中</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 新增/编辑弹窗 -->
+  <div class="modal-mask" id="menuModal">
+    <div class="modal">
+      <div class="modal-hd"><span id="menuModalTitle">新增菜单</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <form data-validate data-done="保存成功（演示）" id="menuForm" novalidate>
+          <div class="form-row">
+            <div class="field"><label>菜单名称<span class="req">*</span></label><input class="input" data-rule="required|min:2" placeholder="如：用户管理"><div class="field-msg"></div></div>
+            <div class="field"><label>菜单类型<span class="req">*</span></label>
+              <select class="select" data-rule="required"><option value="">请选择</option><option>目录</option><option>菜单</option><option>按钮</option></select>
+              <div class="field-msg"></div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>上级菜单</label>
+              <select class="select" id="menuParent"><option value="0">顶级菜单</option></select></div>
+            <div class="field"><label>路由地址</label><input class="input" placeholder="/system-users"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>图标</label><input class="input" placeholder="输入 emoji，如 📑"></div>
+            <div class="field"><label>排序号</label><input class="input" type="number" value="1" min="1"></div>
+          </div>
+          <div class="field"><label class="checkline"><input type="checkbox" checked> 显示菜单</label></div>
+        </form>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" onclick="document.getElementById('menuForm').requestSubmit()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const menus = M.menus.map(m => ({ ...m }));
+    const nameOf = id => (menus.find(m => m.id === id) || {}).name || "顶级菜单";
+
+    /* 上级菜单下拉 */
+    document.getElementById("menuParent").innerHTML =
+      '<option value="0">顶级菜单</option>' +
+      menus.filter(m => m.type !== "按钮").map(m => `<option value="${m.id}">${App.esc(m.name)}</option>`).join("");
+
+    const table = new App.DataTable({
+      el: "#menuTable",
+      data: menus,
+      pageSize: 10,
+      keywordEl: "#menuKw",
+      searchKeys: ["name", "path"],
+      filters: [
+        { key: "type", el: "#menuType" },
+        { key: "visible", el: "#menuVisible" }
+      ],
+      columns: [
+        { key: "name", title: "菜单名称", sortable: true, render: (v, r) => r.parent === 0 ? `<b>${r.icon || "📁"} ${App.esc(v)}</b>` : `<span style="padding-left:22px">↳ ${r.icon || "📄"} ${App.esc(v)}</span>` },
+        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "目录" ? "badge-info" : v === "菜单" ? "badge-ok" : "badge-gray"}">${v}</span>` },
+        { key: "parent", title: "上级菜单", render: v => v === 0 ? '<span class="text-3">—</span>' : App.esc(nameOf(v)) },
+        { key: "path", title: "路由地址", render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "sort", title: "排序", sortable: true, align: "right" },
+        {
+          key: "visible", title: "状态", sortable: true, render: v => v
+            ? '<span class="badge badge-ok">显示中</span>'
+            : '<span class="badge badge-gray">已隐藏</span>'
+        },
+        {
+          key: "id", title: "操作", render: (v, r) => `
+            <button class="btn-link" onclick="App.toast('编辑 ${App.esc(r.name)}（演示）','ok')">编辑</button>
+            <button class="btn-link" onclick="toggleVisible(${v})">${r.visible ? "隐藏" : "显示"}</button>
+            <button class="btn-link danger" onclick="delMenu(${v})">删除</button>`
+        }
+      ]
+    });
+
+    window.toggleVisible = function (id) {
+      const m = menus.find(x => x.id === id);
+      if (!m) return;
+      m.visible = !m.visible;
+      table.render();
+      App.toast(`「${m.name}」已${m.visible ? "显示" : "隐藏"}`, "ok");
+    };
+    window.delMenu = function (id) {
+      const i = menus.findIndex(x => x.id === id);
+      if (i < 0) return;
+      const name = menus[i].name;
+      menus.splice(i, 1);
+      table.render();
+      App.toast(`已删除「${name}」（演示）`, "ok");
+    };
+
+    document.getElementById("addMenuBtn").addEventListener("click", () => App.openModal("menuModal"));
+    let collapsed = false;
+    document.getElementById("expandAll").addEventListener("click", function () {
+      collapsed = !collapsed;
+      this.textContent = collapsed ? "全部展开" : "展开/折叠";
+      App.toast(collapsed ? "已折叠子菜单（演示）" : "已展开全部（演示）");
+    });
+  </script>
+</body>
+</html>

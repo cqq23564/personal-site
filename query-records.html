@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>核放记录查询 · 查询统计</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html" class="active">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link active" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">✅ 核放记录查询</div>
+          <div class="page-desc">总署一线放行（过驳）抬杆记录，支持按单号 / 车牌 / 货物检索</div>
+        </div>
+        <button class="btn btn-primary" id="exportBtn">📥 导出核放记录</button>
+      </div>
+
+      <div class="stat-grid mb-24" id="rlStats"></div>
+
+      <div class="grid-2 mb-24">
+        <div class="card">
+          <div class="card-hd">核放类型分布</div>
+          <div class="card-bd"><div class="chart-box" id="rlChart"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">放行货物构成</div>
+          <div class="card-bd"><div class="chart-box" id="rlGoods"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input grow" id="rlKw" placeholder="🔍 核放单号 / 车牌 / 货物">
+          <select class="select" id="rlType">
+            <option value="">全部类型</option>
+            <option>过驳</option><option>入区核放</option><option>出区核放</option>
+          </select>
+          <select class="select" id="rlResult">
+            <option value="">全部结果</option>
+            <option>成功抬杆</option><option>失败-单证不符</option>
+          </select>
+          <select class="select" id="rlGate">
+            <option value="">全部闸口</option>
+            <option>闸口A</option><option>闸口B边小</option>
+          </select>
+        </div>
+        <div class="card-bd flush">
+          <div class="table-wrap" id="rlTable"></div>
+          <div class="table-footer"><span class="total"></span><span id="rlPager"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const records = M.releaseRecords.map(r => ({ ...r }));
+    const okCnt = records.filter(r => r.result === "成功抬杆").length;
+    const guo = records.filter(r => r.type === "过驳").length;
+
+    document.getElementById("rlStats").innerHTML = `
+      <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${okCnt}</div><div class="stat-label">成功抬杆（次）</div></div></div>
+      <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value">${records.length - okCnt}</div><div class="stat-label">失败（次）</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳核放（次）</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue">⚖️</div><div><div class="stat-value">${records.filter(r => r.weight !== "—").length}</div><div class="stat-label">计重记录（条）</div></div></div>`;
+
+    /* 类型分布柱状图 */
+    const types = ["过驳", "入区核放", "出区核放"];
+    App.renderBarChart("#rlChart", {
+      labels: types,
+      series: [{ name: "核放次数", data: types.map(t => records.filter(r => r.type === t).length), color: "#3b6ef5" }]
+    });
+
+    /* 货物构成环形图 */
+    const goodsMap = {};
+    records.forEach(r => { if (r.goods !== "—") goodsMap[r.goods] = (goodsMap[r.goods] || 0) + 1; });
+    const palette = ["#3b6ef5", "#7c5cff", "#16a34a", "#d97706", "#0891b2", "#94a3b8"];
+    App.renderDonut("#rlGoods", Object.entries(goodsMap).map(([name, value], i) => ({
+      name, value, color: palette[i % palette.length]
+    })), { label: "核放货物", unit: "次" });
+
+    const table = new App.DataTable({
+      el: "#rlTable", data: records, pageSize: 8, pager: "#rlPager",
+      keywordEl: "#rlKw", searchKeys: ["no", "plate", "goods", "operator"],
+      filters: [
+        { key: "type", el: "#rlType" },
+        { key: "result", el: "#rlResult" },
+        { key: "gate", el: "#rlGate" }
+      ],
+      columns: [
+        { key: "no", title: "核放单号", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+        { key: "gate", title: "闸口", sortable: true },
+        {
+          key: "type", title: "核放类型", sortable: true, render: v =>
+            `<span class="badge ${v === "过驳" ? "badge-warn" : "badge-info"}">${App.esc(v)}</span>`
+        },
+        { key: "goods", title: "货物", sortable: true },
+        { key: "weight", title: "重量", sortable: true, align: "right" },
+        { key: "time", title: "核放时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+        {
+          key: "result", title: "结果", sortable: true, render: v =>
+            `<span class="badge ${v === "成功抬杆" ? "badge-ok" : "badge-err"}">${App.esc(v)}</span>`
+        },
+        { key: "operator", title: "操作方", sortable: true }
+      ]
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      App.exportCSV("核放记录.csv", ["核放单号", "车牌", "闸口", "类型", "货物", "重量", "时间", "结果", "操作方"],
+        table.filtered.map(r => [r.no, r.plate, r.gate, r.type, r.goods, r.weight, r.time, r.result, r.operator]));
+    });
+  </script>
+</body>
+</html>

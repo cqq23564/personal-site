@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件管理 · 林运维个人主页</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">林</span>林运维 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html" class="active">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <a href="files.html">📁 文件管理</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">数据看板</div>
+        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link active" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">📁 文件管理</div>
+          <div class="page-desc">上传、下载、预览与批量导出，单文件不超过 50 MB</div>
+        </div>
+        <button class="btn btn-primary" id="exportAll">📥 批量导出清单</button>
+      </div>
+
+      <!-- 存储统计 -->
+      <div class="stat-grid mb-24" id="fileStats"></div>
+
+      <div class="grid-2 mb-24">
+        <!-- 上传区 -->
+        <div class="card">
+          <div class="card-hd">上传文件</div>
+          <div class="card-bd">
+            <div class="upload-zone" id="uploadZone">
+              <div class="big">☁️</div>
+              <b>点击选择文件</b> 或拖拽到此处
+              <div class="text-3" style="font-size:12px;margin-top:6px">支持 xlsx / csv / pdf / png / zip，演示模式仅在本地列表展示</div>
+            </div>
+          </div>
+        </div>
+        <!-- 分类统计 -->
+        <div class="card">
+          <div class="card-hd">文件类型分布</div>
+          <div class="card-bd"><div class="chart-box" id="fileChart"></div></div>
+        </div>
+      </div>
+
+      <!-- 工具栏 -->
+      <div class="card">
+        <div class="table-toolbar">
+          <input class="input grow" id="fileKw" placeholder="🔍 文件名 / 上传者">
+          <select class="select" id="fileType">
+            <option value="">全部类型</option>
+            <option value="excel">Excel</option>
+            <option value="csv">CSV</option>
+            <option value="pdf">PDF</option>
+            <option value="image">图片</option>
+            <option value="other">其他</option>
+          </select>
+          <div class="grow"></div>
+          <button class="btn btn-line btn-sm" id="viewToggle">🔳 切换网格/列表</button>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="table-toolbar" id="fileSelBar" style="display:none;background:var(--primary-light)">
+          <span class="sel-info" style="font-weight:600;color:var(--primary)"></span>
+          <div class="grow"></div>
+          <button class="btn btn-line btn-sm" data-act="batch-download">📥 批量导出</button>
+          <button class="btn btn-danger btn-sm" data-act="batch-delete">🗑 批量删除</button>
+          <button class="btn btn-ghost btn-sm" data-act="clear">取消选择</button>
+        </div>
+
+        <!-- 网格视图 -->
+        <div class="card-bd" id="gridView">
+          <div class="file-grid" id="fileGrid"></div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div class="card-bd flush hidden" id="listView">
+          <div class="table-wrap" id="fileTable"></div>
+          <div class="table-footer"><span class="total"></span><span id="filePager"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 预览弹窗 -->
+  <div class="modal-mask" id="previewModal">
+    <div class="modal wide">
+      <div class="modal-hd"><span id="previewName">预览</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd" id="previewBody"></div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>关闭</button>
+        <button class="btn btn-primary" onclick="App.toast('开始下载（演示）','ok')">📥 下载文件</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span><a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const M = window.MOCK;
+    const files = M.files.map(f => ({ ...f }));
+    const typeMap = { excel: "Excel", csv: "CSV", pdf: "PDF", image: "图片", zip: "压缩包", other: "其他" };
+    const palette = { Excel: "#16a34a", CSV: "#3b6ef5", PDF: "#dc2626", 图片: "#d97706", 压缩包: "#7c5cff", 其他: "#94a3b8" };
+
+    /* 统计 + 图表 */
+    function renderStats() {
+      const downloads = files.reduce((a, b) => a + b.downloads, 0);
+      const tables = files.filter(f => f.type === "excel" || f.type === "csv").length;
+      document.getElementById("fileStats").innerHTML = `
+        <div class="stat-card"><div class="stat-icon blue">📁</div><div><div class="stat-value">${files.length}</div><div class="stat-label">文件总数</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">📊</div><div><div class="stat-value">${tables}</div><div class="stat-label">表格文件</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">⬇️</div><div><div class="stat-value">${downloads}</div><div class="stat-label">累计下载</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">💾</div><div><div class="stat-value">5.7</div><div class="stat-label">已用容量(GB) / 50</div></div></div>`;
+      const cnt = {};
+      files.forEach(f => { const k = typeMap[f.type] || "其他"; cnt[k] = (cnt[k] || 0) + 1; });
+      App.renderDonut("#fileChart", Object.entries(cnt).map(([name, value]) => ({ name, value, color: palette[name] || "#94a3b8" })), { label: "文件类型", unit: "个" });
+    }
+    renderStats();
+
+    /* 列表视图表格（与网格共享同一 files 引用） */
+    let listTable = null;
+    function buildListTable() {
+      if (listTable) return listTable;
+      listTable = new App.DataTable({
+        el: "#fileTable", data: files, pageSize: 8, pager: "#filePager",
+        keywordEl: "#fileKw", searchKeys: ["name", "owner"],
+        filters: [{ key: "type", el: "#fileType" }],
+        selectable: true, rowKey: "id",
+        columns: [
+          { key: "name", title: "文件名", wrap: true, render: v => `<b>${App.esc(v)}</b>` },
+          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge badge-gray">${App.esc(typeMap[v] || v)}</span>` },
+          { key: "size", title: "大小", sortable: true },
+          { key: "owner", title: "上传者", sortable: true },
+          { key: "time", title: "时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+          { key: "downloads", title: "下载次数", sortable: true, align: "right" },
+          {
+            key: "id", title: "操作", render: (v, r) => `
+              <button class="btn-link" onclick="App.toast('开始下载 ${App.esc(r.name)}','ok')">下载</button>
+              <button class="btn-link danger" onclick="delFile('${v}')">删除</button>`
+          }
+        ]
+      });
+      return listTable;
+    }
+
+    window.delFile = function (id) {
+      const i = files.findIndex(f => f.id === id);
+      if (i < 0) return;
+      const name = files[i].name;
+      files.splice(i, 1);
+      renderStats();
+      if (listTable) listTable.render();
+      App.toast(`已删除「${name}」（演示）`, "ok");
+    };
+
+    /* 文件管理器（网格 + 上传 + 批量） */
+    App.initFileManager(files, {
+      onChange: () => { renderStats(); if (listTable) listTable.render(); }
+    });
+
+    /* 视图切换 */
+    let gridMode = true;
+    document.getElementById("viewToggle").addEventListener("click", function () {
+      gridMode = !gridMode;
+      document.getElementById("gridView").classList.toggle("hidden", !gridMode);
+      document.getElementById("listView").classList.toggle("hidden", gridMode);
+      this.textContent = gridMode ? "🔳 切换网格/列表" : "📋 切换网格/列表";
+      if (!gridMode) buildListTable().render();
+    });
+
+    /* 全量导出清单 */
+    document.getElementById("exportAll").addEventListener("click", () => {
+      App.exportCSV("文件清单.csv", ["ID", "文件名", "类型", "大小", "上传者", "时间", "下载次数"],
+        files.map(f => [f.id, f.name, typeMap[f.type] || f.type, f.size, f.owner, f.time, f.downloads]));
+    });
+  </script>
+</body>
+</html>
