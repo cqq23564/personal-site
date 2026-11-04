@@ -69,10 +69,12 @@
           <div class="page-desc">入区 / 出卡 / 核放 / 申报日报，支持明细导出</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
+          <button class="btn btn-primary hidden" id="rpAddBtn">＋ 新增日报</button>
           <button class="btn btn-line" id="exportDetail">📄 导出行车明细</button>
-          <button class="btn btn-primary" id="exportReport">📥 导出报表数据</button>
+          <button class="btn btn-line" id="exportReport">📥 导出报表数据</button>
         </div>
       </div>
+      <div class="page-notice" id="rpNotice" style="display:none"></div>
 
       <!-- 今日概览 -->
       <div class="stat-grid mb-24" id="todayStats"></div>
@@ -108,7 +110,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -116,74 +118,134 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/admin-crud.js"></script>
   <script>
-    const M = window.MOCK;
-    const reports = M.dailyReports.map(r => ({ ...r }));
-    const today = reports[0];
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
 
-    document.getElementById("todayStats").innerHTML = `
-      <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${today.inTotal}</div><div class="stat-label">今日入区（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${today.inHeavy}</div><div class="stat-label">其中重车（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${today.outTotal}</div><div class="stat-label">今日出卡（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon purple">📋</div><div><div class="stat-value">${today.decl}</div><div class="stat-label">边民申报（单）</div></div></div>
-      <div class="stat-card"><div class="stat-icon cyan">✅</div><div><div class="stat-value">${today.release}</div><div class="stat-label">一线放行（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${today.abnormal}</div><div class="stat-label">异常（次）</div></div></div>`;
+      /* 云表字段 -> 页面展示字段 */
+      function toRows(list) {
+        return (list || []).map(function (r) {
+          return {
+            id: r.id, date: r.rdate, inTotal: r.in_total, inHeavy: r.in_heavy, inEmpty: r.in_empty,
+            outTotal: r.out_total, outHeavy: r.out_heavy, outEmpty: r.out_empty,
+            release: r.release_cnt, decl: r.decl, abnormal: r.abnormal
+          };
+        });
+      }
 
-    /* 趋势图（时间倒序 → 正序） */
-    const asc = reports.slice().reverse();
-    App.renderLineChart("#reportChart", {
-      labels: asc.map(r => r.date.slice(5)),
-      series: [
-        { name: "入区", data: asc.map(r => r.inTotal), color: "#3b6ef5", area: true },
-        { name: "出卡", data: asc.map(r => r.outTotal), color: "#d97706", area: true },
-        { name: "边民申报", data: asc.map(r => r.decl), color: "#16a34a" }
-      ]
-    });
+      const table = new App.DataTable({
+        el: "#rpTable", data: [], pageSize: 7, pager: "#rpPager",
+        keywordEl: "#rpKw", searchKeys: ["date"],
+        columns: [
+          { key: "date", title: "日期", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "inTotal", title: "入区总数", sortable: true, align: "right" },
+          { key: "inHeavy", title: "重车", sortable: true, align: "right" },
+          { key: "inEmpty", title: "空车", sortable: true, align: "right" },
+          { key: "outTotal", title: "出卡总数", sortable: true, align: "right" },
+          { key: "outHeavy", title: "重车", sortable: true, align: "right" },
+          { key: "outEmpty", title: "空车", sortable: true, align: "right" },
+          { key: "release", title: "一线放行", sortable: true, align: "right" },
+          { key: "decl", title: "边民申报", sortable: true, align: "right" },
+          {
+            key: "abnormal", title: "异常", sortable: true, align: "right",
+            render: v => `<span class="${v > 3 ? "stat-trend down" : ""}">${v}</span>`
+          },
+          {
+            key: "id", title: "操作", render: (v, r) => {
+              var btns = '<button class="btn-link" onclick="exportDay(' + v + ')">导出</button>';
+              if (C.isAdmin()) btns = '<button class="btn-link" onclick="editRp(' + v + ')">编辑</button><button class="btn-link danger" onclick="delRp(' + v + ')">删除</button>' + btns;
+              return btns;
+            }
+          }
+        ]
+      });
 
-    const table = new App.DataTable({
-      el: "#rpTable", data: reports, pageSize: 7, pager: "#rpPager",
-      keywordEl: "#rpKw", searchKeys: ["date"],
-      columns: [
-        { key: "date", title: "日期", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "inTotal", title: "入区总数", sortable: true, align: "right" },
-        { key: "inHeavy", title: "重车", sortable: true, align: "right" },
-        { key: "inEmpty", title: "空车", sortable: true, align: "right" },
-        { key: "outTotal", title: "出卡总数", sortable: true, align: "right" },
-        { key: "outHeavy", title: "重车", sortable: true, align: "right" },
-        { key: "outEmpty", title: "空车", sortable: true, align: "right" },
-        { key: "release", title: "一线放行", sortable: true, align: "right" },
-        { key: "decl", title: "边民申报", sortable: true, align: "right" },
-        {
-          key: "abnormal", title: "异常", sortable: true, align: "right",
-          render: v => `<span class="${v > 3 ? "stat-trend down" : ""}">${v}</span>`
-        },
-        {
-          key: "date", title: "操作", render: v => `
-            <button class="btn-link" onclick="App.toast('查看 ${App.esc(v)} 明细（演示）','ok')">明细</button>
-            <button class="btn-link" onclick="App.toast('已导出 ${App.esc(v)} 报表','ok')">导出</button>`
-        }
-      ]
-    });
+      /* 今日概览 + 趋势图（随数据刷新） */
+      function renderExtras(rows) {
+        var today = rows[0] || { inTotal: 0, inHeavy: 0, outTotal: 0, decl: 0, release: 0, abnormal: 0 };
+        $("#todayStats").innerHTML = `
+          <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${today.inTotal}</div><div class="stat-label">最新日入区（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${today.inHeavy}</div><div class="stat-label">其中重车（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${today.outTotal}</div><div class="stat-label">最新日出卡（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">📋</div><div><div class="stat-value">${today.decl}</div><div class="stat-label">边民申报（单）</div></div></div>
+          <div class="stat-card"><div class="stat-icon cyan">✅</div><div><div class="stat-value">${today.release}</div><div class="stat-label">一线放行（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${today.abnormal}</div><div class="stat-label">异常（次）</div></div></div>`;
 
-    /* 排序快捷方式 */
-    document.getElementById("rpSort").addEventListener("change", function () {
-      const [k, dir] = this.value.split("-");
-      if (!k) { table.sortKey = null; }
-      else { table.sortKey = k; table.sortAsc = dir === "asc"; }
-      table.render();
-    });
+        var asc = rows.slice().reverse();
+        App.renderLineChart("#reportChart", {
+          labels: asc.map(r => String(r.date).slice(5)),
+          series: [
+            { name: "入区", data: asc.map(r => r.inTotal), color: "#3b6ef5", area: true },
+            { name: "出卡", data: asc.map(r => r.outTotal), color: "#d97706", area: true },
+            { name: "边民申报", data: asc.map(r => r.decl), color: "#16a34a" }
+          ]
+        });
+      }
 
-    document.getElementById("exportReport").addEventListener("click", () => {
-      App.exportCSV("每日报表.csv",
-        ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
-        table.filtered.map(r => [r.date, r.inTotal, r.inHeavy, r.inEmpty, r.outTotal, r.outHeavy, r.outEmpty, r.release, r.decl, r.abnormal]));
-    });
+      window.rpCrud = AdminCrud.mount({
+        table: "site_reports", entity: "日报", module: "每日报表",
+        notice: "#rpNotice", addBtn: "#rpAddBtn",
+        dt: table, order: "rdate", asc: false,
+        editFn: "editRp", delFn: "delRp", label: r => r.date,
+        fields: [
+          { key: "rdate", label: "日期", required: true, ph: "2026-11-03", pattern: /^\d{4}-\d{2}-\d{2}$/, hint: "一天只能有一条日报" },
+          { key: "in_total", label: "入区总数", type: "number", def: 0 },
+          { key: "in_heavy", label: "入区重车", type: "number", def: 0 },
+          { key: "in_empty", label: "入区空车", type: "number", def: 0 },
+          { key: "out_total", label: "出卡总数", type: "number", def: 0 },
+          { key: "out_heavy", label: "出卡重车", type: "number", def: 0 },
+          { key: "out_empty", label: "出卡空车", type: "number", def: 0 },
+          { key: "release_cnt", label: "一线放行", type: "number", def: 0 },
+          { key: "decl", label: "边民申报", type: "number", def: 0 },
+          { key: "abnormal", label: "异常次数", type: "number", def: 0 }
+        ],
+        onLoaded: function (list) { renderExtras(toRows(list)); }
+      });
 
-    document.getElementById("exportDetail").addEventListener("click", () => {
-      App.exportCSV("行车明细.csv",
-        ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "核放结果"],
-        M.checkpointVehicles.map(r => [r.plate, r.gate, r.channel, r.type, r.goods, r.action, r.time, r.result]));
-    });
+      /* 单日报表导出 */
+      window.exportDay = function (id) {
+        var r = rpCrud.rows().find(function (x) { return x.id === id; });
+        if (!r) return;
+        App.exportCSV("日报_" + r.rdate + ".csv",
+          ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
+          [[r.rdate, r.in_total, r.in_heavy, r.in_empty, r.out_total, r.out_heavy, r.out_empty, r.release_cnt, r.decl, r.abnormal]]);
+        C.logAction("每日报表", "导出日报", r.rdate);
+      };
+
+      /* 排序快捷方式 */
+      document.getElementById("rpSort").addEventListener("change", function () {
+        const [k, dir] = this.value.split("-");
+        if (!k) { table.sortKey = null; }
+        else { table.sortKey = k; table.sortAsc = dir === "asc"; }
+        table.render();
+      });
+
+      document.getElementById("exportReport").addEventListener("click", () => {
+        App.exportCSV("每日报表.csv",
+          ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
+          table.filtered.map(r => [r.date, r.inTotal, r.inHeavy, r.inEmpty, r.outTotal, r.outHeavy, r.outEmpty, r.release, r.decl, r.abnormal]));
+      });
+
+      /* 行车明细导出（取云端卡口记录，可按日期过滤） */
+      document.getElementById("exportDetail").addEventListener("click", async () => {
+        this.disabled = true;
+        var res = await C.tableList("site_checkpoint", { order: "happened_at", asc: false });
+        this.disabled = false;
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        var kw = $("#rpKw").value.trim();
+        var rows = (res.data || []).filter(function (r) { return !kw || String(r.happened_at).indexOf(kw.replace("-", "-")) > -1 || String(r.happened_at).slice(5).indexOf(kw) > -1; });
+        App.exportCSV("行车明细.csv",
+          ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "核放结果"],
+          rows.map(r => [r.plate, r.gate, r.channel, r.vtype, r.goods, r.action, r.happened_at, r.result]));
+        App.toast("已导出 " + rows.length + " 条行车明细", "ok");
+        C.logAction("每日报表", "导出行车明细", rows.length + " 条");
+      });
+    })();
   </script>
 </body>
 </html>

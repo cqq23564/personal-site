@@ -68,8 +68,12 @@
           <div class="page-title">✅ 核放记录查询</div>
           <div class="page-desc">总署一线放行（过驳）抬杆记录，支持按单号 / 车牌 / 货物检索</div>
         </div>
-        <button class="btn btn-primary" id="exportBtn">📥 导出核放记录</button>
+        <div class="flex gap-8">
+          <button class="btn btn-primary hidden" id="rlAddBtn">＋ 新增记录</button>
+          <button class="btn btn-line" id="exportBtn">📥 导出核放记录</button>
+        </div>
       </div>
+      <div class="page-notice" id="rlNotice" style="display:none"></div>
 
       <div class="stat-grid mb-24" id="rlStats"></div>
 
@@ -111,7 +115,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -119,64 +123,104 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/admin-crud.js"></script>
   <script>
-    const M = window.MOCK;
-    const records = M.releaseRecords.map(r => ({ ...r }));
-    const okCnt = records.filter(r => r.result === "成功抬杆").length;
-    const guo = records.filter(r => r.type === "过驳").length;
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
 
-    document.getElementById("rlStats").innerHTML = `
-      <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${okCnt}</div><div class="stat-label">成功抬杆（次）</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value">${records.length - okCnt}</div><div class="stat-label">失败（次）</div></div></div>
-      <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳核放（次）</div></div></div>
-      <div class="stat-card"><div class="stat-icon blue">⚖️</div><div><div class="stat-value">${records.filter(r => r.weight !== "—").length}</div><div class="stat-label">计重记录（条）</div></div></div>`;
+      /* 云表字段 -> 页面展示字段 */
+      function toRows(list) {
+        return (list || []).map(function (r) {
+          return {
+            id: r.id, no: r.rno, plate: r.plate, gate: r.gate, type: r.rtype,
+            goods: r.goods, weight: r.weight, time: r.happened_at,
+            result: r.result, operator: r.operator
+          };
+        });
+      }
 
-    /* 类型分布柱状图 */
-    const types = ["过驳", "入区核放", "出区核放"];
-    App.renderBarChart("#rlChart", {
-      labels: types,
-      series: [{ name: "核放次数", data: types.map(t => records.filter(r => r.type === t).length), color: "#3b6ef5" }]
-    });
+      const table = new App.DataTable({
+        el: "#rlTable", data: [], pageSize: 8, pager: "#rlPager",
+        keywordEl: "#rlKw", searchKeys: ["no", "plate", "goods", "operator"],
+        filters: [
+          { key: "type", el: "#rlType" },
+          { key: "result", el: "#rlResult" },
+          { key: "gate", el: "#rlGate" }
+        ],
+        columns: [
+          { key: "no", title: "核放单号", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+          { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "gate", title: "闸口", sortable: true },
+          {
+            key: "type", title: "核放类型", sortable: true, render: v =>
+              `<span class="badge ${v === "过驳" ? "badge-warn" : "badge-info"}">${App.esc(v)}</span>`
+          },
+          { key: "goods", title: "货物", sortable: true },
+          { key: "weight", title: "重量", sortable: true, align: "right" },
+          { key: "time", title: "核放时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+          {
+            key: "result", title: "结果", sortable: true, render: v =>
+              `<span class="badge ${v === "成功抬杆" ? "badge-ok" : "badge-err"}">${App.esc(v)}</span>`
+          },
+          { key: "operator", title: "操作方", sortable: true },
+          {
+            key: "id", title: "操作", render: (v) => C.isAdmin()
+              ? `<button class="btn-link" onclick="editRl(${v})">编辑</button><button class="btn-link danger" onclick="delRl(${v})">删除</button>`
+              : `<span class="text-3">只读</span>`
+          }
+        ]
+      });
 
-    /* 货物构成环形图 */
-    const goodsMap = {};
-    records.forEach(r => { if (r.goods !== "—") goodsMap[r.goods] = (goodsMap[r.goods] || 0) + 1; });
-    const palette = ["#3b6ef5", "#7c5cff", "#16a34a", "#d97706", "#0891b2", "#94a3b8"];
-    App.renderDonut("#rlGoods", Object.entries(goodsMap).map(([name, value], i) => ({
-      name, value, color: palette[i % palette.length]
-    })), { label: "核放货物", unit: "次" });
+      /* 统计卡 + 图表（随数据刷新） */
+      function renderExtras(rows) {
+        const okCnt = rows.filter(r => r.result === "成功抬杆").length;
+        const guo = rows.filter(r => r.type === "过驳").length;
+        $("#rlStats").innerHTML = `
+          <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${okCnt}</div><div class="stat-label">成功抬杆（次）</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value">${rows.length - okCnt}</div><div class="stat-label">失败（次）</div></div></div>
+          <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳核放（次）</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue">⚖️</div><div><div class="stat-value">${rows.filter(r => r.weight !== "—" && r.weight).length}</div><div class="stat-label">计重记录（条）</div></div></div>`;
 
-    const table = new App.DataTable({
-      el: "#rlTable", data: records, pageSize: 8, pager: "#rlPager",
-      keywordEl: "#rlKw", searchKeys: ["no", "plate", "goods", "operator"],
-      filters: [
-        { key: "type", el: "#rlType" },
-        { key: "result", el: "#rlResult" },
-        { key: "gate", el: "#rlGate" }
-      ],
-      columns: [
-        { key: "no", title: "核放单号", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "gate", title: "闸口", sortable: true },
-        {
-          key: "type", title: "核放类型", sortable: true, render: v =>
-            `<span class="badge ${v === "过驳" ? "badge-warn" : "badge-info"}">${App.esc(v)}</span>`
-        },
-        { key: "goods", title: "货物", sortable: true },
-        { key: "weight", title: "重量", sortable: true, align: "right" },
-        { key: "time", title: "核放时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        {
-          key: "result", title: "结果", sortable: true, render: v =>
-            `<span class="badge ${v === "成功抬杆" ? "badge-ok" : "badge-err"}">${App.esc(v)}</span>`
-        },
-        { key: "operator", title: "操作方", sortable: true }
-      ]
-    });
+        const types = ["过驳", "入区核放", "出区核放"];
+        App.renderBarChart("#rlChart", {
+          labels: types,
+          series: [{ name: "核放次数", data: types.map(t => rows.filter(r => r.type === t).length), color: "#3b6ef5" }]
+        });
 
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      App.exportCSV("核放记录.csv", ["核放单号", "车牌", "闸口", "类型", "货物", "重量", "时间", "结果", "操作方"],
-        table.filtered.map(r => [r.no, r.plate, r.gate, r.type, r.goods, r.weight, r.time, r.result, r.operator]));
-    });
+        const goodsMap = {};
+        rows.forEach(r => { if (r.goods && r.goods !== "—") goodsMap[r.goods] = (goodsMap[r.goods] || 0) + 1; });
+        const palette = ["#3b6ef5", "#7c5cff", "#16a34a", "#d97706", "#0891b2", "#94a3b8"];
+        App.renderDonut("#rlGoods", Object.entries(goodsMap).map(([name, value], i) => ({
+          name, value, color: palette[i % palette.length]
+        })), { label: "核放货物", unit: "次" });
+      }
+
+      window.rlCrud = AdminCrud.mount({
+        table: "site_records", entity: "记录", module: "核放记录",
+        notice: "#rlNotice", addBtn: "#rlAddBtn",
+        exportBtn: "#exportBtn", exportFile: "核放记录.csv",
+        exportHeaders: ["核放单号", "车牌", "闸口", "类型", "货物", "重量", "时间", "结果", "操作方"],
+        exportRow: r => [r.no, r.plate, r.gate, r.type, r.goods, r.weight, r.time, r.result, r.operator],
+        dt: table, order: "happened_at", asc: false,
+        editFn: "editRl", delFn: "delRl", label: r => r.no,
+        fields: [
+          { key: "rno", label: "核放单号", required: true, ph: "如：HF2026110300121" },
+          { key: "plate", label: "车牌号码", required: true, ph: "如：桂A·L3344" },
+          { key: "gate", label: "闸口", type: "select", options: ["闸口A", "闸口B边小"], required: true },
+          { key: "rtype", label: "核放类型", type: "select", options: ["过驳", "入区核放", "出区核放"], required: true },
+          { key: "goods", label: "货物", ph: "如：东盟水果（无货填 —）" },
+          { key: "weight", label: "重量", ph: "如：12.6 吨（无填 —）" },
+          { key: "happened_at", label: "核放时间", required: true, ph: "2026-11-03 09:58", pattern: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/ },
+          { key: "result", label: "结果", type: "select", options: ["成功抬杆", "失败-单证不符"], required: true },
+          { key: "operator", label: "操作方", ph: "如：系统 / 王磊" }
+        ],
+        onLoaded: function (list) { renderExtras(toRows(list)); }
+      });
+    })();
   </script>
 </body>
 </html>

@@ -21,7 +21,7 @@
       <div class="nav-actions">
         <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
         <div class="dropdown">
-          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>我的账号</span>▾</button>
           <div class="dropdown-menu">
             <a href="profile.html">🙋 个人中心</a>
             <a href="dashboard.html">📊 数据看板</a>
@@ -36,29 +36,30 @@
 
   <div class="wrap-wide section">
 
-    <!-- 个人资料头部 -->
+    <!-- 个人资料头部（真实数据） -->
     <div class="profile-head">
       <img src="assets/img/avatar.png" alt="头像">
       <div style="flex:1;min-width:220px">
-        <div class="nm">林运维 <span class="badge badge-info plain" style="background:rgba(255,255,255,.18);color:#fff">系统管理员</span></div>
-        <div class="rl">园区运营中心 · 广西凭祥</div>
+        <div class="nm" id="pfHeadName">我的账号 <span class="badge badge-info plain" id="pfHeadRole" style="background:rgba(255,255,255,.18);color:#fff"></span></div>
+        <div class="rl" id="pfHeadDept">—</div>
         <div class="meta">
-          <div><b>1,286</b>累计登录</div>
-          <div><b>128</b>本月操作</div>
-          <div><b>2026-11-03 09:12</b>最近登录</div>
+          <div>注册时间 <b id="pfHeadCreated">—</b></div>
+          <div>账号状态 <b id="pfHeadStatus">—</b></div>
+          <div>登录方式 <b>验证码</b></div>
         </div>
       </div>
       <div class="flex gap-8" style="flex-wrap:wrap">
-        <button class="btn btn-line" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff" onclick="App.toast('演示：头像已更新','ok')">更换头像</button>
-        <button class="btn btn-primary" onclick="App.toast('演示：资料已保存','ok')">保存资料</button>
+        <button class="btn btn-primary" id="pfHeadSave">保存资料</button>
       </div>
     </div>
+
+    <div class="field-msg" id="pfNotice" style="margin-top:12px"></div>
 
     <!-- Tabs -->
     <div class="mt-24" data-tabs-scope>
       <div class="tabs">
         <button class="tab active" data-tab="base">📋 基本资料</button>
-        <button class="tab" data-tab="safe">🔒 安全设置</button>
+        <button class="tab" data-tab="safe">🔒 账号安全</button>
         <button class="tab" data-tab="files">📁 我的文件</button>
         <button class="tab" data-tab="logs">📜 操作记录</button>
       </div>
@@ -68,30 +69,30 @@
         <div class="grid-2">
           <div class="card"><div class="card-hd">基础信息</div><div class="card-bd">
             <div class="form-row">
-              <div class="field"><label>姓名</label><input class="input" value="林运维"></div>
-              <div class="field"><label>昵称</label><input class="input" value="运维小林"></div>
+              <div class="field"><label>姓名</label><input class="input" id="pfName" placeholder="请输入姓名"></div>
+              <div class="field"><label>昵称</label><input class="input" id="pfNickname" placeholder="展示用昵称"></div>
             </div>
             <div class="form-row">
-              <div class="field"><label>手机号</label><input class="input" value="138****6688"></div>
-              <div class="field"><label>邮箱</label><input class="input" value="linops@example.cn"></div>
+              <div class="field"><label>手机号</label><input class="input" id="pfPhone" maxlength="11" placeholder="11 位手机号"></div>
+              <div class="field"><label>邮箱</label><input class="input" id="pfEmail" placeholder="you@example.com"></div>
             </div>
             <div class="field"><label>所属部门</label>
-              <select class="select"><option>园区运营中心</option><option>卡口管理部</option><option>通关服务部</option></select>
+              <select class="select" id="pfDept">
+                <option>园区运营中心</option><option>卡口管理部</option><option>通关服务部</option><option>边民互助组</option>
+              </select>
             </div>
             <div class="field"><label>个人简介</label>
-              <textarea class="textarea" placeholder="介绍一下自己">园区数字化建设者，专注车辆在场监管、卡口核放与每日报表。</textarea>
+              <textarea class="textarea" id="pfBio" placeholder="介绍一下自己"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="App.toast('演示：资料已保存','ok')">保存修改</button>
+            <button class="btn btn-primary" id="pfSaveBtn">保存修改</button>
           </div></div>
           <div class="card"><div class="card-hd">账号信息</div><div class="card-bd">
             <table class="table">
               <tbody>
-                <tr><td class="text-3" style="width:110px">账号</td><td class="mono">admin</td></tr>
-                <tr><td class="text-3">角色</td><td><span class="badge badge-info plain">系统管理员</span></td></tr>
-                <tr><td class="text-3">注册时间</td><td>2023-04-18</td></tr>
-                <tr><td class="text-3">最近登录</td><td>2026-11-03 09:12</td></tr>
-                <tr><td class="text-3">登录 IP</td><td class="mono">10.20.3.16</td></tr>
-                <tr><td class="text-3">账号状态</td><td><span class="badge badge-ok">正常</span></td></tr>
+                <tr><td class="text-3" style="width:110px">账号</td><td class="mono" id="pfAccount">—</td></tr>
+                <tr><td class="text-3">角色</td><td><span class="badge badge-info plain" id="pfRole">—</span></td></tr>
+                <tr><td class="text-3">注册时间</td><td id="pfCreated">—</td></tr>
+                <tr><td class="text-3">账号状态</td><td id="pfStatus">—</td></tr>
               </tbody>
             </table>
             <div class="mt-16 flex gap-8" style="flex-wrap:wrap">
@@ -102,41 +103,29 @@
         </div>
       </div>
 
-      <!-- 安全设置 -->
+      <!-- 账号安全 -->
       <div data-tab-pane="safe" class="hidden">
         <div class="grid-2">
-          <div class="card"><div class="card-hd">修改密码</div><div class="card-bd">
-            <form data-validate data-done="密码修改成功（演示）" novalidate>
-              <div class="field"><label>当前密码<span class="req">*</span></label><input class="input" type="password" data-rule="required" placeholder="请输入当前密码"><div class="field-msg"></div></div>
-              <div class="field"><label>新密码<span class="req">*</span></label><input class="input" type="password" id="newPwd" data-rule="required|pwd" placeholder="6-18 位，含字母和数字"><div class="field-msg"></div></div>
-              <div class="field"><label>确认新密码<span class="req">*</span></label><input class="input" type="password" id="newPwd2" data-rule="required" placeholder="再输入一次"><div class="field-msg"></div></div>
-              <button class="btn btn-primary" type="submit">修改密码</button>
-            </form>
+          <div class="card"><div class="card-hd">登录方式</div><div class="card-bd">
+            <table class="table">
+              <tbody>
+                <tr><td class="text-3" style="width:130px">登录方式</td><td>短信验证码 / 邮箱验证码</td></tr>
+                <tr><td class="text-3">绑定手机</td><td class="mono" id="sfPhone">—</td></tr>
+                <tr><td class="text-3">绑定邮箱</td><td class="mono" id="sfEmail">—</td></tr>
+              </tbody>
+            </table>
+            <p class="text-3" style="margin-top:12px;font-size:12.5px">修改绑定手机/邮箱请联系管理员。登录凭据由云服务托管，本站不存储密码。</p>
           </div></div>
-          <div class="card"><div class="card-hd">安全选项</div><div class="card-bd">
-            <div class="flex-between" style="padding:12px 0;border-bottom:1px dashed var(--border)">
-              <div><b>登录二次验证</b><div class="text-3" style="font-size:12.5px">登录时需输入短信验证码</div></div>
-              <label class="switch"><input type="checkbox" checked><span class="sl"></span></label>
-            </div>
-            <div class="flex-between" style="padding:12px 0;border-bottom:1px dashed var(--border)">
-              <div><b>异地登录提醒</b><div class="text-3" style="font-size:12.5px">新设备登录时邮件通知</div></div>
-              <label class="switch"><input type="checkbox" checked><span class="sl"></span></label>
-            </div>
-            <div class="flex-between" style="padding:12px 0;border-bottom:1px dashed var(--border)">
-              <div><b>操作日志留存</b><div class="text-3" style="font-size:12.5px">保留 180 天，可在操作日志查询</div></div>
-              <label class="switch"><input type="checkbox"><span class="sl"></span></label>
-            </div>
-            <div class="flex-between" style="padding:12px 0">
-              <div><b>公开我的主页</b><div class="text-3" style="font-size:12.5px">允许搜索引擎收录</div></div>
-              <label class="switch"><input type="checkbox"><span class="sl"></span></label>
-            </div>
+          <div class="card"><div class="card-hd">危险操作</div><div class="card-bd">
+            <p class="text-2">退出当前账号的登录状态。下次访问需重新使用验证码登录。</p>
+            <button class="btn btn-line" id="sfLogout" style="margin-top:12px">退出登录</button>
           </div></div>
         </div>
       </div>
 
-      <!-- 我的文件 -->
+      <!-- 我的文件（演示数据） -->
       <div data-tab-pane="files" class="hidden">
-        <div class="card"><div class="card-hd">我上传的文件 <span class="sub">最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><div class="card-hd">我上传的文件 <span class="sub">演示数据 · 最近 10 条</span></div><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>文件名</th><th>大小</th><th>时间</th><th class="num">下载次数</th><th>操作</th></tr></thead>
             <tbody id="myFilesBody"></tbody>
@@ -144,9 +133,9 @@
         </div></div>
       </div>
 
-      <!-- 操作记录 -->
+      <!-- 操作记录（演示数据） -->
       <div data-tab-pane="logs" class="hidden">
-        <div class="card"><div class="card-hd">我的操作记录 <span class="sub">最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><div class="card-hd">我的操作记录 <span class="sub">演示数据 · 最近 10 条</span></div><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>时间</th><th>模块</th><th>动作</th><th>IP</th><th>结果</th></tr></thead>
             <tbody id="myLogsBody"></tbody>
@@ -159,7 +148,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 仅作学习与演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -167,22 +156,115 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    const M = window.MOCK;
-    // 我的文件
-    document.getElementById("myFilesBody").innerHTML = M.files.slice(0, 10).map(f => `
-      <tr><td>${App.esc(f.name)}</td><td>${App.esc(f.size)}</td><td>${App.esc(f.time)}</td>
-      <td class="num">${f.downloads}</td>
-      <td><button class="btn-link" onclick="App.toast('开始下载 ${App.esc(f.name)}','ok')">下载</button></td></tr>`).join("");
-    // 我的操作记录
-    document.getElementById("myLogsBody").innerHTML = M.logs.filter(l => l.user === M.currentUser.name).slice(0, 10).map(l => `
-      <tr><td class="mono">${l.time}</td><td>${l.module}</td><td>${l.action}</td><td class="mono">${l.ip}</td>
-      <td><span class="badge ${l.result === "成功" ? "badge-ok" : "badge-err"}">${l.result}</span></td></tr>`).join("");
-    // 密码一致性
-    document.querySelector("[data-tab-pane=safe] form").addEventListener("submit", function (e) {
-      const p1 = document.getElementById("newPwd").value, p2 = document.getElementById("newPwd2").value;
-      if (p1 !== p2) { App.toast("两次输入的新密码不一致", "err"); e.stopImmediatePropagation(); }
-    });
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var notice = $("#pfNotice");
+      var C = window.Cloud;
+      var STATUS = { pending: "待审核", active: "正常", disabled: "已禁用", rejected: "已驳回" };
+
+      function tip(msg, ok) {
+        notice.textContent = msg || "";
+        notice.style.color = ok === false ? "#dc2626" : ok === true ? "#16a34a" : "#64748b";
+      }
+      function maskPhone(p) { p = String(p || ""); return p.length === 11 ? p.slice(0, 3) + "****" + p.slice(7) : (p || "—"); }
+      function maskEmail(e) {
+        e = String(e || ""); if (!e) return "—";
+        var parts = e.split("@"); if (parts[0].length <= 2) return e;
+        return parts[0].slice(0, 2) + "***@" + parts[1];
+      }
+      function fmtTime(t) { return t ? String(t).slice(0, 10) : "—"; }
+
+      /* 未登录（且云服务可用时）跳转登录页 */
+      if (C.isReady() && !C.isLoggedIn()) {
+        location.href = "login.html?next=profile.html";
+        return;
+      }
+
+      /* 首次登录引导：从登录页完善资料跳转过来 */
+      var firstLogin = /[?&]complete=1/.test(location.search);
+      if (firstLogin) {
+        tip("👋 首次登录：请完善并保存个人资料，保存后账号进入审核队列，管理员通过后即可使用全部功能。", null);
+      }
+
+      function render() {
+        var p = C.state.profile, u = C.state.user;
+        var name = p ? (p.nickname || p.name || "我的账号") : "我的账号";
+        $("#pfHeadName").innerHTML = App.esc(name) + ' <span class="badge badge-info plain" id="pfHeadRole" style="background:rgba(255,255,255,.18);color:#fff">' + App.esc(C.ROLE_TEXT[p && p.role] || "普通用户") + "</span>";
+        $("#pfHeadDept").textContent = (p && p.dept) || "未设置单位";
+        $("#pfHeadCreated").textContent = p ? fmtTime(p.created_at) : "—";
+        $("#pfHeadStatus").textContent = p ? (STATUS[p.status] || p.status) : "—";
+        if (p) {
+          $("#pfName").value = p.name || "";
+          $("#pfNickname").value = p.nickname || "";
+          $("#pfPhone").value = p.phone || "";
+          $("#pfEmail").value = p.email || "";
+          $("#pfBio").value = p.bio || "";
+          if (p.dept) $("#pfDept").value = p.dept;
+        }
+        var account = (u && (u.phone || u.email)) || (p && (p.phone || p.email)) || "—";
+        $("#pfAccount").textContent = maskPhone(account.indexOf("@") > -1 ? "" : account) || maskEmail(account);
+        $("#pfRole").textContent = C.ROLE_TEXT[p && p.role] || "普通用户";
+        $("#pfCreated").textContent = p ? fmtTime(p.created_at) : "—";
+        $("#pfStatus").innerHTML = p ? '<span class="badge ' + (p.status === "active" ? "badge-ok" : p.status === "pending" ? "badge-warn" : "badge-err") + '">' + (STATUS[p.status] || p.status) + "</span>" : "—";
+        $("#sfPhone").textContent = maskPhone((u && u.phone) || (p && p.phone));
+        $("#sfEmail").textContent = maskEmail((u && u.email) || (p && p.email));
+        if (p && !(p.name || "").trim()) tip("资料尚未完善：请填写姓名等基本信息后保存。", null);
+      }
+
+      async function save() {
+        var hadProfile = !!C.state.profile;
+        var patch = {
+          name: $("#pfName").value.trim(),
+          nickname: $("#pfNickname").value.trim(),
+          phone: $("#pfPhone").value.trim(),
+          email: $("#pfEmail").value.trim(),
+          dept: $("#pfDept").value,
+          bio: $("#pfBio").value.trim()
+        };
+        if (!patch.name) { tip("姓名不能为空", false); return; }
+        if (patch.phone && !C.validPhone(patch.phone)) { tip("手机号格式不正确", false); return; }
+        if (patch.email && !C.validEmail(patch.email)) { tip("邮箱格式不正确", false); return; }
+        var btn = $("#pfSaveBtn"); btn.disabled = true; btn.textContent = "保存中…";
+        var res = await C.saveMyProfile(patch);
+        btn.disabled = false; btn.textContent = "保存修改";
+        if (res.error) { tip(res.error.message, false); return; }
+        tip(hadProfile ? "资料已保存" : "资料已保存，等待管理员审核。通过后即可使用全部功能。", true);
+        render();
+      }
+      $("#pfSaveBtn").addEventListener("click", save);
+      $("#pfHeadSave").addEventListener("click", save);
+      $("#sfLogout").addEventListener("click", function () {
+        C.signOut().then(function () { location.href = "login.html"; });
+      });
+
+      /* 演示数据：我的文件 / 操作记录 */
+      var M = window.MOCK;
+      $("#myFilesBody").innerHTML = M.files.slice(0, 10).map(function (f) {
+        return "<tr><td>" + App.esc(f.name) + "</td><td>" + App.esc(f.size) + "</td><td>" + App.esc(f.time) + "</td>" +
+          '<td class="num">' + f.downloads + "</td>" +
+          '<td><button class="btn-link" onclick="App.toast(\'开始下载 ' + App.esc(f.name) + "','ok')\">下载</button></td></tr>";
+      }).join("");
+      var myName = (C.state.profile && C.state.profile.name) || "";
+      $("#myLogsBody").innerHTML = M.logs.filter(function (l) { return !myName || l.user === myName || l.user === "系统调度"; }).slice(0, 10).map(function (l) {
+        return '<tr><td class="mono">' + l.time + "</td><td>" + l.module + "</td><td>" + l.action + "</td><td>" + l.ip + "</td>" +
+          '<td><span class="badge ' + (l.result === "成功" ? "badge-ok" : "badge-err") + '">' + l.result + "</span></td></tr>";
+      }).join("");
+
+      /* 云服务就绪后加载真实资料 */
+      if (C.isReady()) {
+        C.restore().then(function () {
+          if (!C.isLoggedIn()) { location.href = "login.html?next=profile.html"; return; }
+          render();
+        });
+      } else {
+        tip("当前为演示模式：真实资料需在 WorkBuddy 托管域名查看。", false);
+      }
+      C.onChange(function () { if (C.isReady()) render(); });
+    })();
   </script>
 </body>
 </html>

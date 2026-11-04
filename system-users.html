@@ -21,7 +21,7 @@
       <div class="nav-actions">
         <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
         <div class="dropdown">
-          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>林运维</span>▾</button>
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>我的账号</span>▾</button>
           <div class="dropdown-menu">
             <a href="profile.html">🙋 个人中心</a>
             <a href="dashboard.html">📊 数据看板</a>
@@ -42,7 +42,7 @@
       </div>
       <div class="side-group">
         <div class="side-group-title">系统管理</div>
-        <a class="side-link active" href="system-users.html"><span class="ico">👤</span>用户管理<span class="badge-dot">2</span></a>
+        <a class="side-link active" href="system-users.html"><span class="ico">👤</span>用户管理<span class="badge-dot" id="sideAuditDot" style="display:none">0</span></a>
         <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
         <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
         <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
@@ -66,29 +66,31 @@
       <div class="page-head">
         <div>
           <div class="page-title">👤 用户管理</div>
-          <div class="page-desc">用户账号维护与注册审核</div>
+          <div class="page-desc">用户账号维护与注册审核 · 用户通过注册页自助注册，管理员在此审核与维护</div>
         </div>
-        <button class="btn btn-primary" id="addUserBtn">＋ 新增用户</button>
+        <button class="btn btn-line" onclick="App.toast('新用户请通过右上角「注册」页自助注册','')">＋ 如何新增用户</button>
       </div>
+
+      <div class="field-msg" id="usersNotice" style="margin-bottom:12px"></div>
 
       <div data-tabs-scope>
         <div class="tabs">
-          <button class="tab active" data-tab="list">用户列表 <span class="cnt" id="userCnt"></span></button>
-          <button class="tab" data-tab="audit">注册审核 <span class="cnt" id="auditCnt"></span></button>
+          <button class="tab active" data-tab="list">用户列表 <span class="cnt" id="userCnt">0</span></button>
+          <button class="tab" data-tab="audit">注册审核 <span class="cnt" id="auditCnt">0</span></button>
         </div>
 
         <!-- 用户列表 -->
         <div data-tab-pane="list">
           <div class="card">
             <div class="table-toolbar">
-              <input class="input" id="userKw" placeholder="🔍 账号 / 姓名 / 电话">
+              <input class="input" id="userKw" placeholder="🔍 姓名 / 电话 / 邮箱">
               <select class="select" id="userRole">
                 <option value="">全部角色</option>
-                <option>系统管理员</option><option>场站操作员</option><option>报关专员</option><option>数据统计员</option>
+                <option value="admin">系统管理员</option><option value="user">普通用户</option>
               </select>
               <select class="select" id="userStatus">
                 <option value="">全部状态</option>
-                <option>正常</option><option>禁用</option>
+                <option value="active">正常</option><option value="disabled">禁用</option>
               </select>
               <div class="grow"></div>
               <button class="btn btn-line btn-sm" id="exportUsers">📥 导出</button>
@@ -104,10 +106,10 @@
         <div data-tab-pane="audit" class="hidden">
           <div class="card">
             <div class="table-toolbar">
-              <input class="input" id="appKw" placeholder="🔍 企业 / 联系人 / 电话">
+              <input class="input" id="appKw" placeholder="🔍 姓名 / 电话 / 邮箱">
               <select class="select" id="appStatus">
                 <option value="">全部状态</option>
-                <option>待审核</option><option>已通过</option><option>已驳回</option>
+                <option value="pending">待审核</option><option value="rejected">已驳回</option>
               </select>
               <div class="grow"></div>
               <button class="btn btn-line btn-sm" id="batchPass">✓ 批量通过</button>
@@ -122,33 +124,37 @@
     </main>
   </div>
 
-  <!-- 用户弹窗 -->
+  <!-- 用户编辑弹窗 -->
   <div class="modal-mask" id="userModal">
     <div class="modal">
-      <div class="modal-hd"><span>新增用户</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-hd"><span id="userModalTitle">编辑用户</span><button class="modal-close" data-modal-close>✕</button></div>
       <div class="modal-bd">
-        <form data-validate data-done="用户创建成功（演示）" id="userForm" novalidate>
+        <form id="userForm" novalidate>
+          <input type="hidden" id="ufId">
           <div class="form-row">
-            <div class="field"><label>账号<span class="req">*</span></label><input class="input" data-rule="required|account" placeholder="字母开头 4-16 位"><div class="field-msg"></div></div>
-            <div class="field"><label>姓名<span class="req">*</span></label><input class="input" data-rule="required|min:2" placeholder="真实姓名"><div class="field-msg"></div></div>
+            <div class="field"><label>姓名<span class="req">*</span></label><input class="input" id="ufName" placeholder="真实姓名"><div class="field-msg"></div></div>
+            <div class="field"><label>昵称</label><input class="input" id="ufNickname" placeholder="展示用昵称"><div class="field-msg"></div></div>
           </div>
           <div class="form-row">
-            <div class="field"><label>手机号<span class="req">*</span></label><input class="input" data-rule="required|phone" maxlength="11" placeholder="11 位手机号"><div class="field-msg"></div></div>
-            <div class="field"><label>角色<span class="req">*</span></label>
-              <select class="select" data-rule="required"><option value="">请选择</option><option>系统管理员</option><option>场站操作员</option><option>报关专员</option><option>数据统计员</option></select>
+            <div class="field"><label>手机号</label><input class="input" id="ufPhone" maxlength="11" placeholder="11 位手机号"><div class="field-msg"></div></div>
+            <div class="field"><label>邮箱</label><input class="input" id="ufEmail" placeholder="you@example.com"><div class="field-msg"></div></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>角色</label>
+              <select class="select" id="ufRole"><option value="user">普通用户</option><option value="admin">系统管理员</option></select>
+              <div class="field-msg"></div></div>
+            <div class="field"><label>部门</label>
+              <select class="select" id="ufDept">
+                <option>园区运营中心</option><option>卡口管理部</option><option>通关服务部</option><option>边民互助组</option>
+              </select>
               <div class="field-msg"></div></div>
           </div>
-          <div class="form-row">
-            <div class="field"><label>部门<span class="req">*</span></label>
-              <select class="select" data-rule="required"><option value="">请选择</option><option>园区运营中心</option><option>卡口管理部</option><option>通关服务部</option></select>
-              <div class="field-msg"></div></div>
-            <div class="field"><label>初始密码<span class="req">*</span></label><input class="input" data-rule="required|pwd" placeholder="6-18 位含字母数字"><div class="field-msg"></div></div>
-          </div>
+          <div class="field"><label>个人简介</label><textarea class="textarea" id="ufBio" placeholder="介绍一下自己"></textarea></div>
         </form>
       </div>
       <div class="modal-ft">
         <button class="btn btn-line" data-modal-close>取消</button>
-        <button class="btn btn-primary" onclick="document.getElementById('userForm').requestSubmit()">创建</button>
+        <button class="btn btn-primary" id="ufSaveBtn">保存</button>
       </div>
     </div>
   </div>
@@ -156,7 +162,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -164,103 +170,223 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    const M = window.MOCK;
-    const users = M.users.map(u => ({ ...u }));
-    const apps = M.registerApps.map(a => ({ ...a }));
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
+      var notice = $("#usersNotice");
+      var STATUS = { pending: "待审核", active: "正常", disabled: "已禁用", rejected: "已驳回" };
+      var isAdmin = false;
+      var rawProfiles = [];
 
-    document.getElementById("userCnt").textContent = users.length;
-    document.getElementById("auditCnt").textContent = apps.filter(a => a.status === "待审核").length;
+      function tip(msg, ok) {
+        notice.textContent = msg || "";
+        notice.style.color = ok === false ? "#dc2626" : ok === true ? "#16a34a" : "#64748b";
+      }
+      function maskPhone(p) { p = String(p || ""); return p.length === 11 ? p.slice(0, 3) + "****" + p.slice(7) : (p || "—"); }
+      function maskEmail(e) {
+        e = String(e || ""); if (!e) return "—";
+        var parts = e.split("@"); if (parts[0].length <= 2) return e;
+        return parts[0].slice(0, 2) + "***@" + parts[1];
+      }
+      function accountOf(p) {
+        if (p.phone) return maskPhone(p.phone);
+        if (p.email) return maskEmail(p.email);
+        return "—";
+      }
+      function statusBadge(st) {
+        var cls = st === "active" ? "badge-ok" : st === "pending" ? "badge-warn" : "badge-err";
+        return '<span class="badge ' + cls + '">' + (STATUS[st] || st) + "</span>";
+      }
 
-    const userTable = new App.DataTable({
-      el: "#userTable", data: users, pageSize: 8, pager: "#userPager",
-      keywordEl: "#userKw", searchKeys: ["account", "name", "phone", "dept"],
-      filters: [{ key: "role", el: "#userRole" }, { key: "status", el: "#userStatus" }],
-      columns: [
-        { key: "account", title: "账号", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "name", title: "姓名", sortable: true },
-        { key: "role", title: "角色", sortable: true, render: v => `<span class="badge badge-info plain">${App.esc(v)}</span>` },
-        { key: "dept", title: "部门", sortable: true },
-        { key: "phone", title: "手机号", render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "last", title: "最近登录", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        {
-          key: "status", title: "状态", sortable: true, render: v =>
-            `<span class="badge ${v === "正常" ? "badge-ok" : "badge-err"}">${v}</span>`
-        },
-        {
-          key: "id", title: "操作", render: (v, r) => `
-            <button class="btn-link" onclick="App.toast('编辑 ${App.esc(r.name)}（演示）','ok')">编辑</button>
-            <button class="btn-link" onclick="toggleUser(${v})">${r.status === "正常" ? "禁用" : "启用"}</button>
-            <button class="btn-link" onclick="App.toast('密码已重置为 123456（演示）','warn')">重置密码</button>
-            <button class="btn-link danger" onclick="delUser(${v})">删除</button>`
+      /* ---------- 数据映射 ---------- */
+      function toRows(profiles) {
+        var myId = C.state.user ? C.state.user.id : "";
+        return profiles.map(function (p) {
+          return {
+            id: p.id,
+            account: accountOf(p),
+            name: p.name + (p.nickname ? "（" + p.nickname + "）" : ""),
+            dept: p.dept || "—",
+            created: p.created_at ? String(p.created_at).slice(0, 10) : "—",
+            _role: p.role, _status: p.status, _self: p.owner_id === myId,
+            roleText: C.ROLE_TEXT[p.role] || "普通用户",
+            statusText: STATUS[p.status] || p.status,
+            raw: p
+          };
+        });
+      }
+
+      /* ---------- 用户列表 ---------- */
+      var userTable = new App.DataTable({
+        el: "#userTable", data: [], pageSize: 8, pager: "#userPager",
+        keywordEl: "#userKw", searchKeys: ["name", "account", "dept"],
+        filters: [{ key: "_role", el: "#userRole" }, { key: "_status", el: "#userStatus" }],
+        columns: [
+          { key: "account", title: "账号", sortable: true, render: function (v) { return '<b class="mono">' + App.esc(v) + "</b>"; } },
+          { key: "name", title: "姓名", sortable: true },
+          { key: "roleText", title: "角色", sortable: true, render: function (v) { return '<span class="badge badge-info plain">' + App.esc(v) + "</span>"; } },
+          { key: "dept", title: "部门", sortable: true },
+          { key: "created", title: "注册时间", sortable: true, render: function (v) { return '<span class="mono text-2">' + App.esc(v) + "</span>"; } },
+          { key: "statusText", title: "状态", sortable: true, render: function (v, r) { return statusBadge(r._status); } },
+          {
+            key: "id", title: "操作", render: function (v, r) {
+              var btns = [];
+              if (r._self || isAdmin) btns.push('<button class="btn-link" onclick="editUser(' + v + ')">编辑</button>');
+              if (isAdmin && !r._self) {
+                btns.push('<button class="btn-link" onclick="toggleUser(' + v + ')">' + (r._status === "disabled" ? "启用" : "禁用") + "</button>");
+                btns.push('<button class="btn-link danger" onclick="delUser(' + v + ')">删除</button>');
+              }
+              return btns.join("") || '<span class="text-3">—</span>';
+            }
+          }
+        ]
+      });
+
+      /* ---------- 注册审核列表 ---------- */
+      var appTable = new App.DataTable({
+        el: "#appTable", data: [], pageSize: 8, pager: "#appPager",
+        keywordEl: "#appKw", searchKeys: ["name", "account", "dept"],
+        filters: [{ key: "_status", el: "#appStatus" }],
+        columns: [
+          { key: "account", title: "账号", sortable: true, render: function (v) { return '<b class="mono">' + App.esc(v) + "</b>"; } },
+          { key: "name", title: "姓名", sortable: true },
+          { key: "dept", title: "单位", sortable: true },
+          { key: "created", title: "申请时间", sortable: true, render: function (v) { return '<span class="mono text-2">' + App.esc(v) + "</span>"; } },
+          { key: "statusText", title: "审核状态", sortable: true, render: function (v, r) { return statusBadge(r._status); } },
+          {
+            key: "id", title: "操作", render: function (v, r) {
+              if (r._status !== "pending") return '<span class="text-3">已处理</span>';
+              if (!isAdmin) return '<span class="text-3">待管理员审核</span>';
+              return '<button class="btn-link" onclick="audit(' + v + ',true)">通过</button>' +
+                '<button class="btn-link danger" onclick="audit(' + v + ',false)">驳回</button>';
+            }
+          }
+        ]
+      });
+
+      /* ---------- 操作 ---------- */
+      function refresh(profiles) {
+        rawProfiles = profiles || [];
+        var rows = toRows(rawProfiles);
+        userTable.setData(rows.filter(function (r) { return r._status !== "pending" && r._status !== "rejected"; }));
+        appTable.setData(rows.filter(function (r) { return r._status === "pending" || r._status === "rejected"; }));
+        $("#userCnt").textContent = userTable.total;
+        var pending = rows.filter(function (r) { return r._status === "pending"; }).length;
+        $("#auditCnt").textContent = pending;
+        var dot = $("#sideAuditDot");
+        dot.textContent = pending;
+        dot.style.display = pending ? "" : "none";
+      }
+
+      window.editUser = function (id) {
+        var r = rawProfiles.find(function (x) { return x.id === id; });
+        if (!r) return;
+        $("#ufId").value = r.id;
+        $("#ufName").value = r.name || "";
+        $("#ufNickname").value = r.nickname || "";
+        $("#ufPhone").value = r.phone || "";
+        $("#ufEmail").value = r.email || "";
+        $("#ufRole").value = r.role || "user";
+        $("#ufDept").value = r.dept || "园区运营中心";
+        $("#ufBio").value = r.bio || "";
+        $("#userModalTitle").textContent = "编辑用户";
+        App.openModal("userModal");
+      };
+
+      $("#ufSaveBtn").addEventListener("click", async function () {
+        var id = Number($("#ufId").value);
+        var name = $("#ufName").value.trim();
+        var phone = $("#ufPhone").value.trim(), email = $("#ufEmail").value.trim();
+        if (!name) { App.toast("姓名不能为空", "err"); return; }
+        if (phone && !C.validPhone(phone)) { App.toast("手机号格式不正确", "err"); return; }
+        if (email && !C.validEmail(email)) { App.toast("邮箱格式不正确", "err"); return; }
+        this.disabled = true;
+        var res = await C.updateProfile(id, {
+          name: name, nickname: $("#ufNickname").value.trim(),
+          phone: phone, email: email, role: $("#ufRole").value,
+          dept: $("#ufDept").value, bio: $("#ufBio").value.trim()
+        });
+        this.disabled = false;
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.closeModal("userModal");
+        App.toast("已保存", "ok");
+        C.logAction("用户管理", "编辑用户", name);
+        loadData();
+      });
+
+      window.toggleUser = async function (id) {
+        var p = rawProfiles.find(function (x) { return x.id === id; });
+        if (!p) return;
+        var next = p.status === "disabled" ? "active" : "disabled";
+        var res = await C.updateProfile(id, { status: next });
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast("「" + (p.name || "用户") + "」已" + (next === "active" ? "启用" : "禁用"), "ok");
+        C.logAction("用户管理", next === "active" ? "启用用户" : "禁用用户", p.name || "用户");
+        loadData();
+      };
+
+      window.delUser = async function (id) {
+        var p = rawProfiles.find(function (x) { return x.id === id; });
+        if (!p) return;
+        if (!confirm("确定删除用户「" + (p.name || "用户") + "」？删除后该用户需重新注册。")) return;
+        var res = await C.deleteProfile(id);
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast("已删除", "ok");
+        C.logAction("用户管理", "删除用户", p.name || "用户");
+        loadData();
+      };
+
+      window.audit = async function (id, pass) {
+        var res = await C.updateProfile(id, { status: pass ? "active" : "rejected" });
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast(pass ? "已通过审核" : "已驳回", pass ? "ok" : "warn");
+        C.logAction("注册审核", pass ? "审核通过" : "审核驳回", "");
+        loadData();
+      };
+
+      $("#batchPass").addEventListener("click", async function () {
+        var pending = rawProfiles.filter(function (p) { return p.status === "pending"; });
+        if (!pending.length) { App.toast("没有待审核的申请", "warn"); return; }
+        this.disabled = true;
+        var ok = 0;
+        for (var i = 0; i < pending.length; i++) {
+          var res = await C.updateProfile(pending[i].id, { status: "active" });
+          if (!res.error) ok++;
         }
-      ]
-    });
+        this.disabled = false;
+        App.toast("已批量通过 " + ok + " 条申请", "ok");
+        loadData();
+      });
 
-    window.toggleUser = function (id) {
-      const u = users.find(x => x.id === id);
-      if (!u) return;
-      u.status = u.status === "正常" ? "禁用" : "正常";
-      userTable.render();
-      App.toast(`「${u.name}」已${u.status === "正常" ? "启用" : "禁用"}`, "ok");
-    };
-    window.delUser = function (id) {
-      const i = users.findIndex(x => x.id === id);
-      if (i < 0) return;
-      const name = users[i].name;
-      users.splice(i, 1);
-      document.getElementById("userCnt").textContent = users.length;
-      userTable.render();
-      App.toast(`已删除用户「${name}」（演示）`, "ok");
-    };
+      $("#exportUsers").addEventListener("click", function () {
+        var rows = userTable.rows();
+        App.exportCSV("用户列表.csv", ["账号", "姓名", "角色", "部门", "注册时间", "状态"],
+          rows.map(function (r) { return [r.account, r.name, r.roleText, r.dept, r.created, r.statusText]; }));
+      });
 
-    const appTable = new App.DataTable({
-      el: "#appTable", data: apps, pageSize: 8, pager: "#appPager",
-      keywordEl: "#appKw", searchKeys: ["name", "contact", "phone", "id"],
-      filters: [{ key: "status", el: "#appStatus" }],
-      columns: [
-        { key: "id", title: "申请编号", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "name", title: "申请主体", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
-        { key: "type", title: "用户类型", render: v => `<span class="badge badge-gray">${App.esc(v)}</span>` },
-        { key: "contact", title: "联系人" },
-        { key: "phone", title: "联系电话", render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "applied", title: "申请时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        {
-          key: "status", title: "审核状态", sortable: true, render: v =>
-            `<span class="badge ${v === "待审核" ? "badge-warn" : v === "已通过" ? "badge-ok" : "badge-err"}">${v}</span>`
-        },
-        {
-          key: "id", title: "操作", render: (v, r) => r.status === "待审核" ? `
-            <button class="btn-link" onclick="audit('${v}',true)">通过</button>
-            <button class="btn-link danger" onclick="audit('${v}',false)">驳回</button>`
-            : '<span class="text-3">已处理</span>'
-        }
-      ]
-    });
+      /* ---------- 加载与守卫 ---------- */
+      async function loadData() {
+        var res = await C.listProfiles({});
+        if (res.error) { tip(res.error.message, false); return; }
+        refresh(res.data);
+      }
 
-    window.audit = function (id, pass) {
-      const a = apps.find(x => x.id === id);
-      if (!a) return;
-      a.status = pass ? "已通过" : "已驳回";
-      document.getElementById("auditCnt").textContent = apps.filter(x => x.status === "待审核").length;
-      appTable.render();
-      App.toast(`「${a.name}」审核${pass ? "通过" : "驳回"}`, pass ? "ok" : "warn");
-    };
-
-    document.getElementById("batchPass").addEventListener("click", () => {
-      let n = 0;
-      apps.forEach(a => { if (a.status === "待审核") { a.status = "已通过"; n++; } });
-      document.getElementById("auditCnt").textContent = 0;
-      appTable.render();
-      App.toast(n ? `已批量通过 ${n} 条申请` : "没有待审核的申请", n ? "ok" : "warn");
-    });
-
-    document.getElementById("exportUsers").addEventListener("click", () => {
-      App.exportCSV("用户列表.csv", ["账号", "姓名", "角色", "部门", "手机号", "状态"],
-        users.map(u => [u.account, u.name, u.role, u.dept, u.phone, u.status]));
-    });
-
-    document.getElementById("addUserBtn").addEventListener("click", () => App.openModal("userModal"));
+      if (!C.isReady()) {
+        tip("当前为演示模式：用户管理需在 WorkBuddy 托管域名使用。", false);
+      } else {
+        C.restore().then(function () {
+          if (!C.isLoggedIn()) { location.href = "login.html?next=system-users.html"; return; }
+          isAdmin = C.isAdmin();
+          if (!isAdmin) tip("你当前不是管理员，仅可查看列表与编辑自己的资料。", false);
+          loadData();
+        });
+      }
+      C.onChange(function () { if (C.isReady() && C.isLoggedIn()) loadData(); });
+    })();
   </script>
 </body>
 </html>

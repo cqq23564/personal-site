@@ -43,17 +43,17 @@
   <section class="hero">
     <div class="hero-bg"><img src="assets/img/banner1.png" alt="山间云海"></div>
     <div class="hero-inner">
-      <h1>你好，我是 <span class="grad">林运维</span><br>园区数字化建设者</h1>
-      <p>专注进出口场站数字化：车辆在场监管 · 卡口核放 · 每日报表 · 数据可视化。<br>把复杂的通关场站数据，变成一眼看懂的驾驶舱。</p>
+      <h1>你好，我是 <span class="grad" id="heroName">林运维</span><br>园区数字化建设者</h1>
+      <p id="heroDesc" data-param="home.hero.desc">专注进出口场站数字化：车辆在场监管 · 卡口核放 · 每日报表 · 数据可视化。<br>把复杂的通关场站数据，变成一眼看懂的驾驶舱。</p>
       <div class="hero-btns">
         <a class="btn btn-primary btn-lg" href="dashboard.html">进入数据看板 →</a>
         <a class="btn btn-line btn-lg" href="index.html#message">给我留言</a>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><div class="v"><span data-count="1286">0</span></div><div class="k">累计登录天数</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="120000">0</span>+</div><div class="k">处理申报单</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="9">0</span></div><div class="k">上线系统模块</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="38">0</span>%</div><div class="k">时效提升</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="1286" data-param="home.stat.days">0</span></div><div class="k">累计登录天数</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="120000" data-param="home.stat.decl">0</span>+</div><div class="k">处理申报单</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="9" data-param="home.stat.modules">0</span></div><div class="k">上线系统模块</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="38" data-param="home.stat.efficiency">0</span>%</div><div class="k">时效提升</div></div>
       </div>
     </div>
   </section>
@@ -93,17 +93,17 @@
       <div class="about-grid reveal">
         <div class="about-photo">
           <img src="assets/img/gallery3.png" alt="工作照">
-          <div class="exp"><b>9</b><span>年行业经验</span></div>
+          <div class="exp"><b data-param="home.about.exp">9</b><span>年行业经验</span></div>
         </div>
         <div>
           <h3 style="font-size:19px">把场站数据「管起来、用起来」</h3>
           <p class="text-2 mt-8">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
           <ul class="info-list">
-            <li><span class="k">姓名</span><span class="v">林运维</span></li>
-            <li><span class="k">岗位</span><span class="v">系统管理员</span></li>
-            <li><span class="k">部门</span><span class="v">园区运营中心</span></li>
-            <li><span class="k">城市</span><span class="v">广西 · 凭祥</span></li>
-            <li><span class="k">邮箱</span><span class="v">linops@example.cn</span></li>
+            <li><span class="k">姓名</span><span class="v" data-param="home.about.name">林运维</span></li>
+            <li><span class="k">岗位</span><span class="v" data-param="home.about.role">系统管理员</span></li>
+            <li><span class="k">部门</span><span class="v" data-param="home.about.dept">园区运营中心</span></li>
+            <li><span class="k">城市</span><span class="v" data-param="home.about.city">广西 · 凭祥</span></li>
+            <li><span class="k">邮箱</span><span class="v" data-param="home.about.email">linops@example.cn</span></li>
             <li><span class="k">状态</span><span class="v"><span class="badge badge-ok">在职</span></span></li>
           </ul>
           <div class="mt-16 flex gap-8" style="flex-wrap:wrap">
@@ -139,13 +139,20 @@
   <!-- ============ 相册 ============ -->
   <section class="section" id="gallery">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">生活相册</h2><span class="section-sub">工作之外，也爱记录路上的风景</span></div>
+      <div class="title-bar reveal">
+        <h2 class="section-title">生活相册</h2><span class="section-sub">工作之外，也爱记录路上的风景</span>
+        <span id="galleryActions" class="hidden" style="margin-left:auto">
+          <button class="btn btn-primary btn-sm" id="galleryUploadBtn">📷 上传照片 / 视频</button>
+        </span>
+      </div>
+      <div class="field-msg" id="galleryNotice" style="margin:-8px 0 14px"></div>
       <div class="gallery reveal">
         <div class="gallery-item"><img src="assets/img/gallery1.png" alt="樱花"><div class="cap">🌸 春日樱花大道</div></div>
         <div class="gallery-item"><img src="assets/img/gallery2.png" alt="灯塔"><div class="cap">🌅 海边灯塔日落</div></div>
         <div class="gallery-item"><img src="assets/img/gallery3.png" alt="书桌"><div class="cap">☕ 一个人的工位</div></div>
         <div class="gallery-item"><img src="assets/img/gallery4.png" alt="雪山"><div class="cap">🏔️ 雪山与湖</div></div>
       </div>
+      <div class="gallery reveal" id="cloudGallery" style="margin-top:16px"></div>
     </div>
   </section>
 
@@ -193,12 +200,13 @@
       <div class="title-bar reveal"><h2 class="section-title">留言板</h2></div>
       <div class="grid-2 reveal">
         <div class="card"><div class="card-hd">写下你的想法</div><div class="card-bd">
-          <form data-validate data-done="留言提交成功（演示）" id="msgForm" novalidate>
+          <form id="msgForm" novalidate>
             <div class="form-row">
               <div class="field"><label>昵称<span class="req">*</span></label><input class="input" id="msgName" data-rule="required|min:2" placeholder="怎么称呼你"><div class="field-msg"></div></div>
               <div class="field"><label>邮箱</label><input class="input" id="msgMail" data-rule="email" placeholder="选填，方便回复"><div class="field-msg"></div></div>
             </div>
             <div class="field"><label>留言内容<span class="req">*</span></label><textarea class="textarea" id="msgText" data-rule="required|min:5" placeholder="想说的话……（至少 5 个字）"></textarea><div class="field-msg"></div></div>
+            <div class="field-msg" id="msgNotice" style="margin-bottom:8px"></div>
             <button class="btn btn-primary" type="submit">提交留言</button>
           </form>
         </div></div>
@@ -208,6 +216,44 @@
   </section>
 
   <!-- ============ 页脚 ============ -->
+  <!-- 上传弹窗 -->
+  <div class="modal-mask" id="uploadModal">
+    <div class="modal">
+      <div class="modal-hd"><span>📷 上传照片 / 视频</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <div class="field">
+          <label>选择文件（图片 ≤ 15MB，视频 ≤ 80MB，可多选）</label>
+          <input class="input" type="file" id="galleryFiles" accept="image/*,video/*" multiple>
+        </div>
+        <div class="field">
+          <label>描述（可选，留空则用文件名）</label>
+          <input class="input" id="galleryCaption" maxlength="60" placeholder="例如：春天的高铁站">
+        </div>
+        <div class="field-msg" id="uploadMsg"></div>
+        <div class="progress" id="uploadProgress" style="display:none"><i style="width:0%"></i></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" id="doUploadBtn">开始上传</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 修改描述弹窗 -->
+  <div class="modal-mask" id="captionModal">
+    <div class="modal">
+      <div class="modal-hd"><span>✏️ 修改描述</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <div class="field"><label>描述</label><input class="input" id="captionInput" maxlength="60" placeholder="给这张照片/视频写句描述"></div>
+        <input type="hidden" id="captionItemId">
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" id="saveCaptionBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="footer-grid">
@@ -242,7 +288,7 @@
         </div>
       </div>
       <div class="copyright">
-        <span>© 2026 林运维 · 个人主页 · 仅作学习与演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span>桂ICP备XXXXXXXX号-1</span>
       </div>
     </div>
@@ -250,32 +296,95 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/gallery.js"></script>
   <script>
-    /* 留言板渲染与提交 */
+    /* 留言板（云端真实数据） */
     (function () {
-      const list = document.getElementById("msgList");
-      const msgs = (window.MOCK.messages || []).slice();
+      var C = window.Cloud;
+      var list = document.getElementById("msgList");
+      var notice = document.getElementById("msgNotice");
+      var msgs = [];
+
+      function relTime(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso).slice(0, 16).replace("T", " ");
+        var diff = (Date.now() - d.getTime()) / 1000;
+        if (diff < 60) return "刚刚";
+        if (diff < 3600) return Math.floor(diff / 60) + " 分钟前";
+        if (diff < 86400) return Math.floor(diff / 3600) + " 小时前";
+        if (diff < 86400 * 30) return Math.floor(diff / 86400) + " 天前";
+        var p = function (n) { return String(n).padStart(2, "0"); };
+        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+      }
+      function showNotice(html, warn) {
+        notice.innerHTML = html || "";
+        notice.style.color = warn ? "#dc2626" : "#64748b";
+      }
       function render() {
         document.getElementById("msgCount").textContent = msgs.length + " 条";
-        list.innerHTML = msgs.map(m => `
-          <div style="padding:12px 0;border-bottom:1px dashed var(--border)">
-            <div class="flex-between"><b>${App.esc(m.name)}</b><span class="text-3" style="font-size:12px">${App.esc(m.time)}</span></div>
-            <p class="text-2" style="font-size:13px;margin-top:4px">${App.esc(m.text)}</p>
-          </div>`).join("") || '<div class="empty"><div class="ico">💬</div>还没有留言</div>';
+        list.innerHTML = msgs.map(function (m) {
+          var del = C.isAdmin() ? '<div style="text-align:right;margin-top:2px"><button class="btn-link danger" style="font-size:12px" onclick="delMsg(' + m.id + ')">删除</button></div>' : "";
+          return '<div style="padding:12px 0;border-bottom:1px dashed var(--border)">' +
+            '<div class="flex-between"><b>' + App.esc(m.name) + '</b><span class="text-3" style="font-size:12px">' + App.esc(relTime(m.created_at)) + "</span></div>" +
+            '<p class="text-2" style="font-size:13px;margin-top:4px">' + App.esc(m.text) + "</p>" + del + "</div>";
+        }).join("") || '<div class="empty"><div class="ico">💬</div>还没有留言</div>';
       }
-      render();
-      document.getElementById("msgForm").addEventListener("submit", function () {
-        const name = document.getElementById("msgName").value.trim();
-        const text = document.getElementById("msgText").value.trim();
-        if (!name || text.length < 5) return;
-        msgs.unshift({ name, time: "刚刚", text });
+
+      window.delMsg = async function (id) {
+        if (!C.isAdmin()) { App.toast("仅管理员可删除留言", "err"); return; }
+        if (!confirm("确定删除这条留言？")) return;
+        var res = await C.tableRemove("site_messages", id);
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast("已删除", "ok");
+        load();
+      };
+
+      async function load() {
+        if (!C.isReady()) { showNotice("当前为演示模式：留言板需在 WorkBuddy 托管域名使用。", true); return; }
+        if (!C.isLoggedIn()) {
+          showNotice('<a href="login.html?next=index.html" style="color:inherit;text-decoration:underline">登录</a> 后即可查看与发表留言。', true);
+          return;
+        }
+        var res = await C.tableList("site_messages", { order: "created_at", asc: false });
+        if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
+        msgs = res.data || [];
         render();
+        showNotice("");
+        var p = C.state.profile || {};
+        var nm = document.getElementById("msgName");
+        if (nm && !nm.value && (p.nickname || p.name)) nm.value = p.nickname || p.name;
+      }
+
+      document.getElementById("msgForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (!C.isLoggedIn()) { App.toast("请先登录后再留言", "warn"); location.href = "login.html?next=index.html"; return; }
+        var text = document.getElementById("msgText").value.trim();
+        var name = document.getElementById("msgName").value.trim();
+        if (text.length < 5) { App.toast("留言内容至少 5 个字", "err"); return; }
+        var p = C.state.profile || {};
+        this.querySelector("button[type=submit]").disabled = true;
+        var res = await C.tableInsert("site_messages", {
+          name: name || p.nickname || p.name || "访客",
+          text: text
+        });
+        this.querySelector("button[type=submit]").disabled = false;
+        if (res.error) { App.toast(res.error.message, "err"); return; }
         this.reset();
-        document.querySelectorAll(".field-msg").forEach(el => el.textContent = "");
+        App.toast("留言已发布", "ok");
+        load();
       });
 
-      /* 视频播放占位 */
-      function playTip() { App.toast("演示站点：将视频文件放到 assets/video/demo.mp4 后即可播放", "warn"); }
+      load();
+      C.onChange(function () { if (C.isReady()) load(); });
+    })();
+
+    /* 视频播放占位 */
+    (function () {
+      function playTip() { App.toast("视频文件待补充：将 mp4 放到 assets/video/demo.mp4 后即可播放", "warn"); }
       document.getElementById("playBtn").addEventListener("click", playTip);
       document.getElementById("playBtn2").addEventListener("click", playTip);
     })();

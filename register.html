@@ -30,7 +30,14 @@
       <div class="auth-box">
         <h1>创建账号</h1>
         <p class="sub">已有账号？<a href="login.html">直接登录 →</a></p>
-        <form data-validate data-done="注册成功，请等待审核…" id="regForm" novalidate>
+
+        <div class="tabs" style="margin-bottom:16px">
+          <button class="tab active" type="button" data-reg-tab="phone">📱 手机注册</button>
+          <button class="tab" type="button" data-reg-tab="email">✉️ 邮箱注册</button>
+        </div>
+
+        <!-- 手机注册 -->
+        <form id="regPhoneForm" novalidate>
           <div class="form-row">
             <div class="field">
               <label>姓名<span class="req">*</span></label>
@@ -38,44 +45,28 @@
               <div class="field-msg"></div>
             </div>
             <div class="field">
-              <label>账号<span class="req">*</span></label>
-              <input class="input" id="regAccount" data-rule="required|account" placeholder="字母开头，4-16 位">
-              <div class="field-msg"></div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label>手机号<span class="req">*</span></label>
-              <input class="input" id="regPhone" data-rule="required|phone" maxlength="11" placeholder="11 位手机号">
-              <div class="field-msg"></div>
-            </div>
-            <div class="field">
-              <label>邮箱</label>
-              <input class="input" id="regMail" data-rule="email" placeholder="选填">
-              <div class="field-msg"></div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label>密码<span class="req">*</span></label>
-              <input class="input" type="password" id="regPwd" data-rule="required|pwd" placeholder="6-18 位，含字母和数字">
-              <div class="field-msg"></div>
-            </div>
-            <div class="field">
-              <label>确认密码<span class="req">*</span></label>
-              <input class="input" type="password" id="regPwd2" data-rule="required" placeholder="再输入一次">
+              <label>所属单位<span class="req">*</span></label>
+              <select class="select" id="regDept" data-rule="required">
+                <option value="">请选择</option>
+                <option>园区运营中心</option>
+                <option>卡口管理部</option>
+                <option>通关服务部</option>
+                <option>边民互助组</option>
+              </select>
               <div class="field-msg"></div>
             </div>
           </div>
           <div class="field">
-            <label>所属单位<span class="req">*</span></label>
-            <select class="select" id="regDept" data-rule="required">
-              <option value="">请选择</option>
-              <option>园区运营中心</option>
-              <option>卡口管理部</option>
-              <option>通关服务部</option>
-              <option>边民互助组</option>
-            </select>
+            <label>手机号<span class="req">*</span></label>
+            <input class="input" id="regPhone" data-rule="required" maxlength="11" placeholder="11 位手机号">
+            <div class="field-msg"></div>
+          </div>
+          <div class="field">
+            <label>验证码<span class="req">*</span></label>
+            <div class="captcha-row">
+              <input class="input" id="regCode" data-rule="required" maxlength="6" placeholder="6 位验证码">
+              <button class="btn btn-line" type="button" id="regSendBtn">获取验证码</button>
+            </div>
             <div class="field-msg"></div>
           </div>
           <div class="field">
@@ -83,7 +74,48 @@
           </div>
           <button class="btn btn-primary btn-lg btn-block" type="submit">注 册</button>
         </form>
-        <div class="auth-tip">📝 注册后需管理员审核（系统管理 → 注册审核），审核通过即可登录。</div>
+
+        <!-- 邮箱注册 -->
+        <form id="regEmailForm" class="hidden" novalidate>
+          <div class="form-row">
+            <div class="field">
+              <label>姓名<span class="req">*</span></label>
+              <input class="input" id="regName2" data-rule="required|min:2" placeholder="真实姓名">
+              <div class="field-msg"></div>
+            </div>
+            <div class="field">
+              <label>所属单位<span class="req">*</span></label>
+              <select class="select" id="regDept2" data-rule="required">
+                <option value="">请选择</option>
+                <option>园区运营中心</option>
+                <option>卡口管理部</option>
+                <option>通关服务部</option>
+                <option>边民互助组</option>
+              </select>
+              <div class="field-msg"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>邮箱<span class="req">*</span></label>
+            <input class="input" id="regEmail" data-rule="required" placeholder="you@example.com">
+            <div class="field-msg"></div>
+          </div>
+          <div class="field">
+            <label>验证码<span class="req">*</span></label>
+            <div class="captcha-row">
+              <input class="input" id="regEmailCode" data-rule="required" maxlength="6" placeholder="6 位验证码">
+              <button class="btn btn-line" type="button" id="regEmailSendBtn">获取验证码</button>
+            </div>
+            <div class="field-msg"></div>
+          </div>
+          <div class="field">
+            <label class="checkline"><input type="checkbox" id="regAgree2"> 我已阅读并同意<a href="#" class="btn-link" onclick="App.toast('演示站点','warn');return false">《用户协议》</a>和<a href="#" class="btn-link" onclick="App.toast('演示站点','warn');return false">《隐私政策》</a></label>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" type="submit">注 册</button>
+        </form>
+
+        <div class="field-msg" id="regNotice" style="margin-top:12px"></div>
+        <div class="auth-tip">📝 注册后需管理员审核（系统管理 → 用户管理 → 注册审核），审核通过即可登录使用。</div>
       </div>
     </div>
     <div class="auth-visual">
@@ -98,22 +130,125 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none;justify-content:center">
-        <span>© 2026 林运维 · 个人主页 · 仅作学习与演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
       </div>
     </div>
   </footer>
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    document.getElementById("regForm").addEventListener("submit", function (e) {
-      const p1 = document.getElementById("regPwd").value, p2 = document.getElementById("regPwd2").value;
-      if (p1 !== p2) { App.toast("两次输入的密码不一致", "err"); e.stopImmediatePropagation(); return; }
-      if (!document.getElementById("regAgree").checked) { App.toast("请先同意用户协议", "warn"); e.stopImmediatePropagation(); return; }
-      const btn = this.querySelector("button[type=submit]");
-      btn.disabled = true; btn.textContent = "提交中…";
-      setTimeout(() => location.href = "login.html", 1000);
-    });
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var notice = $("#regNotice");
+      var pending = null;
+      var countdown = 0, timer = null;
+
+      function tip(msg, ok) {
+        notice.textContent = msg || "";
+        notice.style.color = ok === false ? "#dc2626" : ok === true ? "#16a34a" : "#64748b";
+      }
+      function guard() {
+        if (!window.Cloud.isReady()) { tip("当前域名未接入云服务，无法注册。请使用 WorkBuddy 托管域名打开本站。", false); return false; }
+        return true;
+      }
+      function startCountdown(btn) {
+        countdown = 60;
+        btn.disabled = true;
+        btn.textContent = countdown + "s 后重发";
+        timer = setInterval(function () {
+          countdown--;
+          if (countdown <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = "获取验证码"; }
+          else btn.textContent = countdown + "s 后重发";
+        }, 1000);
+      }
+
+      document.querySelectorAll("[data-reg-tab]").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          document.querySelectorAll("[data-reg-tab]").forEach(function (t) { t.classList.remove("active"); });
+          tab.classList.add("active");
+          var isPhone = tab.dataset.regTab === "phone";
+          $("#regPhoneForm").classList.toggle("hidden", !isPhone);
+          $("#regEmailForm").classList.toggle("hidden", isPhone);
+          tip("");
+        });
+      });
+
+      /* 手机注册：发送验证码 */
+      $("#regSendBtn").addEventListener("click", async function () {
+        if (!guard()) return;
+        var btn = this;
+        var phone = $("#regPhone").value.trim();
+        if (!window.Cloud.validPhone(phone)) { tip("请输入正确的 11 位手机号", false); return; }
+        btn.disabled = true; btn.textContent = "发送中…";
+        var res = await window.Cloud.sendPhoneCode(phone);
+        if (res.error) { tip(res.error.message, false); btn.disabled = false; btn.textContent = "获取验证码"; return; }
+        pending = { phone: phone, verificationId: res.data.verificationId, isExistingUser: res.data.isExistingUser };
+        tip("验证码已发送，5 分钟内有效", true);
+        startCountdown(btn);
+      });
+
+      $("#regPhoneForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (!guard()) return;
+        var name = $("#regName").value.trim(), dept = $("#regDept").value;
+        var code = $("#regCode").value.trim();
+        if (name.length < 2) { tip("请输入真实姓名", false); return; }
+        if (!dept) { tip("请选择所属单位", false); return; }
+        if (!$("#regAgree").checked) { tip("请先同意用户协议", false); return; }
+        if (!code) { tip("请输入验证码", false); return; }
+        if (!pending) { tip("请先获取验证码", false); return; }
+        var btn = this.querySelector("button[type=submit]");
+        btn.disabled = true; btn.textContent = "提交中…";
+        var res = await window.Cloud.register({
+          phone: pending.phone, verificationId: pending.verificationId,
+          isExistingUser: pending.isExistingUser, token: code,
+          name: name, dept: dept
+        });
+        if (res.error) { tip(res.error.message, false); btn.disabled = false; btn.textContent = "注 册"; return; }
+        tip("注册成功！请等待管理员审核，通过后即可登录。", true);
+        setTimeout(function () { location.href = "login.html"; }, 1600);
+      });
+
+      /* 邮箱注册：发送验证码 */
+      $("#regEmailSendBtn").addEventListener("click", async function () {
+        if (!guard()) return;
+        var btn = this;
+        var email = $("#regEmail").value.trim();
+        if (!window.Cloud.validEmail(email)) { tip("请输入正确的邮箱地址", false); return; }
+        btn.disabled = true; btn.textContent = "发送中…";
+        var res = await window.Cloud.sendEmailCode(email);
+        if (res.error) { tip(res.error.message, false); btn.disabled = false; btn.textContent = "获取验证码"; return; }
+        pending = { email: email, verificationId: res.data.verificationId, isExistingUser: res.data.isExistingUser };
+        tip("验证码已发送，5 分钟内有效", true);
+        startCountdown(btn);
+      });
+
+      $("#regEmailForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (!guard()) return;
+        var name = $("#regName2").value.trim(), dept = $("#regDept2").value;
+        var code = $("#regEmailCode").value.trim();
+        if (name.length < 2) { tip("请输入真实姓名", false); return; }
+        if (!dept) { tip("请选择所属单位", false); return; }
+        if (!$("#regAgree2").checked) { tip("请先同意用户协议", false); return; }
+        if (!code) { tip("请输入验证码", false); return; }
+        if (!pending) { tip("请先获取验证码", false); return; }
+        var btn = this.querySelector("button[type=submit]");
+        btn.disabled = true; btn.textContent = "提交中…";
+        var res = await window.Cloud.register({
+          email: pending.email, verificationId: pending.verificationId,
+          isExistingUser: pending.isExistingUser, token: code,
+          name: name, dept: dept
+        });
+        if (res.error) { tip(res.error.message, false); btn.disabled = false; btn.textContent = "注 册"; return; }
+        tip("注册成功！请等待管理员审核，通过后即可登录。", true);
+        setTimeout(function () { location.href = "login.html"; }, 1600);
+      });
+    })();
   </script>
 </body>
 </html>

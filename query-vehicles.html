@@ -69,10 +69,12 @@
           <div class="page-desc">当前园区内全部车辆，支持按车牌 / 货物 / 司机搜索，按在场时长排序</div>
         </div>
         <div class="flex gap-8">
-          <button class="btn btn-line" onclick="App.toast('已刷新（演示）','ok')">🔄 刷新</button>
-          <button class="btn btn-primary" id="exportBtn">📥 导出在场车辆</button>
+          <button class="btn btn-line" id="vehRefreshBtn">🔄 刷新</button>
+          <button class="btn btn-primary hidden" id="vehAddBtn">＋ 新增车辆</button>
+          <button class="btn btn-line" id="exportBtn">📥 导出在场车辆</button>
         </div>
       </div>
+      <div class="page-notice" id="vehNotice" style="display:none"></div>
 
       <!-- 汇总 -->
       <div class="stat-grid mb-24" id="vehStats"></div>
@@ -117,7 +119,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -125,65 +127,107 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/admin-crud.js"></script>
   <script>
-    const M = window.MOCK;
-    const vehicles = M.vehiclesOnSite.map(v => ({ ...v }));
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
 
-    /* 汇总卡 */
-    const heavy = vehicles.filter(v => v.type === "重车").length;
-    document.getElementById("vehStats").innerHTML = `
-      <div class="stat-card"><div class="stat-icon blue">🚛</div><div><div class="stat-value">${vehicles.length}</div><div class="stat-label">在场总数（辆）</div></div></div>
-      <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${heavy}</div><div class="stat-label">重车（辆）</div></div></div>
-      <div class="stat-card"><div class="stat-icon orange">🫗</div><div><div class="stat-value">${vehicles.length - heavy}</div><div class="stat-label">空车（辆）</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${M.stranded.length}</div><div class="stat-label">滞留超 72h（辆）</div></div></div>`;
+      /* 云表字段 -> 页面展示字段 */
+      function toRows(list) {
+        return (list || []).map(function (v) {
+          return {
+            id: v.id, plate: v.plate, type: v.vtype, goods: v.goods, gate: v.gate,
+            nation: v.nation, driver: v.driver, entry: v.entry_at,
+            dwell: Number(v.dwell || 0), status: v.status,
+            reason: v.reason || "", contact: v.contact || ""
+          };
+        });
+      }
 
-    /* 滞留表 */
-    new App.DataTable({
-      el: "#strandedTable", data: M.stranded, pageSize: 5,
-      columns: [
-        { key: "plate", title: "车牌号码", render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "goods", title: "货物" },
-        { key: "entry", title: "入场时间", render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "dwell", title: "滞留时长(h)", align: "right", sortable: true, render: v => `<b style="color:var(--danger)">${v}</b>` },
-        { key: "reason", title: "滞留原因", wrap: true },
-        { key: "contact", title: "跟进人", render: v => `<span class="mono">${App.esc(v)}</span>` }
-      ],
-      emptyText: "🎉 当前没有滞留超 72 小时的车辆"
-    });
+      /* 滞留表（由在场车辆派生：状态=滞留预警 或 时长>72h） */
+      var strandedTable = new App.DataTable({
+        el: "#strandedTable", data: [], pageSize: 5,
+        columns: [
+          { key: "plate", title: "车牌号码", render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "goods", title: "货物" },
+          { key: "entry", title: "入场时间", render: v => `<span class="mono">${App.esc(v)}</span>` },
+          { key: "dwell", title: "滞留时长(h)", align: "right", sortable: true, render: v => `<b style="color:var(--danger)">${v}</b>` },
+          { key: "reason", title: "滞留原因", wrap: true },
+          { key: "contact", title: "跟进人", render: v => `<span class="mono">${App.esc(v || "—")}</span>` }
+        ],
+        emptyText: "🎉 当前没有滞留超 72 小时的车辆"
+      });
 
-    /* 在场车辆表 */
-    const table = new App.DataTable({
-      el: "#vehTable", data: vehicles, pageSize: 8, pager: "#vehPager",
-      keywordEl: "#vehKw", searchKeys: ["plate", "goods", "driver", "gate", "nation"],
-      filters: [
-        { key: "type", el: "#vehType" },
-        { key: "gate", el: "#vehGate" },
-        { key: "nation", el: "#vehNation" },
-        { key: "status", el: "#vehStatus" }
-      ],
-      columns: [
-        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
-        { key: "goods", title: "货物", sortable: true },
-        { key: "gate", title: "入区闸口", sortable: true },
-        { key: "nation", title: "国籍", sortable: true },
-        { key: "driver", title: "司机", sortable: true },
-        { key: "entry", title: "入场时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        {
-          key: "dwell", title: "在场时长(h)", sortable: true, align: "right",
-          render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>`
-        },
-        {
-          key: "status", title: "状态", sortable: true, render: v =>
-            `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>`
-        }
-      ]
-    });
+      /* 在场车辆表 */
+      var vehTable = new App.DataTable({
+        el: "#vehTable", data: [], pageSize: 8, pager: "#vehPager",
+        keywordEl: "#vehKw", searchKeys: ["plate", "goods", "driver", "gate", "nation"],
+        filters: [
+          { key: "type", el: "#vehType" },
+          { key: "gate", el: "#vehGate" },
+          { key: "nation", el: "#vehNation" },
+          { key: "status", el: "#vehStatus" }
+        ],
+        columns: [
+          { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+          { key: "goods", title: "货物", sortable: true },
+          { key: "gate", title: "入区闸口", sortable: true },
+          { key: "nation", title: "国籍", sortable: true },
+          { key: "driver", title: "司机", sortable: true },
+          { key: "entry", title: "入场时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+          { key: "dwell", title: "在场时长(h)", sortable: true, align: "right", render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>` },
+          { key: "status", title: "状态", sortable: true, render: v => `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>` },
+          {
+            key: "id", title: "操作", render: (v) => C.isAdmin()
+              ? `<button class="btn-link" onclick="editVeh(${v})">编辑</button><button class="btn-link danger" onclick="delVeh(${v})">删除</button>`
+              : `<span class="text-3">只读</span>`
+          }
+        ]
+      });
 
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      App.exportCSV("在场车辆.csv", ["车牌", "类型", "货物", "闸口", "国籍", "司机", "入场时间", "在场时长(h)", "状态"],
-        table.filtered.map(v => [v.plate, v.type, v.goods, v.gate, v.nation, v.driver, v.entry, v.dwell, v.status]));
-    });
+      /* 汇总卡 + 滞留清单（随数据加载刷新） */
+      function renderExtras(rows) {
+        var heavy = rows.filter(r => r.type === "重车").length;
+        var stranded = rows.filter(r => r.status === "滞留预警" || r.dwell > 72);
+        $("#vehStats").innerHTML = `
+          <div class="stat-card"><div class="stat-icon blue">🚛</div><div><div class="stat-value">${rows.length}</div><div class="stat-label">在场总数（辆）</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${heavy}</div><div class="stat-label">重车（辆）</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange">🫗</div><div><div class="stat-value">${rows.length - heavy}</div><div class="stat-label">空车（辆）</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${stranded.length}</div><div class="stat-label">滞留超 72h（辆）</div></div></div>`;
+        strandedTable.setData(stranded);
+      }
+
+      window.vehCrud = AdminCrud.mount({
+        table: "site_vehicles", entity: "车辆", module: "在场车辆",
+        notice: "#vehNotice", addBtn: "#vehAddBtn",
+        exportBtn: "#exportBtn", exportFile: "在场车辆.csv",
+        exportHeaders: ["车牌", "类型", "货物", "闸口", "国籍", "司机", "入场时间", "在场时长(h)", "状态", "滞留原因", "跟进人"],
+        exportRow: r => [r.plate, r.type, r.goods, r.gate, r.nation, r.driver, r.entry, r.dwell, r.status, r.reason, r.contact],
+        dt: vehTable, order: "entry_at", asc: false,
+        editFn: "editVeh", delFn: "delVeh", label: r => r.plate,
+        fields: [
+          { key: "plate", label: "车牌号码", required: true, ph: "如：桂A·D5821" },
+          { key: "vtype", label: "类型", type: "select", options: ["重车", "空车"], required: true },
+          { key: "goods", label: "货物", ph: "如：东盟水果（空车填 —）" },
+          { key: "gate", label: "入区闸口", type: "select", options: ["闸口A", "闸口B边小"], required: true },
+          { key: "nation", label: "国籍", type: "select", options: ["中国", "越南"] },
+          { key: "driver", label: "司机", ph: "司机姓名" },
+          { key: "entry_at", label: "入场时间", required: true, ph: "2026-11-03 09:26", pattern: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/ },
+          { key: "dwell", label: "在场时长(h)", type: "number", def: 0 },
+          { key: "status", label: "状态", type: "select", options: ["在场", "滞留预警", "已出区"] },
+          { key: "reason", label: "滞留原因", ph: "状态为滞留预警时填写" },
+          { key: "contact", label: "跟进人", ph: "如：韦诚 138****2231" }
+        ],
+        onLoaded: function (list) { renderExtras(toRows(list)); }
+      });
+
+      $("#vehRefreshBtn").addEventListener("click", function () { vehCrud.load(); App.toast("已刷新", "ok"); });
+    })();
   </script>
 </body>
 </html>

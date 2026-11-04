@@ -66,17 +66,18 @@
       <div class="page-head">
         <div>
           <div class="page-title">🔧 参数管理</div>
-          <div class="page-desc">系统运行参数配置，修改后立即生效（演示）</div>
+          <div class="page-desc">系统运行参数配置，修改后立即生效；键名以 home. 开头的参数实时驱动首页展示数据</div>
         </div>
         <button class="btn btn-primary" id="addParamBtn">＋ 新增参数</button>
       </div>
+      <div class="page-notice" id="paramNotice" style="display:none"></div>
 
       <div class="card">
         <div class="table-toolbar">
           <input class="input" id="paramKw" placeholder="🔍 参数名称 / 键名">
           <select class="select" id="paramGroup">
             <option value="">全部分组</option>
-            <option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option>
+            <option>首页数据</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option>
           </select>
           <div class="grow"></div>
           <button class="btn btn-line btn-sm" id="exportParams">📥 导出</button>
@@ -92,29 +93,29 @@
   <!-- 参数弹窗 -->
   <div class="modal-mask" id="paramModal">
     <div class="modal">
-      <div class="modal-hd"><span id="paramModalTitle">编辑参数</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-hd"><span id="paramModalTitle">新增参数</span><button class="modal-close" data-modal-close>✕</button></div>
       <div class="modal-bd">
-        <form data-validate data-done="参数保存成功（演示）" id="paramForm" novalidate>
+        <form id="paramForm" novalidate>
           <div class="form-row">
-            <div class="field"><label>参数名称<span class="req">*</span></label><input class="input" data-rule="required" placeholder="如：滞留预警阈值"><div class="field-msg"></div></div>
-            <div class="field"><label>参数键名<span class="req">*</span></label><input class="input mono" data-rule="required" placeholder="如：vehicle.stranded.hours"><div class="field-msg"></div></div>
+            <div class="field"><label>参数名称<span class="req">*</span></label><input class="input" id="pfName" placeholder="如：首页-累计登录天数"><div class="field-msg"></div></div>
+            <div class="field"><label>参数键名<span class="req">*</span></label><input class="input mono" id="pfKey" placeholder="如：home.stat.days">
+              <div class="text-3" style="font-size:12px;margin-top:4px">字母 / 数字 / 点 / 横线；以 home. 开头的键名会实时驱动首页对应数据</div></div>
           </div>
           <div class="form-row">
-            <div class="field"><label>参数值<span class="req">*</span></label><input class="input" data-rule="required" placeholder="如：72"><div class="field-msg"></div></div>
-            <div class="field"><label>单位</label><input class="input" placeholder="小时 / 秒 / MB"></div>
+            <div class="field"><label>参数值<span class="req">*</span></label><input class="input" id="pfValue" placeholder="如：1286"><div class="field-msg"></div></div>
+            <div class="field"><label>单位（可选）</label><input class="input" id="pfUnit" placeholder="小时 / 秒 / MB"></div>
           </div>
           <div class="form-row">
             <div class="field"><label>分组</label>
-              <select class="select"><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
-            <div class="field"><label>系统内置</label>
-              <select class="select"><option>否</option><option>是</option></select></div>
+              <select class="select" id="pfGroup"><option>首页数据</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
+            <div class="field"></div>
           </div>
-          <div class="field"><label>备注</label><textarea class="textarea" style="min-height:70px" placeholder="参数说明"></textarea></div>
+          <div class="field"><label>备注</label><textarea class="textarea" id="pfRemark" style="min-height:70px" placeholder="参数说明"></textarea></div>
         </form>
       </div>
       <div class="modal-ft">
         <button class="btn btn-line" data-modal-close>取消</button>
-        <button class="btn btn-primary" onclick="document.getElementById('paramForm').requestSubmit()">保存</button>
+        <button class="btn btn-primary" id="pfSaveBtn">保存</button>
       </div>
     </div>
   </div>
@@ -122,7 +123,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -130,46 +131,148 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    const M = window.MOCK;
-    const params = M.params.map(p => ({ ...p }));
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
+      var notice = $("#paramNotice");
+      var rows = [];
+      var canManage = false;
+      var editingId = null;
 
-    const table = new App.DataTable({
-      el: "#paramTable", data: params, pageSize: 8, pager: "#paramPager",
-      keywordEl: "#paramKw", searchKeys: ["name", "key", "remark"],
-      filters: [{ key: "group", el: "#paramGroup" }],
-      columns: [
-        { key: "name", title: "参数名称", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
-        { key: "key", title: "参数键名", render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        { key: "value", title: "参数值", sortable: true, render: (v, r) => `<span class="badge badge-info plain mono">${App.esc(v)}${r.unit ? " " + App.esc(r.unit) : ""}</span>` },
-        { key: "group", title: "分组", sortable: true, render: v => `<span class="tag">${App.esc(v)}</span>` },
-        { key: "remark", title: "备注", wrap: true, render: v => `<span class="text-2">${App.esc(v)}</span>` },
-        {
-          key: "id", title: "操作", render: (v, r) => `
-            <button class="btn-link" onclick="App.toast('编辑 ${App.esc(r.name)}（演示）','ok')">编辑</button>
-            <button class="btn-link danger" onclick="delParam(${v})">删除</button>`
+      function showNotice(html, warn) {
+        if (!notice) return;
+        notice.innerHTML = html || "";
+        notice.className = "page-notice" + (warn ? " warn" : "");
+        notice.style.display = html ? "" : "none";
+      }
+
+      var paramTable = new App.DataTable({
+        el: "#paramTable", data: [], pageSize: 8, pager: "#paramPager",
+        keywordEl: "#paramKw", searchKeys: ["pname", "pkey", "remark"],
+        filters: [{ key: "pgroup", el: "#paramGroup" }],
+        columns: [
+          { key: "pname", title: "参数名称", sortable: true, render: function (v) { return "<b>" + App.esc(v) + "</b>"; } },
+          { key: "pkey", title: "参数键名", render: function (v) { return '<span class="mono text-2">' + App.esc(v) + "</span>"; } },
+          {
+            key: "pvalue", title: "参数值", sortable: true, render: function (v, r) {
+              return '<span class="badge badge-info plain mono">' + App.esc(v) + (r.unit ? " " + App.esc(r.unit) : "") + "</span>";
+            }
+          },
+          {
+            key: "pgroup", title: "分组", sortable: true, render: function (v) {
+              return v === "首页数据"
+                ? '<span class="badge badge-ok plain">' + App.esc(v) + "</span>"
+                : '<span class="tag">' + App.esc(v) + "</span>";
+            }
+          },
+          { key: "remark", title: "备注", wrap: true, render: function (v) { return '<span class="text-2">' + App.esc(v || "") + "</span>"; } },
+          {
+            key: "id", title: "操作", render: function (v) {
+              if (!canManage) return '<span class="text-3">只读</span>';
+              return '<button class="btn-link" onclick="editParam(' + v + ')">编辑</button>' +
+                '<button class="btn-link danger" onclick="delParam(' + v + ')">删除</button>';
+            }
+          }
+        ]
+      });
+
+      /* ---------- 加载 ---------- */
+      async function loadData() {
+        if (!C.isReady()) {
+          showNotice("当前为演示模式：参数管理需在 WorkBuddy 托管域名使用。", true);
+          return;
         }
-      ]
-    });
+        if (!C.isLoggedIn()) {
+          showNotice('请先 <a href="login.html?next=system-params.html" style="color:inherit;text-decoration:underline">登录</a> 后再管理参数。', true);
+          return;
+        }
+        canManage = C.isAdmin();
+        $("#addParamBtn").classList.toggle("hidden", !canManage);
+        var res = await C.listParams();
+        if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
+        rows = res.data || [];
+        paramTable.setData(rows);
+        if (canManage) {
+          showNotice("共 <b>" + rows.length + "</b> 项参数，保存后立即生效。键名以 <b>home.</b> 开头的参数实时驱动首页展示数据" +
+            "（如 <span class=\"mono\">home.stat.days</span> → 首页「累计登录天数」、<span class=\"mono\">home.about.dept</span> → 首页「关于我 · 部门」）。");
+        } else {
+          showNotice("你当前是普通用户，参数仅 <b>管理员</b> 可修改（以下列表只读）。", true);
+        }
+      }
 
-    window.delParam = function (id) {
-      const i = params.findIndex(x => x.id === id);
-      if (i < 0) return;
-      const name = params[i].name;
-      params.splice(i, 1);
-      table.render();
-      App.toast(`已删除参数「${name}」（演示）`, "ok");
-    };
+      /* ---------- 新增 / 编辑 ---------- */
+      function openForm(row) {
+        editingId = row ? row.id : null;
+        $("#paramModalTitle").textContent = row ? "编辑参数" : "新增参数";
+        $("#pfName").value = row ? row.pname : "";
+        $("#pfKey").value = row ? row.pkey : "";
+        $("#pfValue").value = row ? row.pvalue : "";
+        $("#pfUnit").value = row ? (row.unit || "") : "";
+        $("#pfGroup").value = row ? (row.pgroup || "场站参数") : "场站参数";
+        $("#pfRemark").value = row ? (row.remark || "") : "";
+        App.openModal("paramModal");
+      }
 
-    document.getElementById("addParamBtn").addEventListener("click", () => {
-      document.getElementById("paramModalTitle").textContent = "新增参数";
-      App.openModal("paramModal");
-    });
+      window.editParam = function (id) {
+        var r = rows.find(function (x) { return x.id === id; });
+        if (r) openForm(r);
+      };
 
-    document.getElementById("exportParams").addEventListener("click", () => {
-      App.exportCSV("系统参数.csv", ["参数名称", "键名", "参数值", "单位", "分组", "备注"],
-        params.map(p => [p.name, p.key, p.value, p.unit, p.group, p.remark]));
-    });
+      window.delParam = async function (id) {
+        var r = rows.find(function (x) { return x.id === id; });
+        if (!r) return;
+        if (!confirm("确定删除参数「" + r.pname + "」？\n删除后，首页对应数据将恢复为页面默认值。")) return;
+        var res = await C.deleteParam(id);
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast("已删除参数「" + r.pname + "」", "ok");
+        C.logAction("参数管理", "删除参数", r.pname);
+        loadData();
+      };
+
+      $("#addParamBtn").addEventListener("click", function () {
+        if (!canManage) { App.toast("仅管理员可修改参数", "err"); return; }
+        openForm(null);
+      });
+
+      $("#pfSaveBtn").addEventListener("click", async function () {
+        if (!canManage) { App.toast("仅管理员可修改参数", "err"); return; }
+        var pname = $("#pfName").value.trim();
+        var pkey = $("#pfKey").value.trim();
+        var pvalue = $("#pfValue").value.trim();
+        var unit = $("#pfUnit").value.trim();
+        var pgroup = $("#pfGroup").value;
+        var remark = $("#pfRemark").value.trim();
+        if (!pname) { App.toast("请填写参数名称", "err"); return; }
+        if (!pkey) { App.toast("请填写参数键名", "err"); return; }
+        if (!/^[a-zA-Z0-9._-]+$/.test(pkey)) { App.toast("键名只能包含字母、数字、点、横线、下划线", "err"); return; }
+        if (!pvalue) { App.toast("请填写参数值", "err"); return; }
+        if (rows.some(function (x) { return x.pkey === pkey && x.id !== editingId; })) {
+          App.toast("该键名已存在，请更换", "err"); return;
+        }
+        this.disabled = true;
+        var res = await C.saveParam({ id: editingId, pname: pname, pkey: pkey, pvalue: pvalue, unit: unit, pgroup: pgroup, remark: remark });
+        this.disabled = false;
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.closeModal("paramModal");
+        App.toast(editingId ? "参数已更新，刷新首页即可看到新数据" : "参数已创建", "ok");
+        C.logAction("参数管理", editingId ? "修改参数" : "新增参数", pname);
+        loadData();
+      });
+
+      /* ---------- 导出 ---------- */
+      $("#exportParams").addEventListener("click", function () {
+        App.exportCSV("系统参数.csv", ["参数名称", "键名", "参数值", "单位", "分组", "备注"],
+          paramTable.rows().map(function (p) { return [p.pname, p.pkey, p.pvalue, p.unit, p.pgroup, p.remark]; }));
+      });
+
+      /* ---------- 启动与守卫 ---------- */
+      loadData();
+      C.onChange(function () { if (C.isReady()) loadData(); });
+    })();
   </script>
 </body>
 </html>

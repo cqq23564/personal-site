@@ -69,13 +69,14 @@
       <div class="page-head">
         <div>
           <div class="page-title">📊 首页驾驶舱</div>
-          <div class="page-desc">数据截至 <span id="nowTime"></span> · 演示数据，非真实业务</div>
+          <div class="page-desc">数据截至 <span id="nowTime"></span> · 云端实时数据，随查询统计模块联动</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
-          <button class="btn btn-line" onclick="App.toast('已刷新（演示）','ok')">🔄 刷新</button>
+          <button class="btn btn-line" id="dashRefresh">🔄 刷新</button>
           <button class="btn btn-primary" id="exportDash">📥 导出今日日报</button>
         </div>
       </div>
+      <div class="page-notice" id="dashNotice" style="display:none"></div>
 
       <!-- KPI 卡片 -->
       <div class="stat-grid mb-24" id="kpiGrid"></div>
@@ -83,7 +84,7 @@
       <!-- 趋势 + 货物构成 -->
       <div class="grid-2 mb-24">
         <div class="card">
-          <div class="card-hd">30 日入区 / 出卡趋势 <span class="sub">单位：车</span></div>
+          <div class="card-hd" id="trendTitle">入区 / 出卡趋势 <span class="sub">单位：车</span></div>
           <div class="card-bd"><div class="chart-box" id="trendChart"></div></div>
         </div>
         <div class="card">
@@ -121,7 +122,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -129,72 +130,179 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    const M = window.MOCK;
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
+      var notice = $("#dashNotice");
+      var lastVehicles = [], lastReports = [], lastStranded = 0;
 
-    /* 时间 */
-    function fmtNow() {
-      const d = new Date(), p = n => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-    }
-    document.getElementById("nowTime").textContent = fmtNow();
-    setInterval(() => document.getElementById("nowTime").textContent = fmtNow(), 1000);
+      function showNotice(html, warn) {
+        notice.innerHTML = html || "";
+        notice.className = "page-notice" + (warn ? " warn" : "");
+        notice.style.display = html ? "" : "none";
+      }
 
-    /* KPI 卡 */
-    document.getElementById("kpiGrid").innerHTML = M.kpis.map(k => `
-      <div class="stat-card">
-        <div class="stat-icon ${k.color}">${k.icon}</div>
-        <div style="flex:1">
-          <div class="stat-value"><span data-count="${k.value}">0</span> <span style="font-size:12px;color:var(--text-3)">${k.unit}</span></div>
-          <div class="stat-label">${k.label}</div>
-        </div>
-        <div class="stat-trend ${k.up ? "up" : "down"}">${k.up ? "▲" : "▼"} ${k.trend}</div>
-      </div>`).join("");
+      /* 时间 */
+      function fmtNow() {
+        const d = new Date(), p = n => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+      }
+      document.getElementById("nowTime").textContent = fmtNow();
+      setInterval(() => document.getElementById("nowTime").textContent = fmtNow(), 1000);
 
-    /* 图表 */
-    App.renderLineChart("#trendChart", {
-      labels: M.trend30.map(t => t.date),
-      series: [
-        { name: "入区", data: M.trend30.map(t => t.in), color: "#3b6ef5", area: true },
-        { name: "出卡", data: M.trend30.map(t => t.out), color: "#d97706", area: true }
-      ]
-    });
-    App.renderDonut("#goodsDonut", M.goodsPie, { label: "货物构成", unit: "%" });
-    App.renderBarChart("#gateChart", {
-      labels: M.gateFlow.map(g => g.hour),
-      series: [
-        { name: "入区", data: M.gateFlow.map(g => g.in), color: "#3b6ef5" },
-        { name: "出卡", data: M.gateFlow.map(g => g.out), color: "#7c5cff" }
-      ]
-    });
+      /* 在场车辆简表 */
+      var onSiteTable = new App.DataTable({
+        el: "#onSiteTable", data: [], pageSize: 8,
+        searchKeys: ["plate", "goods", "driver", "gate"],
+        columns: [
+          { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+          { key: "goods", title: "货物" },
+          { key: "gate", title: "闸口" },
+          { key: "nation", title: "国籍" },
+          { key: "dwell", title: "在场时长(h)", sortable: true, align: "right", render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>` },
+          { key: "status", title: "状态", sortable: true, render: v => `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>` }
+        ]
+      });
 
-    /* 园区示意图 */
-    App.renderParkMap("#parkMap", M.mapMarkers);
+      /* ---------- KPI（日报口径 + 车辆实时） ---------- */
+      function renderKpis(vehicles, reports) {
+        var latest = reports[0] || {};
+        var prev = reports[1] || {};
+        var declSum = reports.reduce(function (s, r) { return s + (Number(r.decl) || 0); }, 0);
+        var stranded = vehicles.filter(function (v) { return v.status === "滞留预警" || Number(v.dwell || 0) > 72; });
+        lastStranded = stranded.length;
+        function trend(cur, pre) {
+          if (!pre) return { up: true, txt: "▲ 新增" };
+          var d = ((cur - pre) / pre) * 100;
+          return { up: d >= 0, txt: (d >= 0 ? "▲ +" : "▼ ") + d.toFixed(1) + "%" };
+        }
+        var t1 = trend(Number(latest.in_total) || 0, Number(prev.in_total) || 0);
+        var t2 = trend(Number(latest.out_total) || 0, Number(prev.out_total) || 0);
+        var t3 = trend(Number(latest.release_cnt) || 0, Number(prev.release_cnt) || 0);
+        var dayTag = latest.rdate ? "（" + String(latest.rdate).slice(5) + "）" : "";
+        var kpis = [
+          { label: "在场车辆", value: vehicles.length, unit: "辆", icon: "🚛", color: "blue", up: null, trend: "实时" },
+          { label: "入区" + dayTag, value: Number(latest.in_total) || 0, unit: "车", icon: "📥", color: "green", up: t1.up, trend: t1.txt },
+          { label: "出卡" + dayTag, value: Number(latest.out_total) || 0, unit: "车", icon: "📤", color: "orange", up: t2.up, trend: t2.txt },
+          { label: "滞留超72小时", value: lastStranded, unit: "车", icon: "⚠️", color: "red", up: false, trend: lastStranded ? "待处理" : "正常" },
+          { label: "一线放行(过驳)" + dayTag, value: Number(latest.release_cnt) || 0, unit: "车", icon: "✅", color: "cyan", up: t3.up, trend: t3.txt },
+          { label: "边民申报总数", value: declSum, unit: "单", icon: "📋", color: "purple", up: true, trend: "累计" }
+        ];
+        $("#kpiGrid").innerHTML = kpis.map(k => `
+          <div class="stat-card">
+            <div class="stat-icon ${k.color}">${k.icon}</div>
+            <div style="flex:1">
+              <div class="stat-value"><span data-count="${k.value}">0</span> <span style="font-size:12px;color:var(--text-3)">${k.unit}</span></div>
+              <div class="stat-label">${k.label}</div>
+            </div>
+            <div class="stat-trend ${k.up === null ? "" : k.up ? "up" : "down"}">${k.trend}</div>
+          </div>`).join("");
+        /* innerHTML 后 IntersectionObserver 不会观察新节点，手动触发数字动画 */
+        $("#kpiGrid").querySelectorAll("[data-count]").forEach(function (el) { App.animateCount(el); });
+      }
 
-    /* 在场车辆简表 */
-    new App.DataTable({
-      el: "#onSiteTable",
-      data: M.vehiclesOnSite,
-      pageSize: 8,
-      searchKeys: ["plate", "goods", "driver", "gate"],
-      columns: [
-        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
-        { key: "goods", title: "货物" },
-        { key: "gate", title: "闸口" },
-        { key: "nation", title: "国籍" },
-        { key: "dwell", title: "在场时长(h)", sortable: true, align: "right", render: v => `<span class="${v > 48 ? "stat-trend down" : ""}">${v}</span>` },
-        { key: "status", title: "状态", sortable: true, render: v => `<span class="badge ${v === "滞留预警" ? "badge-err" : "badge-ok"}">${v}</span>` }
-      ]
-    });
+      /* ---------- 图表 ---------- */
+      function renderCharts(vehicles, checkpoints, reports) {
+        var asc = reports.slice().reverse();
+        $("#trendTitle").innerHTML = (asc.length ? "近 " + asc.length + " 日" : "") + '入区 / 出卡趋势 <span class="sub">单位：车</span>';
+        App.renderLineChart("#trendChart", {
+          labels: asc.map(r => String(r.rdate).slice(5)),
+          series: [
+            { name: "入区", data: asc.map(r => Number(r.in_total) || 0), color: "#3b6ef5", area: true },
+            { name: "出卡", data: asc.map(r => Number(r.out_total) || 0), color: "#d97706", area: true }
+          ]
+        });
 
-    /* 导出日报 */
-    document.getElementById("exportDash").addEventListener("click", () => {
-      const t = M.trend30[M.trend30.length - 1];
-      App.exportCSV("园区日报_" + new Date().toISOString().slice(0, 10) + ".csv",
-        ["日期", "入区车数", "出卡车数", "在场车辆", "边民申报"],
-        [[t.date, t.in, t.out, M.kpis[0].value, M.kpis[5].value]]);
-    });
+        var gmap = {};
+        vehicles.forEach(function (v) { if (v.goods && v.goods !== "—") gmap[v.goods] = (gmap[v.goods] || 0) + 1; });
+        var gtotal = Object.keys(gmap).reduce(function (s, k) { return s + gmap[k]; }, 0);
+        var palette = ["#3b6ef5", "#7c5cff", "#16a34a", "#d97706", "#0891b2", "#94a3b8"];
+        App.renderDonut("#goodsDonut", Object.keys(gmap).map(function (name, i) {
+          return { name: name, value: gtotal ? Math.round(gmap[name] / gtotal * 100) : 0, color: palette[i % palette.length] };
+        }), { label: "在场货物构成", unit: "%" });
+
+        var hours = {};
+        checkpoints.forEach(function (r) {
+          var h = String(r.happened_at || "").slice(11, 13);
+          if (!/^\d{2}$/.test(h)) return;
+          if (!hours[h]) hours[h] = { in: 0, out: 0 };
+          if (r.action === "入区" || r.action === "过驳") hours[h].in++;
+          else if (r.action === "出区") hours[h].out++;
+        });
+        var keys = Object.keys(hours).sort();
+        App.renderBarChart("#gateChart", {
+          labels: keys.map(function (h) { return h + ":00"; }),
+          series: [
+            { name: "入区", data: keys.map(function (h) { return hours[h].in; }), color: "#3b6ef5" },
+            { name: "出卡", data: keys.map(function (h) { return hours[h].out; }), color: "#7c5cff" }
+          ]
+        });
+      }
+
+      /* ---------- 园区示意图（计数由云端数据派生） ---------- */
+      function renderMap(vehicles, checkpoints, records) {
+        function cnt(list, fn) { return list.filter(fn).length; }
+        var ch516 = function (r) { return r.channel === "<516>"; };
+        App.renderParkMap("#parkMap", [
+          { id: "gateA", name: "闸口A（主卡口）", x: 12, y: 22, type: "gate", count: cnt(checkpoints, r => r.gate === "闸口A"), status: "ok" },
+          { id: "gateB", name: "闸口B（边小卡）", x: 88, y: 20, type: "gate", count: cnt(checkpoints, r => r.gate === "闸口B边小"), status: "ok" },
+          { id: "ch516", name: "场所通道 <516>", x: 78, y: 62, type: "channel", count: cnt(checkpoints, ch516), status: cnt(checkpoints, r => ch516(r) && r.result === "待核") ? "warn" : "ok" },
+          { id: "park", name: "海关监管停车场", x: 42, y: 46, type: "park", count: vehicles.length, status: "ok" },
+          { id: "yard", name: "查验场", x: 20, y: 74, type: "yard", count: cnt(vehicles, v => v.status === "滞留预警"), status: "ok" },
+          { id: "wh", name: "保税仓库", x: 60, y: 84, type: "wh", count: cnt(records, r => r.rtype === "过驳"), status: "ok" }
+        ]);
+      }
+
+      /* ---------- 加载 ---------- */
+      async function loadAll() {
+        if (!C.isReady()) { showNotice("当前为演示模式：看板实时数据需在 WorkBuddy 托管域名使用。", true); return; }
+        if (!C.isLoggedIn()) {
+          showNotice('看板数据需 <a href="login.html?next=dashboard.html" style="color:inherit;text-decoration:underline">登录</a> 后查看（云端数据仅对登录用户开放）。', true);
+          return;
+        }
+        var results = await Promise.all([
+          C.tableList("site_vehicles", { order: "entry_at", asc: false }),
+          C.tableList("site_checkpoint", { order: "happened_at", asc: false }),
+          C.tableList("site_records", { order: "happened_at", asc: false }),
+          C.tableList("site_reports", { order: "rdate", asc: false })
+        ]);
+        if (results.some(function (r) { return r.error; })) {
+          showNotice("读取失败：" + App.esc((results.find(function (r) { return r.error; }) || {}).error.message || ""), true);
+          return;
+        }
+        var vehicles = (results[0].data || []).map(function (v) {
+          return { id: v.id, plate: v.plate, type: v.vtype, goods: v.goods, gate: v.gate, nation: v.nation, driver: v.driver, dwell: Number(v.dwell || 0), status: v.status };
+        });
+        var checkpoints = results[1].data || [];
+        var records = results[2].data || [];
+        var reports = results[3].data || [];
+        lastVehicles = vehicles; lastReports = reports;
+        renderKpis(vehicles, reports);
+        renderCharts(vehicles, checkpoints, reports);
+        renderMap(vehicles, checkpoints, records);
+        onSiteTable.setData(vehicles);
+        showNotice("数据实时来自云端：<b>" + vehicles.length + "</b> 辆在场 · <b>" + checkpoints.length + "</b> 条卡口记录 · <b>" + records.length + "</b> 条核放记录 · <b>" + reports.length + "</b> 份日报。在「查询统计」中增删改，看板即时联动。");
+      }
+
+      loadAll();
+      C.onChange(function () { if (C.isReady()) loadAll(); });
+      $("#dashRefresh").addEventListener("click", function () { loadAll(); App.toast("已刷新", "ok"); });
+
+      /* 导出今日日报 */
+      document.getElementById("exportDash").addEventListener("click", () => {
+        var latest = lastReports[0] || {};
+        App.exportCSV("园区日报_" + (latest.rdate || new Date().toISOString().slice(0, 10)) + ".csv",
+          ["日期", "入区车数", "出卡车数", "一线放行", "边民申报", "异常", "在场车辆", "滞留超72h"],
+          [[latest.rdate || "—", latest.in_total || 0, latest.out_total || 0, latest.release_cnt || 0, latest.decl || 0, latest.abnormal || 0, lastVehicles.length, lastStranded]]);
+        C.logAction("数据看板", "导出今日日报", latest.rdate || "");
+        App.toast("已导出日报", "ok");
+      });
+    })();
   </script>
 </body>
 </html>

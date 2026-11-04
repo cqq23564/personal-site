@@ -70,9 +70,10 @@
         </div>
         <div class="flex gap-8">
           <button class="btn btn-line" id="exportLogs">📥 导出日志</button>
-          <button class="btn btn-danger" id="clearLogs">🗑 清空日志</button>
+          <button class="btn btn-danger hidden" id="clearLogs">🗑 清空日志</button>
         </div>
       </div>
+      <div class="page-notice" id="logNotice" style="display:none"></div>
 
       <div class="stat-grid mb-24" id="logStats"></div>
 
@@ -84,6 +85,7 @@
             <option>用户管理</option><option>查询统计</option><option>卡口车辆管理</option>
             <option>核放记录</option><option>参数管理</option><option>注册审核</option>
             <option>菜单管理</option><option>文件管理</option><option>用户登录</option>
+            <option>数据看板</option><option>在场车辆</option><option>每日报表</option>
           </select>
           <select class="select" id="logResult">
             <option value="">全部结果</option>
@@ -103,7 +105,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -111,48 +113,87 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
   <script>
-    const M = window.MOCK;
-    const logs = M.logs.map(l => ({ ...l }));
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
+      var notice = $("#logNotice");
+      var rawLogs = [];
 
-    /* 统计卡 */
-    const ok = logs.filter(l => l.result === "成功").length;
-    document.getElementById("logStats").innerHTML = `
-      <div class="stat-card"><div class="stat-icon blue">📜</div><div><div class="stat-value">${logs.length}</div><div class="stat-label">日志总数</div></div></div>
-      <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${ok}</div><div class="stat-label">成功操作</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value">${logs.length - ok}</div><div class="stat-label">失败操作</div></div></div>
-      <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-value">${new Set(logs.map(l => l.user)).size}</div><div class="stat-label">涉及用户</div></div></div>`;
+      function showNotice(html, warn) {
+        notice.innerHTML = html || "";
+        notice.className = "page-notice" + (warn ? " warn" : "");
+        notice.style.display = html ? "" : "none";
+      }
 
-    const table = new App.DataTable({
-      el: "#logTable", data: logs, pageSize: 10, pager: "#logPager",
-      keywordEl: "#logKw", searchKeys: ["user", "action", "ip", "id"],
-      filters: [{ key: "module", el: "#logModule" }, { key: "result", el: "#logResult" }],
-      columns: [
-        { key: "id", title: "日志编号", render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        { key: "time", title: "时间", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "user", title: "操作人", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
-        { key: "module", title: "模块", sortable: true, render: v => `<span class="tag">${App.esc(v)}</span>` },
-        { key: "action", title: "动作", wrap: true },
-        { key: "ip", title: "IP 地址", render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "cost", title: "耗时", sortable: true, align: "right", render: v => v + " ms" },
-        {
-          key: "result", title: "结果", sortable: true, render: v =>
-            `<span class="badge ${v === "成功" ? "badge-ok" : "badge-err"}">${App.esc(v)}</span>`
+      const table = new App.DataTable({
+        el: "#logTable", data: [], pageSize: 10, pager: "#logPager",
+        keywordEl: "#logKw", searchKeys: ["user", "action", "ip", "id"],
+        filters: [{ key: "module", el: "#logModule" }, { key: "result", el: "#logResult" }],
+        columns: [
+          { key: "id", title: "日志编号", render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+          { key: "time", title: "时间", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+          { key: "user", title: "操作人", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
+          { key: "module", title: "模块", sortable: true, render: v => `<span class="tag">${App.esc(v)}</span>` },
+          { key: "action", title: "动作", wrap: true },
+          { key: "ip", title: "IP 地址", render: v => `<span class="mono">${App.esc(v || "—")}</span>` },
+          { key: "cost", title: "耗时", sortable: true, align: "right", render: v => (v ? v + " ms" : "—") },
+          {
+            key: "result", title: "结果", sortable: true, render: v =>
+              `<span class="badge ${v === "成功" ? "badge-ok" : "badge-err"}">${App.esc(v)}</span>`
+          }
+        ]
+      });
+
+      /* 统计卡 */
+      function renderStats(logs) {
+        const ok = logs.filter(l => l.result === "成功").length;
+        $("#logStats").innerHTML = `
+          <div class="stat-card"><div class="stat-icon blue">📜</div><div><div class="stat-value">${logs.length}</div><div class="stat-label">日志总数</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value">${ok}</div><div class="stat-label">成功操作</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value">${logs.length - ok}</div><div class="stat-label">失败操作</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-value">${new Set(logs.map(l => l.user)).size}</div><div class="stat-label">涉及用户</div></div></div>`;
+      }
+
+      async function loadData() {
+        if (!C.isReady()) { showNotice("当前为演示模式：操作日志需在 WorkBuddy 托管域名使用。", true); return; }
+        if (!C.isLoggedIn()) {
+          showNotice('请先 <a href="login.html?next=system-logs.html" style="color:inherit;text-decoration:underline">登录</a> 后查看操作日志。', true);
+          return;
         }
-      ]
-    });
+        $("#clearLogs").classList.toggle("hidden", !C.isAdmin());
+        var res = await C.tableList("site_logs", { order: "happened_at", asc: false });
+        if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
+        rawLogs = (res.data || []).map(function (l) {
+          return { id: l.log_id || ("L" + l.id), time: l.happened_at, user: l.user_name, module: l.module, action: l.action, ip: l.ip, cost: l.cost, result: l.result, _nid: l.id };
+        });
+        table.setData(rawLogs);
+        renderStats(rawLogs);
+        showNotice("共 <b>" + rawLogs.length + "</b> 条日志。参数、用户、菜单、车辆、核放、报表等模块的新增/修改/删除操作都会自动记录在这里。");
+      }
 
-    document.getElementById("exportLogs").addEventListener("click", () => {
-      App.exportCSV("操作日志.csv", ["编号", "时间", "操作人", "模块", "动作", "IP", "耗时(ms)", "结果"],
-        table.filtered.map(l => [l.id, l.time, l.user, l.module, l.action, l.ip, l.cost, l.result]));
-    });
+      loadData();
+      C.onChange(function () { if (C.isReady()) loadData(); });
 
-    document.getElementById("clearLogs").addEventListener("click", () => {
-      if (!confirm("确定清空所有操作日志？此操作不可恢复（演示）。")) return;
-      logs.length = 0;
-      table.render();
-      App.toast("日志已清空（演示）", "ok");
-    });
+      document.getElementById("exportLogs").addEventListener("click", () => {
+        App.exportCSV("操作日志.csv", ["编号", "时间", "操作人", "模块", "动作", "IP", "耗时(ms)", "结果"],
+          table.filtered.map(l => [l.id, l.time, l.user, l.module, l.action, l.ip, l.cost, l.result]));
+      });
+
+      document.getElementById("clearLogs").addEventListener("click", async () => {
+        if (!C.isAdmin()) { App.toast("仅管理员可清空日志", "err"); return; }
+        if (!confirm("确定清空所有操作日志？此操作不可恢复。")) return;
+        this.disabled = true;
+        var res = await C.tableClear("site_logs");
+        this.disabled = false;
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        App.toast("日志已清空", "ok");
+        loadData();
+      });
+    })();
   </script>
 </body>
 </html>

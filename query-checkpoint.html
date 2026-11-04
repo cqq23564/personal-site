@@ -68,8 +68,12 @@
           <div class="page-title">🛂 卡口车辆管理</div>
           <div class="page-desc">闸口出入区记录与手动抬杆操作，含场所通道 &lt;516&gt; 越南拼车出场统计</div>
         </div>
-        <button class="btn btn-primary" id="exportBtn">📥 导出卡口记录</button>
+        <div class="flex gap-8">
+          <button class="btn btn-primary hidden" id="cpAddBtn">＋ 新增记录</button>
+          <button class="btn btn-line" id="exportBtn">📥 导出卡口记录</button>
+        </div>
       </div>
+      <div class="page-notice" id="cpNotice" style="display:none"></div>
 
       <div class="stat-grid mb-24" id="cpStats"></div>
 
@@ -113,7 +117,7 @@
       <div class="modal-hd">确认抬杆</div>
       <div class="modal-bd">
         <p id="liftInfo">确定对所选车辆执行抬杆放行？</p>
-        <p class="text-3 mt-8" style="font-size:12.5px">提示：正式环境需校验核放单与海关指令，演示模式直接放行。</p>
+        <p class="text-3 mt-8" style="font-size:12.5px">提示：执行后将把所选「待核」记录的核放结果更新为「抬杆」，实时保存到云端。</p>
       </div>
       <div class="modal-ft">
         <button class="btn btn-line" data-modal-close>取消</button>
@@ -125,7 +129,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -133,69 +137,120 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/admin-crud.js"></script>
   <script>
-    const M = window.MOCK;
-    const records = M.checkpointVehicles.map(r => ({ ...r }));
+    (function () {
+      var $ = function (s) { return document.querySelector(s); };
+      var C = window.Cloud;
 
-    /* 统计 */
-    const ch516 = records.filter(r => r.channel === "<516>").length;
-    const inCnt = records.filter(r => r.action === "入区").length;
-    const outCnt = records.filter(r => r.action === "出区").length;
-    const guo = records.filter(r => r.action === "过驳").length;
-    document.getElementById("cpStats").innerHTML = `
-      <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${inCnt}</div><div class="stat-label">今日入区（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${outCnt}</div><div class="stat-label">今日出区（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳（车）</div></div></div>
-      <div class="stat-card"><div class="stat-icon purple">🛂</div><div><div class="stat-value">${ch516}</div><div class="stat-label">通道&lt;516&gt;出场（车）</div></div></div>`;
+      /* 云表字段 -> 页面展示字段 */
+      function toRows(list) {
+        return (list || []).map(function (r) {
+          return {
+            id: r.id, plate: r.plate, gate: r.gate, channel: r.channel, type: r.vtype,
+            goods: r.goods, action: r.action, time: r.happened_at, result: r.result
+          };
+        });
+      }
 
-    const table = new App.DataTable({
-      el: "#cpTable", data: records, pageSize: 8, pager: "#cpPager",
-      keywordEl: "#cpKw", searchKeys: ["plate", "goods", "channel", "action"],
-      selectable: true, rowKey: "plate",
-      filters: [
-        { key: "gate", el: "#cpGate" },
-        { key: "action", el: "#cpAction" },
-        { key: "type", el: "#cpType" },
-        { key: "result", el: "#cpResult" }
-      ],
-      columns: [
-        { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-        { key: "gate", title: "闸口", sortable: true },
-        { key: "channel", title: "场所通道", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
-        { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
-        { key: "goods", title: "货物", sortable: true },
-        {
-          key: "action", title: "动作", sortable: true, render: v =>
-            `<span class="badge ${v === "入区" ? "badge-ok" : v === "出区" ? "badge-info" : "badge-warn"}">${v}</span>`
-        },
-        { key: "time", title: "时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-        {
-          key: "result", title: "核放结果", sortable: true, render: v =>
-            `<span class="badge ${v === "待核" ? "badge-err" : "badge-ok"}">${App.esc(v)}</span>`
+      const table = new App.DataTable({
+        el: "#cpTable", data: [], pageSize: 8, pager: "#cpPager",
+        keywordEl: "#cpKw", searchKeys: ["plate", "goods", "channel", "action"],
+        selectable: true, rowKey: "plate",
+        filters: [
+          { key: "gate", el: "#cpGate" },
+          { key: "action", el: "#cpAction" },
+          { key: "type", el: "#cpType" },
+          { key: "result", el: "#cpResult" }
+        ],
+        columns: [
+          { key: "plate", title: "车牌号码", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "gate", title: "闸口", sortable: true },
+          { key: "channel", title: "场所通道", sortable: true, render: v => `<span class="mono">${App.esc(v)}</span>` },
+          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "重车" ? "badge-info" : "badge-gray"}">${v}</span>` },
+          { key: "goods", title: "货物", sortable: true },
+          {
+            key: "action", title: "动作", sortable: true, render: v =>
+              `<span class="badge ${v === "入区" ? "badge-ok" : v === "出区" ? "badge-info" : "badge-warn"}">${v}</span>`
+          },
+          { key: "time", title: "时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
+          {
+            key: "result", title: "核放结果", sortable: true, render: v =>
+              `<span class="badge ${v === "待核" ? "badge-err" : "badge-ok"}">${App.esc(v)}</span>`
+          },
+          {
+            key: "id", title: "操作", render: (v) => C.isAdmin()
+              ? `<button class="btn-link" onclick="editCp(${v})">编辑</button><button class="btn-link danger" onclick="delCp(${v})">删除</button>`
+              : `<span class="text-3">只读</span>`
+          }
+        ]
+      });
+
+      /* 统计卡 */
+      function renderStats(rows) {
+        const ch516 = rows.filter(r => r.channel === "<516>").length;
+        const inCnt = rows.filter(r => r.action === "入区").length;
+        const outCnt = rows.filter(r => r.action === "出区").length;
+        const guo = rows.filter(r => r.action === "过驳").length;
+        $("#cpStats").innerHTML = `
+          <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${inCnt}</div><div class="stat-label">入区（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${outCnt}</div><div class="stat-label">出区（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon cyan">🔄</div><div><div class="stat-value">${guo}</div><div class="stat-label">过驳（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">🛂</div><div><div class="stat-value">${ch516}</div><div class="stat-label">通道&lt;516&gt;出场（车）</div></div></div>`;
+      }
+
+      window.cpCrud = AdminCrud.mount({
+        table: "site_checkpoint", entity: "记录", module: "卡口车辆管理",
+        notice: "#cpNotice", addBtn: "#cpAddBtn",
+        exportBtn: "#exportBtn", exportFile: "卡口车辆记录.csv",
+        exportHeaders: ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "结果"],
+        exportRow: r => [r.plate, r.gate, r.channel, r.type, r.goods, r.action, r.time, r.result],
+        dt: table, order: "happened_at", asc: false,
+        editFn: "editCp", delFn: "delCp", label: r => r.plate,
+        fields: [
+          { key: "plate", label: "车牌号码", required: true, ph: "如：桂A·D5821" },
+          { key: "gate", label: "闸口", type: "select", options: ["闸口A", "闸口B边小"], required: true },
+          { key: "channel", label: "场所通道", type: "select", options: ["<501>", "<516>"], required: true },
+          { key: "vtype", label: "类型", type: "select", options: ["重车", "空车"], required: true },
+          { key: "goods", label: "货物", ph: "如：东盟水果（空车填 —）" },
+          { key: "action", label: "动作", type: "select", options: ["入区", "出区", "过驳"], required: true },
+          { key: "happened_at", label: "时间", required: true, ph: "2026-11-03 09:26", pattern: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/ },
+          { key: "result", label: "核放结果", type: "select", options: ["放行", "抬杆", "待核"] }
+        ],
+        onLoaded: function (list) { renderStats(toRows(list)); }
+      });
+
+      /* 批量抬杆（真实更新云端：待核 -> 抬杆） */
+      const modal = document.getElementById("liftModal");
+      document.getElementById("batchLift").addEventListener("click", () => {
+        if (!C.isAdmin()) { App.toast("仅管理员可执行抬杆", "err"); return; }
+        const sel = table.selectedRows();
+        if (!sel.length) return App.toast("请先勾选车辆", "warn");
+        const pend = sel.filter(r => r.result === "待核");
+        if (!pend.length) return App.toast("所选车辆中没有「待核」记录", "warn");
+        document.getElementById("liftInfo").textContent = `确定对所选 ${pend.length} 辆「待核」车辆执行抬杆放行？`;
+        modal.classList.add("show");
+      });
+      document.getElementById("liftConfirm").addEventListener("click", async () => {
+        const sel = table.selectedRows().filter(r => r.result === "待核");
+        modal.classList.remove("show");
+        if (!sel.length) return;
+        this.disabled = true;
+        var ok = 0;
+        for (var i = 0; i < sel.length; i++) {
+          var res = await C.tableUpdate("site_checkpoint", sel[i].id, { result: "抬杆" });
+          if (!res.error) ok++;
         }
-      ]
-    });
-
-    /* 批量抬杆 */
-    const modal = document.getElementById("liftModal");
-    document.getElementById("batchLift").addEventListener("click", () => {
-      const sel = table.selectedRows();
-      if (!sel.length) return App.toast("请先勾选车辆", "warn");
-      document.getElementById("liftInfo").textContent = `确定对所选 ${sel.length} 辆车执行抬杆放行？`;
-      modal.classList.add("show");
-    });
-    document.getElementById("liftConfirm").addEventListener("click", () => {
-      const sel = table.selectedRows();
-      sel.forEach(r => { if (r.result === "待核") r.result = "抬杆"; });
-      modal.classList.remove("show");
-      table.clearSelected();
-      App.toast(`已对 ${sel.length} 辆车执行抬杆（演示）`, "ok");
-    });
-
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      App.exportCSV("卡口车辆记录.csv", ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "结果"],
-        table.filtered.map(r => [r.plate, r.gate, r.channel, r.type, r.goods, r.action, r.time, r.result]));
-    });
+        this.disabled = false;
+        table.clearSelected();
+        App.toast(`已对 ${ok} 辆车执行抬杆`, "ok");
+        C.logAction("卡口车辆管理", "批量抬杆", ok + " 辆");
+        cpCrud.load();
+      });
+    })();
   </script>
 </body>
 </html>

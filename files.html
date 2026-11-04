@@ -71,6 +71,7 @@
         </div>
         <button class="btn btn-primary" id="exportAll">📥 批量导出清单</button>
       </div>
+      <div class="page-notice" id="fileNotice" style="display:none"></div>
 
       <!-- 存储统计 -->
       <div class="stat-grid mb-24" id="fileStats"></div>
@@ -83,7 +84,7 @@
             <div class="upload-zone" id="uploadZone">
               <div class="big">☁️</div>
               <b>点击选择文件</b> 或拖拽到此处
-              <div class="text-3" style="font-size:12px;margin-top:6px">支持 xlsx / csv / pdf / png / zip，演示模式仅在本地列表展示</div>
+              <div class="text-3" style="font-size:12px;margin-top:6px">支持 xlsx / csv / pdf / png / zip / mp4 等，登录后真实上传到云端存储（单文件 ≤ 80MB）</div>
             </div>
           </div>
         </div>
@@ -140,7 +141,7 @@
       <div class="modal-bd" id="previewBody"></div>
       <div class="modal-ft">
         <button class="btn btn-line" data-modal-close>关闭</button>
-        <button class="btn btn-primary" onclick="App.toast('开始下载（演示）','ok')">📥 下载文件</button>
+        <button class="btn btn-primary" id="previewDownloadBtn">📥 下载文件</button>
       </div>
     </div>
   </div>
@@ -148,7 +149,7 @@
   <footer class="site-footer">
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
-        <span>© 2026 林运维 · 个人主页 · 数据为演示用途</span>
+        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
         <span><a href="index.html">返回首页</a></span>
       </div>
     </div>
@@ -156,83 +157,9 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script>
-    const M = window.MOCK;
-    const files = M.files.map(f => ({ ...f }));
-    const typeMap = { excel: "Excel", csv: "CSV", pdf: "PDF", image: "图片", zip: "压缩包", other: "其他" };
-    const palette = { Excel: "#16a34a", CSV: "#3b6ef5", PDF: "#dc2626", 图片: "#d97706", 压缩包: "#7c5cff", 其他: "#94a3b8" };
-
-    /* 统计 + 图表 */
-    function renderStats() {
-      const downloads = files.reduce((a, b) => a + b.downloads, 0);
-      const tables = files.filter(f => f.type === "excel" || f.type === "csv").length;
-      document.getElementById("fileStats").innerHTML = `
-        <div class="stat-card"><div class="stat-icon blue">📁</div><div><div class="stat-value">${files.length}</div><div class="stat-label">文件总数</div></div></div>
-        <div class="stat-card"><div class="stat-icon green">📊</div><div><div class="stat-value">${tables}</div><div class="stat-label">表格文件</div></div></div>
-        <div class="stat-card"><div class="stat-icon orange">⬇️</div><div><div class="stat-value">${downloads}</div><div class="stat-label">累计下载</div></div></div>
-        <div class="stat-card"><div class="stat-icon purple">💾</div><div><div class="stat-value">5.7</div><div class="stat-label">已用容量(GB) / 50</div></div></div>`;
-      const cnt = {};
-      files.forEach(f => { const k = typeMap[f.type] || "其他"; cnt[k] = (cnt[k] || 0) + 1; });
-      App.renderDonut("#fileChart", Object.entries(cnt).map(([name, value]) => ({ name, value, color: palette[name] || "#94a3b8" })), { label: "文件类型", unit: "个" });
-    }
-    renderStats();
-
-    /* 列表视图表格（与网格共享同一 files 引用） */
-    let listTable = null;
-    function buildListTable() {
-      if (listTable) return listTable;
-      listTable = new App.DataTable({
-        el: "#fileTable", data: files, pageSize: 8, pager: "#filePager",
-        keywordEl: "#fileKw", searchKeys: ["name", "owner"],
-        filters: [{ key: "type", el: "#fileType" }],
-        selectable: true, rowKey: "id",
-        columns: [
-          { key: "name", title: "文件名", wrap: true, render: v => `<b>${App.esc(v)}</b>` },
-          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge badge-gray">${App.esc(typeMap[v] || v)}</span>` },
-          { key: "size", title: "大小", sortable: true },
-          { key: "owner", title: "上传者", sortable: true },
-          { key: "time", title: "时间", sortable: true, render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
-          { key: "downloads", title: "下载次数", sortable: true, align: "right" },
-          {
-            key: "id", title: "操作", render: (v, r) => `
-              <button class="btn-link" onclick="App.toast('开始下载 ${App.esc(r.name)}','ok')">下载</button>
-              <button class="btn-link danger" onclick="delFile('${v}')">删除</button>`
-          }
-        ]
-      });
-      return listTable;
-    }
-
-    window.delFile = function (id) {
-      const i = files.findIndex(f => f.id === id);
-      if (i < 0) return;
-      const name = files[i].name;
-      files.splice(i, 1);
-      renderStats();
-      if (listTable) listTable.render();
-      App.toast(`已删除「${name}」（演示）`, "ok");
-    };
-
-    /* 文件管理器（网格 + 上传 + 批量） */
-    App.initFileManager(files, {
-      onChange: () => { renderStats(); if (listTable) listTable.render(); }
-    });
-
-    /* 视图切换 */
-    let gridMode = true;
-    document.getElementById("viewToggle").addEventListener("click", function () {
-      gridMode = !gridMode;
-      document.getElementById("gridView").classList.toggle("hidden", !gridMode);
-      document.getElementById("listView").classList.toggle("hidden", gridMode);
-      this.textContent = gridMode ? "🔳 切换网格/列表" : "📋 切换网格/列表";
-      if (!gridMode) buildListTable().render();
-    });
-
-    /* 全量导出清单 */
-    document.getElementById("exportAll").addEventListener("click", () => {
-      App.exportCSV("文件清单.csv", ["ID", "文件名", "类型", "大小", "上传者", "时间", "下载次数"],
-        files.map(f => [f.id, f.name, typeMap[f.type] || f.type, f.size, f.owner, f.time, f.downloads]));
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/files.js"></script>
 </body>
 </html>

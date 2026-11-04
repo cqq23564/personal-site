@@ -408,6 +408,21 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   font-size: 13.5px; font-weight: 600; transform: translateY(6px); opacity: 0.92; transition: all 0.25s;
 }
 .gallery-item:hover .cap { transform: none; opacity: 1; }
+.gallery-item video { display: block; width: 100%; height: 100%; object-fit: cover; background: #000; }
+
+/* ---------- 相册管理按钮（登录属主可见） ---------- */
+.gl-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; z-index: 2; }
+.gallery-item:hover .gl-tools { opacity: 1; }
+.gl-btn { border: none; border-radius: 6px; padding: 4px 9px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,.92); color: #1e293b; cursor: pointer; box-shadow: 0 1px 4px rgba(8,15,40,.25); }
+.gl-btn:hover { background: #fff; }
+.gl-btn.danger { color: #dc2626; }
+
+/* 页面级提示条（参数管理等） */
+.page-notice { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-2); margin-bottom: 14px; line-height: 1.7; }
+.page-notice b { color: var(--text-1); }
+.page-notice.warn { border-color: rgba(245, 158, 11, .45); background: rgba(245, 158, 11, .08); }
+.page-notice .mono { font-size: 12px; }
+.gl-empty { color: var(--text-3); font-size: 13.5px; padding: 6px 2px; }
 
 /* ---------- 进度条 ---------- */
 .progress { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }

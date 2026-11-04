@@ -418,6 +418,12 @@
       return this.filtered.filter(r => this.selected.has(String(this.opt.rowKey ? r[this.opt.rowKey] : r[this.opt.columns[0].key])));
     }
     clearSelected() { this.selected.clear(); this.render(); }
+    /** 替换数据源并重新渲染（用于云端数据加载后刷新） */
+    setData(data) { this.opt.data = Array.isArray(data) ? data : []; this.page = 1; this.render(); }
+    /** 当前过滤/排序后的全部行 */
+    rows() { return this.filtered; }
+    /** 当前过滤后的总行数 */
+    get total() { return this.filtered.length; }
   }
 
   /* ================= 图表（纯 SVG） ================= */
@@ -795,11 +801,16 @@
     initTabs();
     initModal();
     initForms();
-    /* 退出登录 */
+    /* 退出登录（已接入云服务时真实登出，否则演示提示） */
     const lo = $("#logoutBtn");
     if (lo) lo.addEventListener("click", () => {
-      toast("已退出登录（演示）", "ok");
-      setTimeout(() => location.href = "login.html", 700);
+      if (window.Cloud && window.Cloud.isReady && window.Cloud.isReady()) {
+        lo.disabled = true; lo.textContent = "退出中…";
+        window.Cloud.signOut().then(() => { location.href = "login.html"; });
+      } else {
+        toast("已退出登录（演示）", "ok");
+        setTimeout(() => location.href = "login.html", 700);
+      }
     });
   }
   document.readyState === "loading"
