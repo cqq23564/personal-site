@@ -260,7 +260,7 @@
 
       /* ---------- 加载 ---------- */
       async function loadAll() {
-        if (!C.isReady()) { showNotice("当前为演示模式：看板实时数据需在 WorkBuddy 托管域名使用。", true); return; }
+        if (!C.isReady()) { showNotice("当前站点为静态镜像，看板实时数据需在 WorkBuddy 托管域名使用。", true); return; }
         if (!C.isLoggedIn()) {
           showNotice('看板数据需 <a href="login.html?next=dashboard.html" style="color:inherit;text-decoration:underline">登录</a> 后查看（云端数据仅对登录用户开放）。', true);
           return;

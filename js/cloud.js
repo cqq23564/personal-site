@@ -4,7 +4,7 @@
  *       SDK CDN：@tencent-ai/workbuddy-cloud-sdk@dev（window.WorkBuddyCloud）
  *
  * 域名边界：云服务按 Origin 精确匹配，仅在 WorkBuddy 托管域名下可用。
- * 其他域名（GitHub Pages / Cloudflare Pages / localhost）自动进入演示模式：
+ * 其他域名（GitHub Pages / Cloudflare Pages / localhost）自动进入静态镜像模式：
  * 页面顶部显示明确提示，不伪造登录态、不静默失败。
  * ===================================================================== */
 (function () {
@@ -240,6 +240,7 @@
     try {
       var c = await cloud.database.from(name).insert(data).select();
       if (c && c.error) return { error: c.error };
+      emit();
       return { data: (c && c.data && c.data[0]) || null };
     } catch (e) { return { error: { message: "网络异常，保存失败" } }; }
   }
@@ -254,6 +255,7 @@
       if (u && u.error) return { error: u.error };
       var rows = (u && u.data) || [];
       if (!rows.length) return { error: { message: "操作失败：没有权限（仅管理员可修改）或记录不存在" } };
+      emit();
       return { data: rows[0] };
     } catch (e) { return { error: { message: "网络异常，操作失败" } }; }
   }
@@ -265,6 +267,7 @@
       if (d && d.error) return { error: d.error };
       var rows = (d && d.data) || [];
       if (!rows.length) return { error: { message: "删除失败：权限不足" } };
+      emit();
       return { data: rows };
     } catch (e) { return { error: { message: "网络异常，删除失败" } }; }
   }
@@ -323,7 +326,7 @@
     var r = await cloud.auth.getSession();
     if (!r || r.error || !r.data) return { error: { message: "登录已过期，请重新登录" } };
     var data = {};
-    ["pname", "pkey", "pvalue", "unit", "pgroup", "remark"].forEach(function (k) {
+    ["pname", "pkey", "pvalue", "unit", "pgroup", "remark", "ptarget"].forEach(function (k) {
       if (row[k] !== undefined) data[k] = row[k];
     });
     data.updated_at = nowISO();
@@ -359,33 +362,59 @@
     } catch (e) { return { error: { message: "网络异常，删除失败" } }; }
   }
 
+  /** 把参数值写到元素上（数字动画 / 换行 / 纯文本，全部转义防注入） */
+  function setParamValue(el, v, allowHtml) {
+    v = String(v == null ? "" : v);
+    if (el.hasAttribute("data-count")) {
+      var num = v.replace(/[^\d.-]/g, "");
+      el.setAttribute("data-count", num);
+      if (window.App && typeof window.App.animateCount === "function") window.App.animateCount(el);
+      else el.textContent = Number(num).toLocaleString("zh-CN");
+    } else if (allowHtml && v.indexOf("\n") > -1) {
+      el.innerHTML = v.split("\n").map(function (s) {
+        return s.replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }).join("<br>");
+    } else {
+      el.textContent = v;
+    }
+    /* 进度条联动：元素带 data-param-width 时把数值同步到所在行的进度条宽度 */
+    if (el.hasAttribute("data-param-width")) {
+      var sel = el.getAttribute("data-param-width");
+      var host = sel ? document.querySelector(sel) : (el.closest ? el.closest(".skill-row") : null);
+      var bar = host && host.querySelector ? host.querySelector(".progress i") : null;
+      if (bar) bar.style.width = (v.replace(/[^\d.]/g, "") || "0") + "%";
+    }
+  }
+
   /**
-   * 首页数据联动：把 site_params 中 home.* 参数应用到页面 [data-param] 元素。
-   * 仅 index.html 挂了钩；未登录 / 无对应参数时保留页面默认值，不静默改写。
+   * 全站文案联动（真实数据，无需改代码）：
+   * 1) 页面 [data-param] 元素按 pkey 取值；
+   * 2) 参数自带 ptarget（CSS 选择器）时，把值写到匹配元素——管理员新增参数即可改任意文案。
+   * 未登录 / 无对应参数时保留页面默认值，不静默改写。
    */
   async function applyHomeParams() {
     if (!state.ready || !state.user) return;
-    if (!document.querySelector("[data-param]")) return;
     var res = homeParamsCache ? { data: homeParamsCache } : await listParams();
     if (!res || res.error) return;
+    var list = res.data || [];
     var map = {};
-    (res.data || []).forEach(function (p) { map[p.pkey] = p.pvalue; });
+    list.forEach(function (p) { map[p.pkey] = p.pvalue; });
     document.querySelectorAll("[data-param]").forEach(function (el) {
       var k = el.getAttribute("data-param");
       var v = map[k];
       if (v === undefined || v === null || v === "") return;
-      v = String(v);
-      if (el.hasAttribute("data-count")) {
-        var num = v.replace(/[^\d.-]/g, "");
-        el.setAttribute("data-count", num);
-        /* 重新播放一次数字动画到新值（main.js 的 animateCount 从 0 计到 target） */
-        if (window.App && typeof window.App.animateCount === "function") window.App.animateCount(el);
-        else el.textContent = Number(num).toLocaleString("zh-CN");
-      } else if (k === "home.hero.desc") {
-        el.innerHTML = v.replace(/\n/g, "<br>");
-      } else {
-        el.textContent = v;
-      }
+      setParamValue(el, v, k === "home.hero.desc" || k === "home.about.intro" || k === "home.video.desc");
+    });
+    /* 自定义选择器绑定：新增参数可改页面任意元素，保存后立即生效 */
+    list.forEach(function (p) {
+      var sel = (p.ptarget || "").trim();
+      var v = p.pvalue;
+      if (!sel || v === undefined || v === null || v === "") return;
+      try {
+        document.querySelectorAll(sel).forEach(function (el) { setParamValue(el, v, true); });
+      } catch (e) { /* 选择器非法时忽略，不影响页面 */ }
     });
   }
   listeners.push(applyHomeParams);
@@ -515,11 +544,12 @@
   function isReady() { return state.ready; }
   function isLoggedIn() { return !!(state.ready && state.user); }
   function isAdmin() { return !!(state.profile && state.profile.role === "admin"); }
+  function isSuperAdmin() { return !!(state.profile && (state.profile.is_super === true || state.profile.role === "admin")); }
   function profileStatus() { return state.profile ? state.profile.status : ""; }
   var STATUS_TEXT = { pending: "待审核", active: "正常", disabled: "已禁用", rejected: "已驳回" };
-  var ROLE_TEXT = { admin: "系统管理员", user: "普通用户" };
+  var ROLE_TEXT = { admin: "超级管理员", user: "普通用户" };
 
-  /* ---------- 演示模式提示条 ---------- */
+  /* ---------- 静态镜像提示条 ---------- */
   function mountBanner() {
     if (state.ready || document.getElementById("cloudFallbackBanner")) return;
     var bar = document.createElement("div");
@@ -528,7 +558,7 @@
       "background:#b45309", "color:#fff", "text-align:center",
       "padding:8px 14px", "font-size:13px", "line-height:1.5"
     ].join(";"));
-    bar.innerHTML = "⚠️ 当前为<b>演示模式</b>：真实用户系统（登录/注册/资料/用户管理）仅在 WorkBuddy 托管域名可用 → " +
+    bar.innerHTML = "⚠️ 当前为<b>静态镜像</b>：真实用户系统（登录/注册/资料/用户管理）仅在 WorkBuddy 托管域名可用 → " +
       '<a href="' + HOSTED_URL + '" target="_blank" style="color:#fff;text-decoration:underline">打开可用版本</a>';
     document.body.insertBefore(bar, document.body.firstChild);
   }
@@ -576,12 +606,127 @@
     }
     var hero = document.getElementById("heroName");
     if (hero) hero.textContent = name || "林运维";
-    /* 标题前缀替换（仅替换一次，避免重复拼接） */
-    if (name && document.title.indexOf("林运维") === 0) {
-      document.title = name + document.title.slice(3);
+    /* 页脚品牌与版权同样跟随真实账号（兼容所有页面） */
+    var fbrand = document.querySelector(".footer-brand");
+    if (fbrand) {
+      var flogo = fbrand.querySelector(".nav-logo");
+      if (flogo) flogo.textContent = name ? name.charAt(0) : "林";
+      var ftext = name ? name + " · 个人主页" : DEFAULT_BRAND;
+      var fspan = fbrand.querySelector("[data-site-brand]");
+      if (fspan) fspan.textContent = ftext;
+      else {
+        Array.prototype.slice.call(fbrand.childNodes).forEach(function (n) {
+          if (n !== flogo && n.nodeType === 3) fbrand.removeChild(n);
+        });
+        fbrand.appendChild(document.createTextNode(ftext));
+      }
+    }
+    document.querySelectorAll("[data-site-copyright], .copyright span").forEach(function (s) {
+      if (name && s.textContent.indexOf("林运维") > -1) {
+        s.textContent = s.textContent.replace("林运维 · 个人主页", name + " · 个人主页");
+      }
+    });
+    /* 标题中的站点名跟随真实账号（任意位置，替换后不再含默认名，避免重复拼接） */
+    if (name && document.title.indexOf("林运维") > -1) {
+      document.title = document.title.replace(/林运维\s*(?:·\s*个人主页)?/g, function (m) {
+        return m.indexOf("·") > -1 ? name + " · 个人主页" : name;
+      });
     }
   }
   listeners.push(mountIdentity);
+
+  /* ---------- 云端菜单 / 按钮：导航与首页按钮区实时渲染 ---------- */
+  function menuEsc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  /** 云端路径 /dashboard、/index#about -> 站内可点链接 */
+  function menuHref(path) {
+    var p = String(path || "").trim();
+    if (!p) return "#";
+    if (p.charAt(0) === "#") return p;
+    p = p.replace(/^\//, "");
+    var hash = "";
+    var hi = p.indexOf("#");
+    if (hi > -1) { hash = p.slice(hi); p = p.slice(0, hi); }
+    if (!p) return "#";
+    if (!/\.html$/i.test(p)) p = p + ".html";
+    return p + hash;
+  }
+  function currentPage() {
+    return (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  }
+  function renderMenus(list) {
+    var nav = document.querySelector(".nav-links");
+    var hero = document.getElementById("heroBtns");
+    var cur = currentPage();
+    var tops = (list || []).filter(function (m) {
+      return m.parent_id === 0 && m.visible && (m.mtype === "目录" || m.mtype === "菜单");
+    }).sort(function (a, b) { return (a.sort_no || 0) - (b.sort_no || 0); });
+    if (nav) {
+      var html = tops.map(function (m) {
+        var href = menuHref(m.path);
+        var kids = [];
+        if (m.mtype === "目录") {
+          kids = (list || []).filter(function (x) {
+            return x.parent_id === m.id && x.visible && x.mtype === "菜单";
+          }).sort(function (a, b) { return (a.sort_no || 0) - (b.sort_no || 0); });
+          if (kids.length) href = menuHref(kids[0].path);
+        }
+        var hit = href.indexOf("#") === -1 && href.toLowerCase() === cur;
+        if (m.mtype === "目录" && kids.length) {
+          hit = kids.some(function (k) { return menuHref(k.path).toLowerCase() === cur; });
+        }
+        return '<a href="' + menuEsc(href) + '"' + (hit ? ' class="active"' : "") + ">" + menuEsc(m.name) + "</a>";
+      }).join("");
+      if (html) nav.innerHTML = html;
+    }
+    if (hero) {
+      var btns = (list || []).filter(function (m) {
+        return m.mtype === "按钮" && m.visible;
+      }).sort(function (a, b) { return (a.sort_no || 0) - (b.sort_no || 0); });
+      if (btns.length) {
+        hero.innerHTML = btns.map(function (m, i) {
+          return '<a class="btn ' + (i === 0 ? "btn-primary" : "btn-line") +
+            ' btn-lg" href="' + menuEsc(menuHref(m.path)) + '">' +
+            (m.icon ? menuEsc(m.icon) + " " : "") + menuEsc(m.name) + "</a>";
+        }).join("");
+      }
+    }
+  }
+  /** 项目展示：菜单表里 mtype='项目' 的记录渲染成首页卡片，可后台自由增删 */
+  function renderProjects(list) {
+    var grid = document.getElementById("projectGrid");
+    if (!grid) return;
+    var items = (list || []).filter(function (m) {
+      return m.mtype === "项目" && m.visible;
+    }).sort(function (a, b) { return (a.sort_no || 0) - (b.sort_no || 0); });
+    if (!items.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ico">📦</div>还没有项目，到「系统管理 → 菜单管理」新增「项目」类型记录即可显示</div>';
+      return;
+    }
+    grid.innerHTML = items.map(function (m) {
+      return '<a class="card project-card" href="' + menuEsc(menuHref(m.path)) + '"><div class="card-bd">' +
+        '<div class="project-tag">' + menuEsc(m.icon || "📌 项目") + "</div>" +
+        "<h3>" + menuEsc(m.name) + "</h3>" +
+        '<p class="text-2 mt-8">' + menuEsc(m.summary || "暂无简介，可在菜单管理中补充") + "</p>" +
+        '<span class="btn-link project-more">查看项目 →</span></div></a>';
+    }).join("");
+  }
+  /** 菜单管理里增删改/显隐后由 emit 自动重渲染，无需刷新页面 */
+  async function mountMenus() {
+    var nav = document.querySelector(".nav-links");
+    var hero = document.getElementById("heroBtns");
+    var grid = document.getElementById("projectGrid");
+    if (!nav && !hero && !grid) return;
+    if (!state.ready || !state.user) return; /* 未登录 / 静态镜像保留页面自带导航 */
+    var res = await tableList("site_menus", { order: "sort_no", asc: true });
+    if (res.error || !res.data || !res.data.length) return;
+    renderMenus(res.data);
+    renderProjects(res.data);
+  }
+  listeners.push(mountMenus);
 
   /* ---------- 对外接口 ---------- */
   var Cloud = {
@@ -593,6 +738,7 @@
     unavailableText: unavailableText,
     isLoggedIn: isLoggedIn,
     isAdmin: isAdmin,
+    isSuperAdmin: isSuperAdmin,
     profileStatus: profileStatus,
     /** 底层 SDK 客户端（storage 等模块用）；未就绪返回 null */
     client: function () { return state.ready ? cloud : null; },
@@ -613,6 +759,7 @@
     saveParam: saveParam,
     deleteParam: deleteParam,
     applyHomeParams: applyHomeParams,
+    mountMenus: mountMenus,
     sendPhoneCode: sendPhoneCode,
     sendEmailCode: sendEmailCode,
     loginWithPhone: loginWithPhone,
@@ -632,5 +779,5 @@
   mountBanner();
   mountNav();
   mountIdentity();
-  restore().then(function () { mountNav(); mountIdentity(); });
+  restore().then(function () { mountNav(); mountIdentity(); mountMenus(); });
 })();

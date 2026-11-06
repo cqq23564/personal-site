@@ -123,9 +123,9 @@
         </div>
       </div>
 
-      <!-- 我的文件（演示数据） -->
+      <!-- 我的文件（云端真实数据） -->
       <div data-tab-pane="files" class="hidden">
-        <div class="card"><div class="card-hd">我上传的文件 <span class="sub">演示数据 · 最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><div class="card-hd">我上传的文件 <span class="sub">云端实时数据 · 最近 10 条</span></div><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>文件名</th><th>大小</th><th>时间</th><th class="num">下载次数</th><th>操作</th></tr></thead>
             <tbody id="myFilesBody"></tbody>
@@ -133,9 +133,9 @@
         </div></div>
       </div>
 
-      <!-- 操作记录（演示数据） -->
+      <!-- 操作记录（云端真实数据） -->
       <div data-tab-pane="logs" class="hidden">
-        <div class="card"><div class="card-hd">我的操作记录 <span class="sub">演示数据 · 最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><div class="card-hd">我的操作记录 <span class="sub">云端实时数据 · 最近 10 条</span></div><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>时间</th><th>模块</th><th>动作</th><th>IP</th><th>结果</th></tr></thead>
             <tbody id="myLogsBody"></tbody>
@@ -241,29 +241,107 @@
         C.signOut().then(function () { location.href = "login.html"; });
       });
 
-      /* 演示数据：我的文件 / 操作记录 */
-      var M = window.MOCK;
-      $("#myFilesBody").innerHTML = M.files.slice(0, 10).map(function (f) {
-        return "<tr><td>" + App.esc(f.name) + "</td><td>" + App.esc(f.size) + "</td><td>" + App.esc(f.time) + "</td>" +
-          '<td class="num">' + f.downloads + "</td>" +
-          '<td><button class="btn-link" onclick="App.toast(\'开始下载 ' + App.esc(f.name) + "','ok')\">下载</button></td></tr>";
-      }).join("");
-      var myName = (C.state.profile && C.state.profile.name) || "";
-      $("#myLogsBody").innerHTML = M.logs.filter(function (l) { return !myName || l.user === myName || l.user === "系统调度"; }).slice(0, 10).map(function (l) {
-        return '<tr><td class="mono">' + l.time + "</td><td>" + l.module + "</td><td>" + l.action + "</td><td>" + l.ip + "</td>" +
-          '<td><span class="badge ' + (l.result === "成功" ? "badge-ok" : "badge-err") + '">' + l.result + "</span></td></tr>";
-      }).join("");
+      /* ---------- 我的文件 / 操作记录：云端真实数据 ---------- */
+      var myFiles = [];
 
-      /* 云服务就绪后加载真实资料 */
+      function emptyRow(cols, text) {
+        return '<tr><td colspan="' + cols + '" class="text-3" style="text-align:center;padding:22px">' + App.esc(text) + "</td></tr>";
+      }
+      function fmtShort(t) { return t ? String(t).slice(0, 16).replace("T", " ") : "—"; }
+
+      /* 下载：台账记录无云端对象时明确提示，有 storage_path 时签发真实链接 */
+      async function downloadMyFile(f) {
+        var name = f.name || "未命名文件";
+        if (!f.storage_path) {
+          App.toast("该记录为初始台账，无云端实体文件；可在「文件管理」上传后下载", "warn");
+          return;
+        }
+        var client = C.client && C.client();
+        if (!client) { App.toast("云服务未就绪，无法下载", "err"); return; }
+        var res = await client.storage.createSignedUrls([f.storage_path], 300);
+        var arr = (res && res.data) || [];
+        var url = (arr[0] || {}).signedUrl || (arr[0] || {}).signedURL || "";
+        if (!url) { App.toast("下载链接获取失败，请稍后重试", "err"); return; }
+        var a = document.createElement("a");
+        a.href = url; a.download = name; a.target = "_blank"; a.rel = "noopener";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        C.logAction("个人中心", "下载文件", name);
+        App.toast("开始下载 " + name, "ok");
+      }
+      $("#myFilesBody").addEventListener("click", function (e) {
+        var b = e.target.closest && e.target.closest("[data-dl]");
+        if (!b) return;
+        var f = myFiles[Number(b.getAttribute("data-dl"))];
+        if (f) downloadMyFile(f);
+      });
+
+      async function loadMyData() {
+        if (!C.isReady()) {
+          $("#myFilesBody").innerHTML = emptyRow(5, "静态镜像：真实文件需在 WorkBuddy 托管域名查看");
+          $("#myLogsBody").innerHTML = emptyRow(5, "静态镜像：真实操作记录需在 WorkBuddy 托管域名查看");
+          return;
+        }
+        if (!C.isLoggedIn()) {
+          $("#myFilesBody").innerHTML = emptyRow(5, "登录后查看我上传的文件");
+          $("#myLogsBody").innerHTML = emptyRow(5, "登录后查看我的操作记录");
+          return;
+        }
+        var p = C.state.profile || {};
+        var myName = (p.nickname || p.name || "").trim();
+
+        /* 我的文件：site_files 最新 10 条 */
+        var fr = await C.tableList("site_files", { order: "created_at", asc: false });
+        if (fr.error) {
+          $("#myFilesBody").innerHTML = emptyRow(5, "读取失败：" + fr.error.message);
+        } else {
+          myFiles = (fr.data || []).slice(0, 10);
+          $("#myFilesBody").innerHTML = myFiles.length ? myFiles.map(function (f, i) {
+            var nm = f.name || "未命名";
+            var real = !!f.storage_path;
+            return "<tr><td>" + App.esc(nm) + (real ? "" : ' <span class="badge badge-gray plain" style="font-size:10px">台账</span>') + "</td>" +
+              "<td>" + App.esc(f.size_txt || "—") + "</td>" +
+              '<td class="mono text-2">' + App.esc(fmtShort(f.created_at)) + "</td>" +
+              '<td class="num">' + (f.downloads || 0) + "</td>" +
+              '<td><button class="btn-link" data-dl="' + i + '">下载</button></td></tr>';
+          }).join("") : emptyRow(5, "还没有上传文件，去「文件管理」上传后这里会实时出现");
+        }
+
+        /* 我的操作记录：site_logs 按当前用户过滤，最新 10 条 */
+        var lr = await C.tableList("site_logs", { order: "happened_at", asc: false });
+        if (lr.error) {
+          $("#myLogsBody").innerHTML = emptyRow(5, "读取失败：" + lr.error.message);
+        } else {
+          var all = lr.data || [];
+          var mine = all.filter(function (l) {
+            var u = String(l.user_name || "");
+            return !myName || !u || u === myName || u === "系统调度" || u === "系统" || u === "用户";
+          }).slice(0, 10);
+          $("#myLogsBody").innerHTML = mine.length ? mine.map(function (l) {
+            var ok = String(l.result || "成功") !== "失败";
+            return '<tr><td class="mono text-2">' + App.esc(fmtShort(l.happened_at || l.created_at)) + "</td>" +
+              "<td>" + App.esc(l.module || "—") + "</td>" +
+              "<td>" + App.esc(l.action || "—") + "</td>" +
+              '<td class="mono text-2">' + App.esc(l.ip || "—") + "</td>" +
+              '<td><span class="badge ' + (ok ? "badge-ok" : "badge-err") + '">' + App.esc(l.result || "成功") + "</span></td></tr>";
+          }).join("") : emptyRow(5, "暂无属于你的操作记录，操作任意模块后这里会实时出现");
+        }
+      }
+
+      /* 云服务就绪后加载真实资料与真实数据 */
       if (C.isReady()) {
         C.restore().then(function () {
           if (!C.isLoggedIn()) { location.href = "login.html?next=profile.html"; return; }
           render();
+          loadMyData();
         });
       } else {
-        tip("当前为演示模式：真实资料需在 WorkBuddy 托管域名查看。", false);
+        tip("当前站点为静态镜像，真实资料需在 WorkBuddy 托管域名查看。", false);
+        loadMyData();
       }
-      C.onChange(function () { if (C.isReady()) render(); });
+      C.onChange(function () {
+        if (C.isReady()) { render(); loadMyData(); }
+        else loadMyData();
+      });
     })();
   </script>
 </body>

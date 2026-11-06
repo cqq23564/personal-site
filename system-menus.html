@@ -66,9 +66,9 @@
       <div class="page-head">
         <div>
           <div class="page-title">📑 菜单管理</div>
-          <div class="page-desc">维护系统菜单、目录与按钮权限，支持显示/隐藏与排序</div>
+          <div class="page-desc">维护导航菜单、首页按钮与项目卡片，增改删后全站实时生效</div>
         </div>
-        <button class="btn btn-primary hidden" id="addMenuBtn">＋ 新增菜单</button>
+        <button class="btn btn-primary hidden" id="addMenuBtn">＋ 新增菜单 / 项目 / 按钮</button>
       </div>
       <div class="page-notice" id="menuNotice" style="display:none"></div>
 
@@ -80,6 +80,7 @@
             <option value="目录">目录</option>
             <option value="菜单">菜单</option>
             <option value="按钮">按钮</option>
+            <option value="项目">项目</option>
           </select>
           <select class="select" id="menuVisible">
             <option value="">显示状态</option>
@@ -93,7 +94,7 @@
           <div class="table-wrap" id="menuTable"></div>
           <div class="table-footer">
             <span class="total"></span>
-            <span class="text-3" style="font-size:12.5px">💡 子菜单通过「上级菜单」列归属，类型为「按钮」的项不展示在导航中</span>
+            <span class="text-3" style="font-size:12.5px">💡 子菜单用「上级菜单」归属；「按钮」渲染到首页按钮区，「项目」渲染到首页项目展示区</span>
           </div>
         </div>
       </div>
@@ -124,15 +125,6 @@
       var allRows = [];
       var collapsed = false;
 
-      /* 云表字段 -> 页面展示字段 */
-      function toRows(list) {
-        return (list || []).map(function (m) {
-          return {
-            id: m.id, name: m.name, parent: m.parent_id, path: m.path,
-            icon: m.icon, sort: m.sort_no, visible: m.visible, type: m.mtype
-          };
-        });
-      }
       function nameOf(id) {
         var m = allRows.find(function (x) { return x.id === id; });
         return m ? m.name : "顶级菜单";
@@ -142,15 +134,15 @@
         el: "#menuTable", data: [], pageSize: 10,
         keywordEl: "#menuKw", searchKeys: ["name", "path"],
         filters: [
-          { key: "type", el: "#menuType" },
+          { key: "mtype", el: "#menuType" },
           { key: "visible", el: "#menuVisible" }
         ],
         columns: [
-          { key: "name", title: "菜单名称", sortable: true, render: (v, r) => r.parent === 0 ? `<b>${r.icon || "📁"} ${App.esc(v)}</b>` : `<span style="padding-left:22px">↳ ${r.icon || "📄"} ${App.esc(v)}</span>` },
-          { key: "type", title: "类型", sortable: true, render: v => `<span class="badge ${v === "目录" ? "badge-info" : v === "菜单" ? "badge-ok" : "badge-gray"}">${v}</span>` },
-          { key: "parent", title: "上级菜单", render: v => v === 0 ? '<span class="text-3">—</span>' : App.esc(nameOf(v)) },
+          { key: "name", title: "菜单名称", sortable: true, render: (v, r) => r.parent_id === 0 ? `<b>${r.icon || "📁"} ${App.esc(v)}</b>` : `<span style="padding-left:22px">↳ ${r.icon || "📄"} ${App.esc(v)}</span>` },
+          { key: "mtype", title: "类型", sortable: true, render: v => `<span class="badge ${v === "目录" ? "badge-info" : v === "菜单" ? "badge-ok" : v === "项目" ? "badge-warn" : "badge-gray"}">${App.esc(v)}</span>` },
+          { key: "parent_id", title: "上级菜单", render: v => v === 0 ? '<span class="text-3">—</span>' : App.esc(nameOf(v)) },
           { key: "path", title: "路由地址", render: v => `<span class="mono">${App.esc(v)}</span>` },
-          { key: "sort", title: "排序", sortable: true, align: "right" },
+          { key: "sort_no", title: "排序", sortable: true, align: "right" },
           {
             key: "visible", title: "状态", sortable: true, render: v => v
               ? '<span class="badge badge-ok">显示中</span>'
@@ -174,19 +166,20 @@
         editFn: "editMenu", delFn: "delMenu", label: r => r.name,
         fields: [
           { key: "name", label: "菜单名称", required: true, ph: "如：用户管理" },
-          { key: "mtype", label: "菜单类型", type: "select", options: ["目录", "菜单", "按钮"], required: true },
+          { key: "mtype", label: "菜单类型", type: "select", options: ["目录", "菜单", "按钮", "项目"], required: true },
           {
             key: "parent_id", label: "上级菜单", type: "select", numeric: true, def: 0,
             options: function (row) {
               var list = [{ value: 0, label: "顶级菜单" }];
               allRows.forEach(function (m) {
-                if (m.mtype !== "按钮" && (!row || m.id !== row.id)) list.push({ value: m.id, label: m.name });
+                if (m.mtype !== "按钮" && m.mtype !== "项目" && (!row || m.id !== row.id)) list.push({ value: m.id, label: m.name });
               });
               return list;
             }
           },
           { key: "path", label: "路由地址", ph: "/system-users" },
-          { key: "icon", label: "图标", ph: "输入 emoji，如 📑" },
+          { key: "icon", label: "图标 / 标签", ph: "输入 emoji，如 📑；项目类型可填「🚀 数据平台」" },
+          { key: "summary", label: "项目简介", type: "textarea", ph: "仅「项目」类型使用：填写后显示在首页项目卡片" },
           { key: "sort_no", label: "排序号", type: "number", def: 1 },
           { key: "visible", label: "显示", type: "checkbox", boxLabel: "在导航中显示", def: true }
         ],

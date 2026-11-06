@@ -631,3 +631,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---------- 项目展示卡片（云端菜单表 mtype=项目 驱动） ---------- */
+.project-card { display: block; text-decoration: none; color: inherit; transition: transform .2s, box-shadow .2s; }
+.project-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(15, 23, 42, .12); }
+.project-card .card-bd { padding: 22px; }
+.project-tag { display: inline-block; font-size: 12px; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary); margin-bottom: 12px; }
+.project-card h3 { font-size: 17px; margin: 0 0 8px; }
+.project-card .text-2 { font-size: 13.5px; line-height: 1.7; min-height: 48px; }
+.project-more { display: inline-block; margin-top: 12px; font-size: 13px; }

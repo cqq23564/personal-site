@@ -172,7 +172,7 @@ window.AdminCrud = (function () {
 
     /* ---------- 加载与守卫 ---------- */
     async function load() {
-      if (!C.isReady()) { showNotice("当前为演示模式：" + cfg.entity + "数据需在 WorkBuddy 托管域名使用。", true); return; }
+      if (!C.isReady()) { showNotice("当前站点为静态镜像，" + cfg.entity + "数据需在 WorkBuddy 托管域名使用。", true); return; }
       if (!C.isLoggedIn()) {
         var page = location.pathname.split("/").pop() || "index.html";
         showNotice('请先 <a href="login.html?next=' + page + '" style="color:inherit;text-decoration:underline">登录</a> 后使用。', true);

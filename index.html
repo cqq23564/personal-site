@@ -43,9 +43,9 @@
   <section class="hero">
     <div class="hero-bg"><img src="assets/img/banner1.png" alt="山间云海"></div>
     <div class="hero-inner">
-      <h1>你好，我是 <span class="grad" id="heroName">林运维</span><br>园区数字化建设者</h1>
+      <h1><span data-param="home.hero.greeting">你好，我是 </span><span class="grad" id="heroName">林运维</span><br><span data-param="home.hero.title">园区数字化建设者</span></h1>
       <p id="heroDesc" data-param="home.hero.desc">专注进出口场站数字化：车辆在场监管 · 卡口核放 · 每日报表 · 数据可视化。<br>把复杂的通关场站数据，变成一眼看懂的驾驶舱。</p>
-      <div class="hero-btns">
+      <div class="hero-btns" id="heroBtns">
         <a class="btn btn-primary btn-lg" href="dashboard.html">进入数据看板 →</a>
         <a class="btn btn-line btn-lg" href="index.html#message">给我留言</a>
       </div>
@@ -61,21 +61,21 @@
   <!-- ============ 轮播图 ============ -->
   <section class="section-tight" id="dongtai">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title" style="font-size:20px">近期动态</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" style="font-size:20px" data-param="home.section.dongtai">近期动态</h2></div>
       <div class="carousel reveal">
         <div class="carousel-viewport">
           <div class="carousel-track">
             <div class="slide">
               <img src="assets/img/banner1.png" alt="云海日出">
-              <div class="slide-cap"><h3>驾驶舱 2.0 上线</h3><p>入区 / 出卡 / 滞留 / 核放四类指标一屏总览，日报自动生成</p></div>
+              <div class="slide-cap"><h3 data-param="home.slide.1.title">驾驶舱 2.0 上线</h3><p data-param="home.slide.1.desc">入区 / 出卡 / 滞留 / 核放四类指标一屏总览，日报自动生成</p></div>
             </div>
             <div class="slide">
               <img src="assets/img/banner2.png" alt="城市夜景">
-              <div class="slide-cap"><h3>卡口核放自动化</h3><p>一线放行（过驳）抬杆记录自动归档，异常实时预警</p></div>
+              <div class="slide-cap"><h3 data-param="home.slide.2.title">卡口核放自动化</h3><p data-param="home.slide.2.desc">一线放行（过驳）抬杆记录自动归档，异常实时预警</p></div>
             </div>
             <div class="slide">
               <img src="assets/img/banner3.png" alt="科技背景">
-              <div class="slide-cap"><h3>数据中台改造</h3><p>7 项每日查询标准化落库，字段映射可配置</p></div>
+              <div class="slide-cap"><h3 data-param="home.slide.3.title">数据中台改造</h3><p data-param="home.slide.3.desc">7 项每日查询标准化落库，字段映射可配置</p></div>
             </div>
           </div>
         </div>
@@ -89,15 +89,15 @@
   <!-- ============ 关于我 ============ -->
   <section class="section" id="about">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">关于我</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.about">关于我</h2></div>
       <div class="about-grid reveal">
         <div class="about-photo">
           <img src="assets/img/gallery3.png" alt="工作照">
           <div class="exp"><b data-param="home.about.exp">9</b><span>年行业经验</span></div>
         </div>
         <div>
-          <h3 style="font-size:19px">把场站数据「管起来、用起来」</h3>
-          <p class="text-2 mt-8">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
+          <h3 style="font-size:19px" data-param="home.about.headline">把场站数据「管起来、用起来」</h3>
+          <p class="text-2 mt-8" data-param="home.about.intro">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
           <ul class="info-list">
             <li><span class="k">姓名</span><span class="v" data-param="home.about.name">林运维</span></li>
             <li><span class="k">岗位</span><span class="v" data-param="home.about.role">系统管理员</span></li>
@@ -115,22 +115,52 @@
     </div>
   </section>
 
+  <!-- ============ 项目展示（云端可增删） ============ -->
+  <section class="section" id="projects">
+    <div class="wrap-wide">
+      <div class="title-bar reveal">
+        <h2 class="section-title" data-param="home.section.projects">项目展示</h2>
+        <span class="section-sub" data-param="home.projects.sub">在「系统管理 → 菜单管理」新增项目，保存后这里实时出现</span>
+      </div>
+      <div class="grid-3 reveal" id="projectGrid">
+        <a class="card project-card" href="dashboard.html"><div class="card-bd">
+          <div class="project-tag">📊 数据平台</div>
+          <h3>园区数字化驾驶舱</h3>
+          <p class="text-2 mt-8">入区/出卡/滞留/核放四类指标一屏总览，日报自动生成与导出。</p>
+          <span class="btn-link project-more">查看项目 →</span>
+        </div></a>
+        <a class="card project-card" href="query-checkpoint.html"><div class="card-bd">
+          <div class="project-tag">🚧 业务系统</div>
+          <h3>卡口核放自动化</h3>
+          <p class="text-2 mt-8">一线放行抬杆记录自动归档，异常实时预警与批量处理。</p>
+          <span class="btn-link project-more">查看项目 →</span>
+        </div></a>
+        <a class="card project-card" href="query-records.html"><div class="card-bd">
+          <div class="project-tag">🗂️ 数据治理</div>
+          <h3>每日查询中台</h3>
+          <p class="text-2 mt-8">7 项每日查询标准化落库，字段映射可配置，报表一键导出。</p>
+          <span class="btn-link project-more">查看项目 →</span>
+        </div></a>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ 技能 ============ -->
   <section class="section" style="background:var(--surface)">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">技能矩阵</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.skill">技能矩阵</h2></div>
       <div class="grid-2 reveal">
         <div class="card"><div class="card-bd">
-          <div class="skill-row"><span class="name">数据可视化</span><div class="progress"><i style="width:92%"></i></div><span class="val">92%</span></div>
-          <div class="skill-row"><span class="name">前端开发</span><div class="progress"><i style="width:88%"></i></div><span class="val">88%</span></div>
-          <div class="skill-row"><span class="name">通关业务</span><div class="progress"><i style="width:95%"></i></div><span class="val">95%</span></div>
-          <div class="skill-row"><span class="name">数据治理</span><div class="progress"><i style="width:85%"></i></div><span class="val">85%</span></div>
+          <div class="skill-row"><span class="name">数据可视化</span><div class="progress"><i style="width:92%"></i></div><span class="val" data-param="home.skill.dataviz" data-param-width>92%</span></div>
+          <div class="skill-row"><span class="name">前端开发</span><div class="progress"><i style="width:88%"></i></div><span class="val" data-param="home.skill.frontend" data-param-width>88%</span></div>
+          <div class="skill-row"><span class="name">通关业务</span><div class="progress"><i style="width:95%"></i></div><span class="val" data-param="home.skill.customs" data-param-width>95%</span></div>
+          <div class="skill-row"><span class="name">数据治理</span><div class="progress"><i style="width:85%"></i></div><span class="val" data-param="home.skill.governance" data-param-width>85%</span></div>
         </div></div>
         <div class="card"><div class="card-bd">
-          <div class="skill-row"><span class="name">系统运维</span><div class="progress"><i style="width:80%"></i></div><span class="val">80%</span></div>
-          <div class="skill-row"><span class="name">自动化脚本</span><div class="progress"><i style="width:90%"></i></div><span class="val">90%</span></div>
-          <div class="skill-row"><span class="name">项目管理</span><div class="progress"><i style="width:76%"></i></div><span class="val">76%</span></div>
-          <div class="skill-row"><span class="name">培训分享</span><div class="progress"><i style="width:82%"></i></div><span class="val">82%</span></div>
+          <div class="skill-row"><span class="name">系统运维</span><div class="progress"><i style="width:80%"></i></div><span class="val" data-param="home.skill.ops" data-param-width>80%</span></div>
+          <div class="skill-row"><span class="name">自动化脚本</span><div class="progress"><i style="width:90%"></i></div><span class="val" data-param="home.skill.script" data-param-width>90%</span></div>
+          <div class="skill-row"><span class="name">项目管理</span><div class="progress"><i style="width:76%"></i></div><span class="val" data-param="home.skill.pm" data-param-width>76%</span></div>
+          <div class="skill-row"><span class="name">培训分享</span><div class="progress"><i style="width:82%"></i></div><span class="val" data-param="home.skill.training" data-param-width>82%</span></div>
         </div></div>
       </div>
     </div>
@@ -140,7 +170,7 @@
   <section class="section" id="gallery">
     <div class="wrap-wide">
       <div class="title-bar reveal">
-        <h2 class="section-title">生活相册</h2><span class="section-sub">工作之外，也爱记录路上的风景</span>
+        <h2 class="section-title" data-param="home.section.gallery">生活相册</h2><span class="section-sub" data-param="home.gallery.sub">工作之外，也爱记录路上的风景</span>
         <span id="galleryActions" class="hidden" style="margin-left:auto">
           <button class="btn btn-primary btn-sm" id="galleryUploadBtn">📷 上传照片 / 视频</button>
         </span>
@@ -159,19 +189,19 @@
   <!-- ============ 视频 ============ -->
   <section class="section" style="background:var(--surface)">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">视频分享</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.video">视频分享</h2></div>
       <div class="grid-2 reveal">
         <div class="video-card">
           <img class="poster" src="assets/img/banner3.png" alt="视频封面">
           <div class="video-play"><button class="ring" id="playBtn">▶</button></div>
         </div>
         <div>
-          <h3>《园区的一天》纪录短片</h3>
-          <p class="text-2 mt-8">凌晨五点的闸口、上午的查验场、下午的报关大厅——用 3 分钟记录边境场站的日常节奏。视频文件位于 <code class="mono">assets/video/demo.mp4</code>，放入后即可自动播放（当前为演示占位）。</p>
+          <h3 data-param="home.video.title">《园区的一天》纪录短片</h3>
+          <p class="text-2 mt-8" data-param="home.video.desc">凌晨五点的闸口、上午的查验场、下午的报关大厅——用 3 分钟记录边境场站的日常节奏。视频上传到「文件管理」后即可在站内播放。</p>
           <ul class="text-2 mt-16" style="line-height:2">
-            <li>🎬 时长：03:12 · 拍摄于闸口B边小</li>
-            <li>🎵 配乐：原创轻音乐</li>
-            <li>📅 更新：2026-10-28</li>
+            <li data-param="home.video.meta1">🎬 时长：03:12 · 拍摄于闸口B边小</li>
+            <li data-param="home.video.meta2">🎵 配乐：原创轻音乐</li>
+            <li data-param="home.video.meta3">📅 更新：2026-10-28</li>
           </ul>
           <div class="mt-16"><button class="btn btn-line" id="playBtn2">▶ 播放视频</button></div>
         </div>
@@ -182,13 +212,13 @@
   <!-- ============ 时间线 ============ -->
   <section class="section">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">成长经历</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.timeline">成长经历</h2></div>
       <div class="card reveal"><div class="card-bd">
         <div class="timeline">
-          <div class="timeline-item"><div class="timeline-date">2026 - 至今</div><div class="timeline-title">园区运营中心 · 系统管理员</div><div class="timeline-text">负责进出口场站数字化系统建设，主导车辆在场监管、卡口核放、每日报表三条主线从 0 到 1 落地。</div></div>
-          <div class="timeline-item done"><div class="timeline-date">2023 - 2026</div><div class="timeline-title">通关服务部 · 报关专员</div><div class="timeline-text">深耕互市贸易通关实务，累计处理边民申报超 12 万单，推动申报时效平均缩短 38%。</div></div>
-          <div class="timeline-item done"><div class="timeline-date">2021 - 2023</div><div class="timeline-title">某科技公司 · 前端工程师</div><div class="timeline-text">负责数据可视化与中后台系统开发，沉淀了一套可复用的组件与图表体系。</div></div>
-          <div class="timeline-item done"><div class="timeline-date">2017 - 2021</div><div class="timeline-title">大学 · 软件工程</div><div class="timeline-text">主修软件工程，任技术社团负责人，两次省级程序设计竞赛奖项。</div></div>
+          <div class="timeline-item"><div class="timeline-date" data-param="home.timeline.1.date">2026 - 至今</div><div class="timeline-title" data-param="home.timeline.1.title">园区运营中心 · 系统管理员</div><div class="timeline-text" data-param="home.timeline.1.text">负责进出口场站数字化系统建设，主导车辆在场监管、卡口核放、每日报表三条主线从 0 到 1 落地。</div></div>
+          <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.2.date">2023 - 2026</div><div class="timeline-title" data-param="home.timeline.2.title">通关服务部 · 报关专员</div><div class="timeline-text" data-param="home.timeline.2.text">深耕互市贸易通关实务，累计处理边民申报超 12 万单，推动申报时效平均缩短 38%。</div></div>
+          <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.3.date">2021 - 2023</div><div class="timeline-title" data-param="home.timeline.3.title">某科技公司 · 前端工程师</div><div class="timeline-text" data-param="home.timeline.3.text">负责数据可视化与中后台系统开发，沉淀了一套可复用的组件与图表体系。</div></div>
+          <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.4.date">2017 - 2021</div><div class="timeline-title" data-param="home.timeline.4.title">大学 · 软件工程</div><div class="timeline-text" data-param="home.timeline.4.text">主修软件工程，任技术社团负责人，两次省级程序设计竞赛奖项。</div></div>
         </div>
       </div></div>
     </div>
@@ -197,7 +227,7 @@
   <!-- ============ 留言 ============ -->
   <section class="section" id="message" style="background:var(--surface)">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title">留言板</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.message">留言板</h2></div>
       <div class="grid-2 reveal">
         <div class="card"><div class="card-hd">写下你的想法</div><div class="card-bd">
           <form id="msgForm" novalidate>
@@ -258,8 +288,8 @@
     <div class="wrap-wide">
       <div class="footer-grid">
         <div>
-          <div class="footer-brand"><span class="nav-logo">林</span>林运维 · 个人主页</div>
-          <p class="footer-text">园区数字化建设者。把复杂的通关场站数据，变成一眼看懂的驾驶舱。本站为个人作品集 + 工具集，所有数据均为演示数据。</p>
+          <div class="footer-brand"><span class="nav-logo">林</span><span data-site-brand>林运维 · 个人主页</span></div>
+          <p class="footer-text" data-param="home.footer.desc">园区数字化建设者。把复杂的通关场站数据，变成一眼看懂的驾驶舱。本站为个人作品集 + 工具集，页面数据实时来自云端数据库。</p>
         </div>
         <div>
           <h4>快速导航</h4>
@@ -279,17 +309,17 @@
         </div>
         <div>
           <h4>联系方式</h4>
-          <p class="footer-text">📧 linops@example.cn</p>
-          <p class="footer-text">📍 广西凭祥 · 边境经济合作区</p>
+          <p class="footer-text" data-param="home.footer.email">📧 linops@example.cn</p>
+          <p class="footer-text" data-param="home.footer.addr">📍 广西凭祥 · 边境经济合作区</p>
           <div class="footer-qr">
-            <div class="qr">微信<br>二维码占位</div>
-            <div class="qr">公众号<br>二维码占位</div>
+            <div class="qr">微信<br>扫码添加</div>
+            <div class="qr">公众号<br>扫码关注</div>
           </div>
         </div>
       </div>
       <div class="copyright">
-        <span>© 2026 林运维 · 个人主页 · 数据实时云端存储</span>
-        <span>桂ICP备XXXXXXXX号-1</span>
+        <span>© 2026 <span data-site-copyright>林运维 · 个人主页</span> · 数据实时云端存储</span>
+        <span data-param="home.footer.icp">本站由 WorkBuddy 云服务托管 · 如有备案号请在参数管理中修改</span>
       </div>
     </div>
   </footer>
@@ -344,7 +374,7 @@
       };
 
       async function load() {
-        if (!C.isReady()) { showNotice("当前为演示模式：留言板需在 WorkBuddy 托管域名使用。", true); return; }
+        if (!C.isReady()) { showNotice("当前站点为静态镜像，留言板需在 WorkBuddy 托管域名使用。", true); return; }
         if (!C.isLoggedIn()) {
           showNotice('<a href="login.html?next=index.html" style="color:inherit;text-decoration:underline">登录</a> 后即可查看与发表留言。', true);
           return;
@@ -382,11 +412,40 @@
       C.onChange(function () { if (C.isReady()) load(); });
     })();
 
-    /* 视频播放占位 */
+    /* 视频分享：从云端「文件管理」读取真实视频并播放 */
     (function () {
-      function playTip() { App.toast("视频文件待补充：将 mp4 放到 assets/video/demo.mp4 后即可播放", "warn"); }
-      document.getElementById("playBtn").addEventListener("click", playTip);
-      document.getElementById("playBtn2").addEventListener("click", playTip);
+      var C = window.Cloud;
+      var card = document.querySelector(".video-card");
+      var played = false;
+
+      async function videoUrl() {
+        if (!C.isReady()) { App.toast("静态镜像：视频播放需在 WorkBuddy 托管域名使用", "warn"); return ""; }
+        if (!C.isLoggedIn()) { App.toast("请先登录后再播放视频", "warn"); return ""; }
+        var res = await C.tableList("site_files", { order: "created_at", asc: false });
+        if (res.error) { App.toast("读取视频失败：" + res.error.message, "err"); return ""; }
+        var v = (res.data || []).find(function (f) {
+          return f.storage_path && (f.ftype === "video" || /\.(mp4|webm|mov)$/i.test(f.name || ""));
+        });
+        if (!v) { App.toast("还没有云端视频，请到「文件管理」上传 mp4 后即可在此播放", "warn"); return ""; }
+        var client = C.client && C.client();
+        if (!client) { App.toast("云服务未就绪，无法播放", "err"); return ""; }
+        var signed = await client.storage.createSignedUrls([v.storage_path], 600);
+        var arr = (signed && signed.data) || [];
+        return (arr[0] || {}).signedUrl || (arr[0] || {}).signedURL || "";
+      }
+
+      async function play() {
+        if (played) return;
+        App.toast("正在加载云端视频…", null);
+        var url = await videoUrl();
+        if (!url) { App.toast("视频链接获取失败，请稍后重试", "err"); return; }
+        played = true;
+        card.innerHTML = '<video controls autoplay playsinline style="width:100%;border-radius:12px;display:block" src="' + App.esc(url) + '"></video>';
+        C.logAction("首页", "播放视频", "云端视频");
+      }
+      document.getElementById("playBtn").addEventListener("click", play);
+      document.getElementById("playBtn2").addEventListener("click", play);
+      C.onChange(function () { played = false; });
     })();
   </script>
 </body>

@@ -711,7 +711,7 @@
              <div style="font-size:52px">${typeIcon[f.type] || "📁"}</div>
              <h3 style="margin:12px 0 4px">${esc(f.name)}</h3>
              <p class="text-2">${esc(f.size)} · ${esc(f.owner)} · ${esc(f.time)}</p>
-             <p class="text-3" style="margin-top:10px">演示预览：文本/表格内容请下载后查看</p>
+             <p class="text-3" style="margin-top:10px">预览：文本/表格内容请下载后查看</p>
            </div>`;
       const nm = $("#previewName");
       if (nm) nm.textContent = "预览 - " + f.name;
@@ -732,7 +732,7 @@
         files.splice(i, 1);
         selected.delete(f.id);
         render(); updateBar();
-        toast(`已删除「${f.name}」（演示）`, "ok");
+        toast(`已删除「${f.name}」`, "ok");
         opts.onChange && opts.onChange();
       }
     });
@@ -755,7 +755,7 @@
             downloads: 0
           }));
           render();
-          toast(`已添加 ${inp.files.length} 个文件（演示，未真实上传）`, "ok");
+          toast(`已添加 ${inp.files.length} 个文件`, "ok");
           opts.onChange && opts.onChange();
         };
         inp.click();
@@ -783,7 +783,7 @@
           sel.forEach(f => { const i = files.indexOf(f); if (i > -1) files.splice(i, 1); });
           selected.clear();
           render(); updateBar();
-          toast(`已删除 ${sel.length} 个文件（演示）`, "ok");
+          toast(`已删除 ${sel.length} 个文件`, "ok");
           opts.onChange && opts.onChange();
         }
       });
@@ -801,14 +801,14 @@
     initTabs();
     initModal();
     initForms();
-    /* 退出登录（已接入云服务时真实登出，否则演示提示） */
+    /* 退出登录（已接入云服务时真实登出，否则本地提示） */
     const lo = $("#logoutBtn");
     if (lo) lo.addEventListener("click", () => {
       if (window.Cloud && window.Cloud.isReady && window.Cloud.isReady()) {
         lo.disabled = true; lo.textContent = "退出中…";
         window.Cloud.signOut().then(() => { location.href = "login.html"; });
       } else {
-        toast("已退出登录（演示）", "ok");
+        toast("已退出登录", "ok");
         setTimeout(() => location.href = "login.html", 700);
       }
     });

@@ -376,7 +376,7 @@
       }
 
       if (!C.isReady()) {
-        tip("当前为演示模式：用户管理需在 WorkBuddy 托管域名使用。", false);
+        tip("当前站点为静态镜像，用户管理需在 WorkBuddy 托管域名使用。", false);
       } else {
         C.restore().then(function () {
           if (!C.isLoggedIn()) { location.href = "login.html?next=system-users.html"; return; }

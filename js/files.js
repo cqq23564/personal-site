@@ -271,7 +271,7 @@
   /* ---------- 加载 ---------- */
   async function loadFiles() {
     if (!C.isReady()) {
-      $("#fileNotice").innerHTML = "当前为演示模式：文件上传需在 WorkBuddy 托管域名使用。";
+      $("#fileNotice").innerHTML = "当前站点为静态镜像，文件上传需在 WorkBuddy 托管域名使用。";
       $("#fileNotice").className = "page-notice warn";
       $("#fileNotice").style.display = "";
       return;

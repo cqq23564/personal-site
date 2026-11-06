@@ -65,8 +65,8 @@
     <main class="main">
       <div class="page-head">
         <div>
-          <div class="page-title">🔧 参数管理</div>
-          <div class="page-desc">系统运行参数配置，修改后立即生效；键名以 home. 开头的参数实时驱动首页展示数据</div>
+          <div class="page-title">🔧 参数管理 <span id="permBadge" class="badge badge-ok plain" style="display:none;margin-left:8px"></span></div>
+          <div class="page-desc">全站参数配置，保存后立即生效；可新增参数并绑定到页面任意元素，或新增菜单与按钮</div>
         </div>
         <button class="btn btn-primary" id="addParamBtn">＋ 新增参数</button>
       </div>
@@ -105,10 +105,49 @@
             <div class="field"><label>参数值<span class="req">*</span></label><input class="input" id="pfValue" placeholder="如：1286"><div class="field-msg"></div></div>
             <div class="field"><label>单位（可选）</label><input class="input" id="pfUnit" placeholder="小时 / 秒 / MB"></div>
           </div>
+          <div class="field"><label>快速选择要修改的内容（可选）</label>
+            <select class="select" id="pfHelper">
+              <option value="">— 选择页面内容自动填键名，或完全自定义 —</option>
+              <optgroup label="首页已有参数">
+                <option value="K::home.hero.greeting::首页-问候语">首页大标题前缀「你好，我是」</option>
+                <option value="K::home.hero.title::首页-主标题后缀">首页大标题第二行</option>
+                <option value="K::home.hero.desc::首页-主标语">首页主标语/描述</option>
+                <option value="K::home.about.headline::首页-关于我导语">关于我 · 小标题</option>
+                <option value="K::home.about.intro::首页-关于我正文">关于我 · 正文段落</option>
+                <option value="K::home.section.gallery::首页-生活相册标题">生活相册 · 标题</option>
+                <option value="K::home.gallery.sub::首页-相册副标题">生活相册 · 副标题</option>
+                <option value="K::home.video.title::首页-视频标题">视频分享 · 标题</option>
+                <option value="K::home.video.desc::首页-视频简介">视频分享 · 简介</option>
+                <option value="K::home.footer.desc::首页-页脚简介">页脚 · 简介</option>
+                <option value="K::home.footer.email::首页-页脚邮箱">页脚 · 邮箱</option>
+                <option value="K::home.footer.addr::首页-页脚地址">页脚 · 地址</option>
+                <option value="K::home.about.name::首页-关于我姓名">关于我 · 姓名</option>
+                <option value="K::home.about.role::首页-关于我岗位">关于我 · 岗位</option>
+                <option value="K::home.about.dept::首页-关于我部门">关于我 · 部门</option>
+                <option value="K::home.about.city::首页-关于我城市">关于我 · 城市</option>
+                <option value="K::home.about.email::首页-联系邮箱">关于我 · 邮箱</option>
+                <option value="K::home.about.exp::首页-行业经验">关于我 · 行业经验</option>
+                <option value="K::home.stat.days::首页-累计登录天数">统计 · 累计登录天数</option>
+                <option value="K::home.stat.decl::首页-处理申报单">统计 · 处理申报单</option>
+                <option value="K::home.stat.modules::首页-上线系统模块">统计 · 上线系统模块</option>
+                <option value="K::home.stat.efficiency::首页-时效提升">统计 · 时效提升</option>
+              </optgroup>
+              <optgroup label="绑定到页面任意元素（新增参数即可改）">
+                <option value="S::.hero-inner h1::dom.hero.title">首页大标题整体（.hero-inner h1）</option>
+                <option value="S::.section-title::dom.section.title">所有区块标题（.section-title）</option>
+                <option value="S::.page-title::dom.page.title">页面标题（.page-title）</option>
+                <option value="S::.footer-text::dom.footer.text">页脚文字（.footer-text）</option>
+                <option value="S::.btn-primary::dom.btn.primary">主按钮文字（.btn-primary）</option>
+                <option value="S::.card-hd::dom.card.hd">卡片标题（.card-hd）</option>
+              </optgroup>
+            </select>
+            <div class="text-3" style="font-size:12px;margin-top:4px">选中后自动填键名；保存<b>立即生效</b>，无需改代码、无需重新发布</div>
+          </div>
           <div class="form-row">
             <div class="field"><label>分组</label>
               <select class="select" id="pfGroup"><option>首页数据</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
-            <div class="field"></div>
+            <div class="field"><label>目标元素选择器（可选）</label><input class="input mono" id="pfTarget" placeholder="如：.footer-text 或 #heroDesc">
+              <div class="text-3" style="font-size:12px;margin-top:4px">填 CSS 选择器后，参数值直接写到匹配元素上，可改页面任意文案</div></div>
           </div>
           <div class="field"><label>备注</label><textarea class="textarea" id="pfRemark" style="min-height:70px" placeholder="参数说明"></textarea></div>
         </form>
@@ -156,7 +195,7 @@
         filters: [{ key: "pgroup", el: "#paramGroup" }],
         columns: [
           { key: "pname", title: "参数名称", sortable: true, render: function (v) { return "<b>" + App.esc(v) + "</b>"; } },
-          { key: "pkey", title: "参数键名", render: function (v) { return '<span class="mono text-2">' + App.esc(v) + "</span>"; } },
+          { key: "pkey", title: "参数键名", render: function (v, r) { return '<span class="mono text-2">' + App.esc(v) + "</span>" + (r.ptarget ? '<span class="badge badge-gray plain" style="margin-left:6px">元素绑定</span>' : ""); } },
           {
             key: "pvalue", title: "参数值", sortable: true, render: function (v, r) {
               return '<span class="badge badge-info plain mono">' + App.esc(v) + (r.unit ? " " + App.esc(r.unit) : "") + "</span>";
@@ -183,7 +222,7 @@
       /* ---------- 加载 ---------- */
       async function loadData() {
         if (!C.isReady()) {
-          showNotice("当前为演示模式：参数管理需在 WorkBuddy 托管域名使用。", true);
+          showNotice("当前站点为静态镜像，云端参数需在 WorkBuddy 托管域名使用。", true);
           return;
         }
         if (!C.isLoggedIn()) {
@@ -191,14 +230,19 @@
           return;
         }
         canManage = C.isAdmin();
+        var badge = $("#permBadge");
+        if (badge && C.isSuperAdmin && C.isSuperAdmin()) {
+          badge.textContent = "👑 超级管理员 · 最高权限（可增改删全部参数）";
+          badge.style.display = "";
+        }
         $("#addParamBtn").classList.toggle("hidden", !canManage);
         var res = await C.listParams();
         if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
         rows = res.data || [];
         paramTable.setData(rows);
         if (canManage) {
-          showNotice("共 <b>" + rows.length + "</b> 项参数，保存后立即生效。键名以 <b>home.</b> 开头的参数实时驱动首页展示数据" +
-            "（如 <span class=\"mono\">home.stat.days</span> → 首页「累计登录天数」、<span class=\"mono\">home.about.dept</span> → 首页「关于我 · 部门」）。");
+          showNotice("共 <b>" + rows.length + "</b> 项参数，全部可增 / 改 / 删，保存后<b>立即生效</b>。键名以 <b>home.</b> 开头驱动首页文案与数字；" +
+            "新增参数时填写「目标元素选择器」即可改页面任意位置文字，无需改代码。");
         } else {
           showNotice("你当前是普通用户，参数仅 <b>管理员</b> 可修改（以下列表只读）。", true);
         }
@@ -214,8 +258,28 @@
         $("#pfUnit").value = row ? (row.unit || "") : "";
         $("#pfGroup").value = row ? (row.pgroup || "场站参数") : "场站参数";
         $("#pfRemark").value = row ? (row.remark || "") : "";
+        $("#pfTarget").value = row ? (row.ptarget || "") : "";
+        $("#pfHelper").value = "";
         App.openModal("paramModal");
       }
+
+      /* 助手：选中页面内容后自动填键名 / 选择器 */
+      $("#pfHelper").addEventListener("change", function () {
+        var v = this.value;
+        if (!v) return;
+        var parts = v.split("::");
+        if (parts[0] === "K") {
+          $("#pfKey").value = parts[1];
+          if (!$("#pfName").value.trim()) $("#pfName").value = parts[2];
+          $("#pfTarget").value = "";
+          $("#pfGroup").value = "首页数据";
+        } else if (parts[0] === "S") {
+          $("#pfTarget").value = parts[1];
+          $("#pfKey").value = parts[2];
+          if (!$("#pfName").value.trim()) $("#pfName").value = "自定义-" + parts[2];
+          $("#pfGroup").value = "首页数据";
+        }
+      });
 
       window.editParam = function (id) {
         var r = rows.find(function (x) { return x.id === id; });
@@ -246,6 +310,8 @@
         var unit = $("#pfUnit").value.trim();
         var pgroup = $("#pfGroup").value;
         var remark = $("#pfRemark").value.trim();
+        var ptarget = $("#pfTarget").value.trim();
+        if (ptarget) { try { document.querySelectorAll(ptarget); } catch (e) { App.toast("目标元素选择器格式不正确", "err"); return; } }
         if (!pname) { App.toast("请填写参数名称", "err"); return; }
         if (!pkey) { App.toast("请填写参数键名", "err"); return; }
         if (!/^[a-zA-Z0-9._-]+$/.test(pkey)) { App.toast("键名只能包含字母、数字、点、横线、下划线", "err"); return; }
@@ -254,11 +320,11 @@
           App.toast("该键名已存在，请更换", "err"); return;
         }
         this.disabled = true;
-        var res = await C.saveParam({ id: editingId, pname: pname, pkey: pkey, pvalue: pvalue, unit: unit, pgroup: pgroup, remark: remark });
+        var res = await C.saveParam({ id: editingId, pname: pname, pkey: pkey, pvalue: pvalue, unit: unit, pgroup: pgroup, remark: remark, ptarget: ptarget });
         this.disabled = false;
         if (res.error) { App.toast(res.error.message, "err"); return; }
         App.closeModal("paramModal");
-        App.toast(editingId ? "参数已更新，刷新首页即可看到新数据" : "参数已创建", "ok");
+        App.toast(editingId ? "已保存并实时生效" : "参数已创建并生效", "ok");
         C.logAction("参数管理", editingId ? "修改参数" : "新增参数", pname);
         loadData();
       });

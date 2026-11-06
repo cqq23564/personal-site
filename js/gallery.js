@@ -294,7 +294,7 @@
     var logged = !!C.isLoggedIn();
     var actions = $("#galleryActions");
     if (actions) actions.classList.toggle("hidden", !logged);
-    if (!C.isReady()) tip("相册上传需在 WorkBuddy 托管域名使用（当前为演示模式）。", false);
+    if (!C.isReady()) tip("相册上传需在 WorkBuddy 托管域名使用（当前为静态镜像）。", false);
     else if (!logged) tip("登录后即可上传照片 / 视频到云端相册。", null);
     else tip("", null);
   }
