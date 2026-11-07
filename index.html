@@ -51,11 +51,13 @@
         <a class="btn btn-primary btn-lg" href="dashboard.html">进入数据看板 →</a>
         <a class="btn btn-line btn-lg" href="index.html#message">给我留言</a>
       </div>
+      <!-- 合规声明：静态写死，不挂 data-param，避免后台参数把免责说明改掉 -->
+      <div class="hero-stats-note">公开资料速览 · 数字引自公开报道，为平台整体成效，非本站数据、非个人业绩 · <a href="source.html">数据来源与声明 →</a></div>
       <div class="hero-stats">
-        <div class="hero-stat"><div class="v"><span data-count="1286" data-param="home.stat.days">0</span></div><div class="k">累计登录天数</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="120000" data-param="home.stat.decl">0</span>+</div><div class="k">处理申报单</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="9" data-param="home.stat.modules">0</span></div><div class="k">上线系统模块</div></div>
-        <div class="hero-stat"><div class="v"><span data-count="38" data-param="home.stat.efficiency">0</span>%</div><div class="k">时效提升</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="240000" data-param="home.stat.days">0</span></div><div class="k">累计便利通关车次</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="37" data-param="home.stat.decl">0</span>%</div><div class="k">通关时间平均压缩</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="40" data-param="home.stat.modules">0</span>%</div><div class="k">查验效能提升</div></div>
+        <div class="hero-stat"><div class="v"><span data-count="50" data-param="home.stat.efficiency">0</span>%</div><div class="k">调度人力减少</div></div>
       </div>
     </div>
   </section>
@@ -99,13 +101,13 @@
         </div>
         <div>
           <h3 class="about-headline" data-param="home.about.headline">把场站数据「管起来、用起来」</h3>
-          <p class="text-2 mt-8" data-param="home.about.intro">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
+          <p class="text-2 mt-8" data-param="home.about.intro">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。站内业务数据均为演示用示意数据，非真实业务数据。</p>
           <ul class="info-list">
             <li><span class="k">姓名</span><span class="v" data-param="home.about.name">陈庆棋</span></li>
             <li><span class="k">岗位</span><span class="v" data-param="home.about.role">系统管理员</span></li>
             <li><span class="k">部门</span><span class="v" data-param="home.about.dept">园区运营中心</span></li>
             <li><span class="k">城市</span><span class="v" data-param="home.about.city">广西 · 凭祥</span></li>
-            <li><span class="k">邮箱</span><span class="v" data-param="home.about.email">linops@example.cn</span></li>
+            <li><span class="k">邮箱</span><span class="v" data-param="home.about.email">contact@example.cn（示例邮箱）</span></li>
             <li><span class="k">状态</span><span class="v"><span class="badge badge-ok">在职</span></span></li>
           </ul>
           <div class="mt-16 flex gap-8" style="flex-wrap:wrap">
@@ -198,12 +200,12 @@
           <div class="video-play"><button class="ring" id="playBtn">▶</button></div>
         </div>
         <div>
-          <h3 data-param="home.video.title">《园区的一天》纪录短片</h3>
-          <p class="text-2 mt-8" data-param="home.video.desc">凌晨五点的闸口、上午的查验场、下午的报关大厅——用 3 分钟记录边境场站的日常节奏。视频上传到「文件管理」后即可在站内播放。</p>
+          <h3 data-param="home.video.title">《场站的一天》示意短片（演示占位）</h3>
+          <p class="text-2 mt-8" data-param="home.video.desc">本模块用于演示站内视频播放能力：管理员在「文件管理」上传自有或已获授权的视频后即可播放。默认不引用任何第三方影像素材，页面文字与封面均为示意内容。</p>
           <ul class="text-2 mt-16" style="line-height:2">
-            <li data-param="home.video.meta1">🎬 时长：03:12 · 拍摄于闸口B边小</li>
-            <li data-param="home.video.meta2">🎵 配乐：原创轻音乐</li>
-            <li data-param="home.video.meta3">📅 更新：2026-10-28</li>
+            <li data-param="home.video.meta1">🎬 视频来源：管理员自行上传（当前为演示占位）</li>
+            <li data-param="home.video.meta2">🎵 配乐：由上传者自行确认版权</li>
+            <li data-param="home.video.meta3">📅 封面为自绘示意素材，非现场实景</li>
           </ul>
           <div class="mt-16"><button class="btn btn-line" id="playBtn2">▶ 播放视频</button></div>
         </div>
@@ -218,7 +220,7 @@
       <div class="card reveal"><div class="card-bd">
         <div class="timeline">
           <div class="timeline-item"><div class="timeline-date" data-param="home.timeline.1.date">2026 - 至今</div><div class="timeline-title" data-param="home.timeline.1.title">园区运营中心 · 系统管理员</div><div class="timeline-text" data-param="home.timeline.1.text">负责进出口场站数字化系统建设，主导车辆在场监管、卡口核放、每日报表三条主线从 0 到 1 落地。</div></div>
-          <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.2.date">2023 - 2026</div><div class="timeline-title" data-param="home.timeline.2.title">通关服务部 · 报关专员</div><div class="timeline-text" data-param="home.timeline.2.text">深耕互市贸易通关实务，累计处理边民申报超 12 万单，推动申报时效平均缩短 38%。</div></div>
+          <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.2.date">2023 - 2026</div><div class="timeline-title" data-param="home.timeline.2.title">通关服务部 · 报关专员</div><div class="timeline-text" data-param="home.timeline.2.text">深耕互市贸易通关实务，熟悉申报、查验、卡口放行全流程，参与单证与流程标准化工作。</div></div>
           <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.3.date">2021 - 2023</div><div class="timeline-title" data-param="home.timeline.3.title">某科技公司 · 前端工程师</div><div class="timeline-text" data-param="home.timeline.3.text">负责数据可视化与中后台系统开发，沉淀了一套可复用的组件与图表体系。</div></div>
           <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.4.date">2017 - 2021</div><div class="timeline-title" data-param="home.timeline.4.title">大学 · 软件工程</div><div class="timeline-text" data-param="home.timeline.4.text">主修软件工程，任技术社团负责人，两次省级程序设计竞赛奖项。</div></div>
         </div>
@@ -291,7 +293,7 @@
       <div class="footer-grid">
         <div>
           <div class="footer-brand"><span class="nav-logo">陈</span><span data-site-brand>陈庆棋 · 个人主页</span></div>
-          <p class="footer-text" data-param="home.footer.desc">园区数字化建设者。把复杂的通关场站数据，变成一眼看懂的驾驶舱。本站为个人作品集 + 工具集，页面数据实时来自云端数据库。</p>
+          <p class="footer-text" data-param="home.footer.desc">园区数字化建设者。把复杂的通关场站数据，变成一眼看懂的驾驶舱。本站为个人技术作品集与功能演示站点，业务数据均为示意数据，非真实业务数据。</p>
         </div>
         <div>
           <h4>快速导航</h4>
@@ -300,6 +302,7 @@
           <a href="system-menus.html">系统管理</a>
           <a href="query-vehicles.html">查询统计</a>
           <a href="files.html">文件管理</a>
+          <a href="source.html">数据来源与声明</a>
         </div>
         <div>
           <h4>常用功能</h4>
@@ -311,7 +314,7 @@
         </div>
         <div>
           <h4>联系方式</h4>
-          <p class="footer-text" data-param="home.footer.email">📧 linops@example.cn</p>
+          <p class="footer-text" data-param="home.footer.email">📧 contact@example.cn（示例邮箱）</p>
           <p class="footer-text" data-param="home.footer.addr">📍 广西凭祥 · 边境经济合作区</p>
           <div class="footer-qr">
             <div class="qr">微信<br>扫码添加</div>
@@ -320,8 +323,8 @@
         </div>
       </div>
       <div class="copyright">
-        <span>© 2026 <span data-site-copyright>陈庆棋 · 个人主页</span> · 数据实时云端存储</span>
-        <span data-param="home.footer.icp">本站由 WorkBuddy 云服务托管 · 如有备案号请在参数管理中修改</span>
+        <span>© 2026 <span data-site-copyright>陈庆棋 · 个人主页</span> · 个人技术作品集（演示数据）</span>
+        <span><a href="source.html">数据来源与声明</a> · <span data-param="home.footer.icp">本站由 WorkBuddy 云服务托管 · 业务数据均为示意数据</span></span>
       </div>
     </div>
   </footer>
