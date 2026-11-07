@@ -970,3 +970,87 @@ button:focus-visible,
   font-size: clamp(1.15rem, calc(1.02rem + .6vw), 1.5rem);
   font-weight: 700; line-height: 1.45; letter-spacing: -.01em;
 }
+
+/* ============================================================
+   移动端首屏修正 · 微信 WebView / 窄屏实机（2026-11-07）
+   依据用户实机截图逐项修复：
+     1) 顶部导航挤压，汉堡菜单被挤出屏幕 → 主导航在手机上完全不可达；
+     2) Hero 统计项 flex-wrap 产生 3 + 1 不对称换行；
+     3) 中文词组「卡口核放 / 驾驶舱」被拦腰拆行；
+     4) 首屏留白过大、统计标签偏小。
+   原则：只覆盖布局与字号，不触碰 data-param / 动态菜单 / 云端数据逻辑。
+   ============================================================ */
+
+/* --- 17.1 中小屏：汉堡菜单必须可见，登录 / 注册不再挤占主导航 --- */
+@media (max-width: 768px) {
+  .nav { gap: 10px; }
+  .nav-actions { gap: 8px; flex-shrink: 1; min-width: 0; }
+  .nav-actions .dropdown {
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+  }
+  .nav-actions .dropdown .btn {
+    margin-left: 0 !important;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+  .hamburger { display: block !important; flex-shrink: 0; }
+}
+
+/* --- 17.2 手机窄屏：品牌收为图形标识，给导航控件让出空间 --- */
+@media (max-width: 480px) {
+  .wrap-wide { padding: 0 14px; }
+  .nav { gap: 8px; }
+  .nav-brand { font-size: 0; gap: 0; flex-shrink: 0; }
+  .nav-brand .nav-logo { font-size: 15px; }
+  .nav-actions { gap: 6px; }
+  .nav-actions .dropdown { gap: 5px; }
+  .nav-actions .dropdown .btn {
+    padding: 0 9px; font-size: 12.5px; min-height: 30px;
+  }
+  .theme-toggle { width: 30px; height: 30px; font-size: 14px; flex-shrink: 0; }
+  .hamburger { font-size: 20px; padding: 4px 8px; }
+
+  /* Hero：压缩首屏高度，收紧留白 */
+  .hero-inner { padding: 40px 16px 38px; }
+  .hero-eyebrow { margin-bottom: 16px; padding: 6px 13px; font-size: 12px; }
+  .hero h1 {
+    font-size: clamp(1.75rem, 8.4vw, 2.1rem);
+    line-height: 1.24; letter-spacing: -.01em;
+  }
+  .hero p {
+    font-size: clamp(14px, 3.8vw, 15.5px);
+    line-height: 1.75;
+    max-width: 100%;
+    margin: 14px 0 22px;
+    word-break: normal;
+    line-break: strict;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+  .hero-btns { gap: 10px; }
+  .hero-btns .btn-lg { min-height: 44px; padding: 0 18px; font-size: 14px; }
+
+  /* 统计：强制 2×2 网格，杜绝 3 + 1 换行 */
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 10px;
+    width: 100%;
+    max-width: 360px;
+    margin: 30px auto 0;
+    flex-wrap: nowrap;
+    justify-items: center;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .v { font-size: 24px; line-height: 1.2; }
+  .hero-stat .k { font-size: 13px; margin-top: 5px; opacity: .92; }
+}
+
+/* --- 17.3 极窄屏（<= 360px）：进一步收紧，保证不溢出 --- */
+@media (max-width: 360px) {
+  .nav-actions .dropdown .btn { padding: 0 7px; font-size: 12px; }
+  .hero h1 { font-size: 1.7rem; }
+  .hero p { font-size: 13.6px; }
+  .hero-btns .btn-lg { padding: 0 14px; font-size: 13px; }
+  .hero-stat .v { font-size: 22px; }
+}
