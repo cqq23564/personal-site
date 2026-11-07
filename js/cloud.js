@@ -584,7 +584,7 @@
   }
 
   /* ---------- 站点身份（品牌 / Hero / 标题跟随登录用户） ---------- */
-  var DEFAULT_BRAND = "林运维 · 个人主页";
+  var DEFAULT_BRAND = "陈庆棋 · 个人主页";
   function displayName() {
     var p = state.profile;
     return (p && (p.nickname || p.name || "").trim()) || "";
@@ -601,16 +601,16 @@
     var brand = document.querySelector(".nav-brand");
     if (brand) {
       var logo = brand.querySelector(".nav-logo");
-      if (logo) logo.textContent = name ? name.charAt(0) : "林";
+      if (logo) logo.textContent = name ? name.charAt(0) : "陈";
       setBrandText(brand, name ? name + " · 个人主页" : DEFAULT_BRAND);
     }
     var hero = document.getElementById("heroName");
-    if (hero) hero.textContent = name || "林运维";
+    if (hero) hero.textContent = name || "陈庆棋";
     /* 页脚品牌与版权同样跟随真实账号（兼容所有页面） */
     var fbrand = document.querySelector(".footer-brand");
     if (fbrand) {
       var flogo = fbrand.querySelector(".nav-logo");
-      if (flogo) flogo.textContent = name ? name.charAt(0) : "林";
+      if (flogo) flogo.textContent = name ? name.charAt(0) : "陈";
       var ftext = name ? name + " · 个人主页" : DEFAULT_BRAND;
       var fspan = fbrand.querySelector("[data-site-brand]");
       if (fspan) fspan.textContent = ftext;
@@ -622,13 +622,13 @@
       }
     }
     document.querySelectorAll("[data-site-copyright], .copyright span").forEach(function (s) {
-      if (name && s.textContent.indexOf("林运维") > -1) {
-        s.textContent = s.textContent.replace("林运维 · 个人主页", name + " · 个人主页");
+      if (name && s.textContent.indexOf("陈庆棋") > -1) {
+        s.textContent = s.textContent.replace("陈庆棋 · 个人主页", name + " · 个人主页");
       }
     });
     /* 标题中的站点名跟随真实账号（任意位置，替换后不再含默认名，避免重复拼接） */
-    if (name && document.title.indexOf("林运维") > -1) {
-      document.title = document.title.replace(/林运维\s*(?:·\s*个人主页)?/g, function (m) {
+    if (name && document.title.indexOf("陈庆棋") > -1) {
+      document.title = document.title.replace(/陈庆棋\s*(?:·\s*个人主页)?/g, function (m) {
         return m.indexOf("·") > -1 ? name + " · 个人主页" : name;
       });
     }

@@ -8,7 +8,7 @@ window.MOCK = (function () {
 
   /* ---------- 当前登录用户 ---------- */
   const currentUser = {
-    name: "林运维",
+    name: "陈庆棋",
     role: "系统管理员",
     avatar: "assets/img/avatar.png",
     dept: "园区运营中心",
@@ -141,7 +141,7 @@ window.MOCK = (function () {
 
   /* ---------- 用户管理 ---------- */
   const users = [
-    { id: 1, account: "admin", name: "林运维", role: "系统管理员", dept: "园区运营中心", phone: "138****6688", status: "正常", last: "2026-11-03 09:12", created: "2023-04-18" },
+    { id: 1, account: "admin", name: "陈庆棋", role: "系统管理员", dept: "园区运营中心", phone: "138****6688", status: "正常", last: "2026-11-03 09:12", created: "2023-04-18" },
     { id: 2, account: "wanglei", name: "王磊", role: "场站操作员", dept: "卡口管理部", phone: "137****4521", status: "正常", last: "2026-11-03 08:40", created: "2023-06-02" },
     { id: 3, account: "liting", name: "李婷", role: "报关专员", dept: "通关服务部", phone: "150****3389", status: "正常", last: "2026-11-02 17:22", created: "2024-01-15" },
     { id: 4, account: "weicheng", name: "韦诚", role: "场站操作员", dept: "卡口管理部", phone: "188****7726", status: "禁用", last: "2026-10-28 11:05", created: "2024-03-09" },
@@ -191,7 +191,7 @@ window.MOCK = (function () {
 
   /* ---------- 操作日志 ---------- */
   const logs = [
-    { id: "L20261103091201", user: "林运维", module: "用户管理", action: "新增用户", ip: "10.20.3.16", result: "成功", time: "2026-11-03 09:12:01", cost: 86 },
+    { id: "L20261103091201", user: "陈庆棋", module: "用户管理", action: "新增用户", ip: "10.20.3.16", result: "成功", time: "2026-11-03 09:12:01", cost: 86 },
     { id: "L20261103090844", user: "系统调度", module: "查询统计", action: "每日报表生成", ip: "127.0.0.1", result: "成功", time: "2026-11-03 09:08:44", cost: 2340 },
     { id: "L20261103084012", user: "王磊", module: "卡口车辆管理", action: "手动抬杆", ip: "10.20.3.42", result: "成功", time: "2026-11-03 08:40:12", cost: 132 },
     { id: "L20261103081055", user: "李婷", module: "核放记录", action: "导出发票数据", ip: "10.20.3.58", result: "成功", time: "2026-11-03 08:10:55", cost: 510 },
@@ -199,18 +199,18 @@ window.MOCK = (function () {
     { id: "L20261102172208", user: "李婷", module: "注册审核", action: "审核通过[李氏货运代理]", ip: "10.20.3.58", result: "成功", time: "2026-11-02 17:22:08", cost: 145 },
     { id: "L20261102171120", user: "韦诚", module: "用户登录", action: "登录系统", ip: "10.20.3.77", result: "失败-密码错误", time: "2026-11-02 17:11:20", cost: 42 },
     { id: "L20261102164502", user: "罗成", module: "卡口车辆管理", action: "修改车辆信息", ip: "10.20.3.42", result: "成功", time: "2026-11-02 16:45:02", cost: 178 },
-    { id: "L20261102140031", user: "林运维", module: "菜单管理", action: "隐藏菜单[个人中心]", ip: "10.20.3.16", result: "成功", time: "2026-11-02 14:00:31", cost: 63 },
+    { id: "L20261102140031", user: "陈庆棋", module: "菜单管理", action: "隐藏菜单[个人中心]", ip: "10.20.3.16", result: "成功", time: "2026-11-02 14:00:31", cost: 63 },
     { id: "L20261102135947", user: "系统调度", module: "文件管理", action: "清理临时文件", ip: "127.0.0.1", result: "成功", time: "2026-11-02 13:59:47", cost: 890 }
   ];
 
   /* ---------- 文件管理 ---------- */
   const files = [
     { id: "F001", name: "2026-11-03_园区日报.xlsx", size: "2.4 MB", type: "excel", owner: "系统调度", time: "2026-11-03 09:08", downloads: 12 },
-    { id: "F002", name: "滞留车辆清单_20261103.csv", size: "18 KB", type: "csv", owner: "林运维", time: "2026-11-03 09:15", downloads: 3 },
+    { id: "F002", name: "滞留车辆清单_20261103.csv", size: "18 KB", type: "csv", owner: "陈庆棋", time: "2026-11-03 09:15", downloads: 3 },
     { id: "F003", name: "闸口B边小入区明细_20261103.xlsx", size: "1.1 MB", type: "excel", owner: "王磊", time: "2026-11-03 08:40", downloads: 5 },
     { id: "F004", name: "边民申报汇总_第44周.pdf", size: "860 KB", type: "pdf", owner: "覃芳", time: "2026-11-01 17:20", downloads: 8 },
     { id: "F005", name: "一线放行过驳记录_20261103.csv", size: "12 KB", type: "csv", owner: "系统调度", time: "2026-11-03 09:10", downloads: 2 },
-    { id: "F006", name: "园区平面示意图.png", size: "345 KB", type: "image", owner: "林运维", time: "2026-10-30 14:12", downloads: 6 },
+    { id: "F006", name: "园区平面示意图.png", size: "345 KB", type: "image", owner: "陈庆棋", time: "2026-10-30 14:12", downloads: 6 },
     { id: "F007", name: "越南拼车出场统计_20261103.xlsx", size: "980 KB", type: "excel", owner: "李婷", time: "2026-11-03 09:05", downloads: 4 },
     { id: "F008", name: "进口商品申报单_通过清单.csv", size: "22 KB", type: "csv", owner: "李婷", time: "2026-11-03 09:02", downloads: 3 }
   ];
