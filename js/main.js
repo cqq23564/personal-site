@@ -6,6 +6,44 @@
 (function () {
   "use strict";
 
+  /* ================= 主题（尽早同步应用，避免首屏闪白） ================= */
+  var THEME_KEY = "site-theme";
+  var rootEl = document.documentElement;
+  function systemDark() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function reduceMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  function storedTheme() {
+    try { return window.localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+  }
+  function currentTheme() {
+    return rootEl.getAttribute("data-theme") || (systemDark() ? "dark" : "light");
+  }
+  function syncThemeUI() {
+    var dark = currentTheme() === "dark";
+    var label = dark ? "切换到浅色主题" : "切换到深色主题";
+    Array.prototype.forEach.call(document.querySelectorAll(".theme-toggle"), function (b) {
+      b.textContent = dark ? "☀️" : "🌙";
+      b.setAttribute("aria-pressed", String(dark));
+      b.setAttribute("aria-label", label);
+      b.title = label;
+    });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", dark ? "#0b1120" : "#f4f6fb");
+  }
+  function applyTheme(theme, persist) {
+    var t = theme === "dark" || theme === "light" ? theme : (systemDark() ? "dark" : "light");
+    rootEl.setAttribute("data-theme", t);
+    if (persist) { try { window.localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+    syncThemeUI();
+    return t;
+  }
+  /* 立即应用：用户记录 > HTML 显式声明 > 系统偏好 */
+  var initialTheme = storedTheme() || rootEl.getAttribute("data-theme");
+  applyTheme(initialTheme, false);
+
   /* ================= 工具 ================= */
   const $ = (s, p) => (p || document).querySelector(s);
   const $$ = (s, p) => Array.from((p || document).querySelectorAll(s));
@@ -57,10 +95,111 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
 
+  /* ================= 全局增强：主题切换 / 跳转链接 / 返回顶部 ================= */
+  function initTheme() {
+    /* theme-color：让移动端浏览器地址栏跟随主题 */
+    if (!document.querySelector('meta[name="theme-color"]')) {
+      var meta = document.createElement("meta");
+      meta.name = "theme-color";
+      meta.content = "#f4f6fb";
+      (document.head || document.documentElement).appendChild(meta);
+    }
+    syncThemeUI();
+
+    var actions = document.querySelector(".nav-actions");
+    if (actions && !actions.querySelector(".theme-toggle")) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "theme-toggle";
+      btn.addEventListener("click", function () {
+        var next = currentTheme() === "dark" ? "light" : "dark";
+        applyTheme(next, true);
+        toast(next === "dark" ? "已切换到深色主题" : "已切换到浅色主题", "ok");
+      });
+      var dd = actions.querySelector(".dropdown");
+      if (dd) actions.insertBefore(btn, dd);
+      else actions.appendChild(btn);
+      syncThemeUI();
+    }
+
+    /* 用户未手动选择时，跟随系统主题实时变化 */
+    if (window.matchMedia) {
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      var onChange = function (e) {
+        if (storedTheme()) return;
+        applyTheme(e.matches ? "dark" : "light", false);
+      };
+      if (mq.addEventListener) mq.addEventListener("change", onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+  }
+
+  function initSkipLink() {
+    if (document.querySelector(".skip-link")) return;
+    var main = document.querySelector("main") ||
+               document.querySelector(".main") ||
+               document.querySelector(".hero") ||
+               document.querySelector("section");
+    var targetId = "main-content";
+    if (main) {
+      targetId = main.id || "main-content";
+      if (!main.id) main.id = targetId;
+      main.setAttribute("tabindex", "-1");
+    }
+    var a = document.createElement("a");
+    a.className = "skip-link";
+    a.href = "#" + targetId;
+    a.textContent = "跳到主要内容";
+    document.body.insertBefore(a, document.body.firstChild);
+  }
+
+  function initBackToTop() {
+    if (document.querySelector(".back-to-top")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "back-to-top";
+    btn.setAttribute("aria-label", "返回顶部");
+    btn.title = "返回顶部";
+    btn.textContent = "↑";
+    document.body.appendChild(btn);
+    var onScroll = function () {
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      btn.classList.toggle("show", y > 400);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    btn.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" });
+    });
+  }
+
   /* ================= 导航 ================= */
   function initNav() {
     const burger = $(".hamburger"), links = $(".nav-links");
-    if (burger && links) burger.addEventListener("click", () => links.classList.toggle("open"));
+    if (burger && links) {
+      links.id = links.id || "primary-nav";
+      links.setAttribute("aria-label", "主导航");
+      burger.setAttribute("aria-controls", links.id);
+      burger.setAttribute("aria-expanded", "false");
+      burger.setAttribute("aria-label", "展开导航菜单");
+      burger.addEventListener("click", () => {
+        const open = links.classList.toggle("open");
+        burger.setAttribute("aria-expanded", String(open));
+        burger.setAttribute("aria-label", open ? "收起导航菜单" : "展开导航菜单");
+      });
+      links.addEventListener("click", e => {
+        if (e.target.closest("a") && links.classList.contains("open")) {
+          links.classList.remove("open");
+          burger.setAttribute("aria-expanded", "false");
+        }
+      });
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && links.classList.contains("open")) {
+          links.classList.remove("open");
+          burger.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
 
     // 当前页高亮
     const page = location.pathname.split("/").pop() || "index.html";
@@ -167,10 +306,25 @@
   function initCounters() {
     const els = $$("[data-count]");
     if (!els.length) return;
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(en => { if (en.isIntersecting) { animateCount(en.target); io.unobserve(en.target); } });
-    }, { threshold: 0.4 });
-    els.forEach(el => io.observe(el));
+    const done = new WeakSet();
+    const run = el => { if (done.has(el)) return; done.add(el); animateCount(el); };
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(en => { if (en.isIntersecting) { run(en.target); io.unobserve(en.target); } });
+      }, { threshold: 0.4 });
+      els.forEach(el => io.observe(el));
+    } else {
+      els.forEach(run);
+    }
+    /* 兜底：截图 / 打印 / IO 未触发时，不能让统计数字停留在 0 */
+    setTimeout(() => {
+      els.forEach(el => {
+        if (done.has(el)) return;
+        done.add(el);
+        const target = Number(el.dataset.count || 0);
+        el.textContent = target.toLocaleString("zh-CN");
+      });
+    }, 1600);
   }
 
   /* ================= Tabs ================= */
@@ -794,6 +948,9 @@
 
   /* ================= 启动 ================= */
   function boot() {
+    initTheme();
+    initSkipLink();
+    initBackToTop();
     initNav();
     initCarousel();
     initReveal();
@@ -821,6 +978,7 @@
   window.App = {
     $, $$, toast, esc, exportCSV, downloadTextFile,
     DataTable, renderLineChart, renderBarChart, renderDonut, renderParkMap,
-    initFileManager, openModal, closeModal, validateField, animateCount
+    initFileManager, openModal, closeModal, validateField, animateCount,
+    setTheme: applyTheme, getTheme: currentTheme
   };
 })();

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>林运维 · 个人主页 | 园区数字化 / 数据可视化</title>
   <meta name="description" content="林运维的个人主页：园区数字化系统建设、数据可视化与全栈实践。">
+  <meta name="theme-color" content="#f4f6fb">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -25,7 +26,7 @@
       <div class="nav-actions">
         <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
         <div class="dropdown">
-          <button class="nav-user"><img src="assets/img/avatar.png" alt="头像"><span>林运维</span>▾</button>
+          <button class="nav-user"><img src="assets/img/avatar.png" alt="头像" decoding="async"><span>林运维</span>▾</button>
           <div class="dropdown-menu">
             <a href="profile.html">🙋 个人中心</a>
             <a href="dashboard.html">📊 数据看板</a>
@@ -41,8 +42,9 @@
 
   <!-- ============ Hero ============ -->
   <section class="hero">
-    <div class="hero-bg"><img src="assets/img/banner1.png" alt="山间云海"></div>
+    <div class="hero-bg"><img src="assets/img/banner1.png" alt="山间云海" fetchpriority="high" decoding="async"></div>
     <div class="hero-inner">
+      <div class="hero-eyebrow" data-param="home.hero.eyebrow">👋 欢迎来到我的个人站点</div>
       <h1><span data-param="home.hero.greeting">你好，我是 </span><span class="grad" id="heroName">林运维</span><br><span data-param="home.hero.title">园区数字化建设者</span></h1>
       <p id="heroDesc" data-param="home.hero.desc">专注进出口场站数字化：车辆在场监管 · 卡口核放 · 每日报表 · 数据可视化。<br>把复杂的通关场站数据，变成一眼看懂的驾驶舱。</p>
       <div class="hero-btns" id="heroBtns">
@@ -61,20 +63,20 @@
   <!-- ============ 轮播图 ============ -->
   <section class="section-tight" id="dongtai">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title" style="font-size:20px" data-param="home.section.dongtai">近期动态</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.dongtai">近期动态</h2></div>
       <div class="carousel reveal">
         <div class="carousel-viewport">
           <div class="carousel-track">
             <div class="slide">
-              <img src="assets/img/banner1.png" alt="云海日出">
+              <img src="assets/img/banner1.png" alt="云海日出" decoding="async">
               <div class="slide-cap"><h3 data-param="home.slide.1.title">驾驶舱 2.0 上线</h3><p data-param="home.slide.1.desc">入区 / 出卡 / 滞留 / 核放四类指标一屏总览，日报自动生成</p></div>
             </div>
             <div class="slide">
-              <img src="assets/img/banner2.png" alt="城市夜景">
+              <img src="assets/img/banner2.png" alt="城市夜景" decoding="async">
               <div class="slide-cap"><h3 data-param="home.slide.2.title">卡口核放自动化</h3><p data-param="home.slide.2.desc">一线放行（过驳）抬杆记录自动归档，异常实时预警</p></div>
             </div>
             <div class="slide">
-              <img src="assets/img/banner3.png" alt="科技背景">
+              <img src="assets/img/banner3.png" alt="科技背景" decoding="async">
               <div class="slide-cap"><h3 data-param="home.slide.3.title">数据中台改造</h3><p data-param="home.slide.3.desc">7 项每日查询标准化落库，字段映射可配置</p></div>
             </div>
           </div>
@@ -92,11 +94,11 @@
       <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.about">关于我</h2></div>
       <div class="about-grid reveal">
         <div class="about-photo">
-          <img src="assets/img/gallery3.png" alt="工作照">
+          <img src="assets/img/gallery3.png" alt="工作照" loading="lazy" decoding="async">
           <div class="exp"><b data-param="home.about.exp">9</b><span>年行业经验</span></div>
         </div>
         <div>
-          <h3 style="font-size:19px" data-param="home.about.headline">把场站数据「管起来、用起来」</h3>
+          <h3 class="about-headline" data-param="home.about.headline">把场站数据「管起来、用起来」</h3>
           <p class="text-2 mt-8" data-param="home.about.intro">从报关一线到系统建设，我熟悉边境场站每一天要面对的问题：车到场了没有、卡住了没有、货对不对、报没报。这个个人站点汇总了我日常使用的工具集——从数据看板、系统管理到查询统计与文件管理，全部开源可自建。</p>
           <ul class="info-list">
             <li><span class="k">姓名</span><span class="v" data-param="home.about.name">林运维</span></li>
@@ -177,10 +179,10 @@
       </div>
       <div class="field-msg" id="galleryNotice" style="margin:-8px 0 14px"></div>
       <div class="gallery reveal">
-        <div class="gallery-item"><img src="assets/img/gallery1.png" alt="樱花"><div class="cap">🌸 春日樱花大道</div></div>
-        <div class="gallery-item"><img src="assets/img/gallery2.png" alt="灯塔"><div class="cap">🌅 海边灯塔日落</div></div>
-        <div class="gallery-item"><img src="assets/img/gallery3.png" alt="书桌"><div class="cap">☕ 一个人的工位</div></div>
-        <div class="gallery-item"><img src="assets/img/gallery4.png" alt="雪山"><div class="cap">🏔️ 雪山与湖</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery1.png" alt="樱花" loading="lazy" decoding="async"><div class="cap">🌸 春日樱花大道</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery2.png" alt="灯塔" loading="lazy" decoding="async"><div class="cap">🌅 海边灯塔日落</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery3.png" alt="书桌" loading="lazy" decoding="async"><div class="cap">☕ 一个人的工位</div></div>
+        <div class="gallery-item"><img src="assets/img/gallery4.png" alt="雪山" loading="lazy" decoding="async"><div class="cap">🏔️ 雪山与湖</div></div>
       </div>
       <div class="gallery reveal" id="cloudGallery" style="margin-top:16px"></div>
     </div>
@@ -192,7 +194,7 @@
       <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.video">视频分享</h2></div>
       <div class="grid-2 reveal">
         <div class="video-card">
-          <img class="poster" src="assets/img/banner3.png" alt="视频封面">
+          <img class="poster" src="assets/img/banner3.png" alt="视频封面" loading="lazy" decoding="async">
           <div class="video-play"><button class="ring" id="playBtn">▶</button></div>
         </div>
         <div>

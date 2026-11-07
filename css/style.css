@@ -640,3 +640,333 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .project-card h3 { font-size: 17px; margin: 0 0 8px; }
 .project-card .text-2 { font-size: 13.5px; line-height: 1.7; min-height: 48px; }
 .project-more { display: inline-block; margin-top: 12px; font-size: 13px; }
+
+/* ============================================================
+   设计优化层 v2 · 2026 正规化改造
+   参考案例：Brittany Chiang / Linear / Stripe / Apple 作品集，
+            以及 Dashboard 设计最佳实践（5-second rule、留白、
+            克制配色、Typography as Hero、微交互、WCAG 2.1 AA）
+   实现方式：追加覆盖（上方原始规则保留，便于回滚）；
+            相同特异性下本层优先，不破坏任何云端数据钩子。
+   ============================================================ */
+
+/* ---------- 1. 设计令牌补全 ---------- */
+:root {
+  color-scheme: light;
+  --primary-soft: #eaf0ff;
+  --success-soft: #e7f7ed;
+  --warning-soft: #fdf2e2;
+  --danger-soft:  #fdecec;
+  --info-soft:    #e5f6fa;
+  --accent-soft:  #f1ecff;
+  --ring: rgba(59, 110, 245, .42);
+  --t-fast: .15s ease;
+  --t-base: .24s cubic-bezier(.2, .7, .3, 1);
+}
+
+/* ---------- 2. 暗色模式 ---------- */
+/* 2a 跟随系统偏好：纯 CSS 生效，无 JS / 首屏也不会闪白 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --primary: #7ea2ff;
+    --primary-dark: #5b83f7;
+    --primary-light: rgba(126, 162, 255, .14);
+    --accent: #a98bff;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --info: #38bdf8;
+    --bg: #0b1120;
+    --surface: #131c30;
+    --surface-2: #18233b;
+    --border: #26334d;
+    --text: #e8edf7;
+    --text-2: #a3b0c7;
+    --text-3: #7b8aa6;
+    --header-bg: rgba(11, 17, 32, .82);
+    --sidebar-bg: #080e1c;
+    --sidebar-text: #aab8d0;
+    --footer-bg: #080e1c;
+    --primary-soft: rgba(126, 162, 255, .14);
+    --success-soft: rgba(74, 222, 128, .14);
+    --warning-soft: rgba(251, 191, 36, .14);
+    --danger-soft:  rgba(248, 113, 113, .14);
+    --info-soft:    rgba(56, 189, 248, .14);
+    --accent-soft:  rgba(169, 139, 255, .14);
+    --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 6px 20px rgba(0, 0, 0, .3);
+    --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
+    --ring: rgba(126, 162, 255, .5);
+  }
+}
+/* 2b 手动切换：显式覆盖系统偏好，由 main.js 记忆到 localStorage */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #7ea2ff;
+  --primary-dark: #5b83f7;
+  --primary-light: rgba(126, 162, 255, .14);
+  --accent: #a98bff;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
+  --bg: #0b1120;
+  --surface: #131c30;
+  --surface-2: #18233b;
+  --border: #26334d;
+  --text: #e8edf7;
+  --text-2: #a3b0c7;
+  --text-3: #7b8aa6;
+  --header-bg: rgba(11, 17, 32, .82);
+  --sidebar-bg: #080e1c;
+  --sidebar-text: #aab8d0;
+  --footer-bg: #080e1c;
+  --primary-soft: rgba(126, 162, 255, .14);
+  --success-soft: rgba(74, 222, 128, .14);
+  --warning-soft: rgba(251, 191, 36, .14);
+  --danger-soft:  rgba(248, 113, 113, .14);
+  --info-soft:    rgba(56, 189, 248, .14);
+  --accent-soft:  rgba(169, 139, 255, .14);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 6px 20px rgba(0, 0, 0, .3);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
+  --ring: rgba(126, 162, 255, .5);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { scrollbar-color: #35445f var(--bg); }
+}
+:root[data-theme="dark"] { scrollbar-color: #35445f var(--bg); }
+
+/* ---------- 3. 全局基础：字号 / 排版 / 数字 ---------- */
+html { scroll-behavior: smooth; }
+body {
+  font-size: 15.5px;
+  line-height: 1.72;
+  letter-spacing: .01em;
+  transition: background-color .25s ease, color .25s ease;
+}
+h1, h2, h3, h4 { text-wrap: balance; }
+.hero p, .section-sub, .page-desc, .slide-cap p, .footer-text { text-wrap: pretty; }
+.stat-value, .table .num, .mono, .hero-stat .v, .skill-row .val,
+.profile-head .meta b { font-variant-numeric: tabular-nums; }
+img { height: auto; }
+
+/* ---------- 4. 键盘可达性 ---------- */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: fixed; top: 10px; left: 10px; z-index: 999;
+  transform: translateY(-160%);
+  background: var(--primary); color: var(--surface);
+  padding: 11px 18px; border-radius: 10px;
+  font-weight: 700; font-size: 14px;
+  box-shadow: var(--shadow-lg);
+  transition: transform .2s ease;
+}
+.skip-link:focus { transform: none; }
+
+/* ---------- 5. 全局控件：主题切换 / 返回顶部 ---------- */
+.theme-toggle {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-2); font-size: 16px; line-height: 1;
+  transition: color var(--t-fast), border-color var(--t-fast),
+              background var(--t-fast), transform var(--t-fast);
+}
+.theme-toggle:hover { color: var(--primary); border-color: var(--primary); transform: translateY(-1px); }
+.back-to-top {
+  position: fixed; right: 22px; bottom: 24px; z-index: 150;
+  width: 44px; height: 44px; border-radius: 14px;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  font-size: 18px; opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity .22s ease, transform .22s ease, visibility .22s ease;
+}
+.back-to-top.show { opacity: 1; visibility: visible; transform: none; }
+.back-to-top:hover { color: var(--primary); border-color: var(--primary); }
+
+/* ---------- 6. 修复硬编码白底，保证暗色一致 ---------- */
+.nav-user, .dropdown-menu, .stat-card, .btn-line, .modal, .toast,
+.pagination button, .file-item, .auth-panel, .timeline-item::before,
+.input, .select, .textarea, .nav-search input:focus {
+  background: var(--surface);
+}
+.stat-icon.blue   { background: var(--primary-soft); }
+.stat-icon.green  { background: var(--success-soft); }
+.stat-icon.orange { background: var(--warning-soft); }
+.stat-icon.purple { background: var(--accent-soft); }
+.stat-icon.red    { background: var(--danger-soft); }
+.stat-icon.cyan   { background: var(--info-soft); }
+.badge-ok   { background: var(--success-soft); }
+.badge-warn { background: var(--warning-soft); }
+.badge-err  { background: var(--danger-soft); }
+.badge-info { background: var(--primary-soft); }
+.captcha-img {
+  background: repeating-linear-gradient(45deg,
+    var(--surface-2), var(--surface-2) 8px, var(--border) 8px, var(--border) 16px);
+  color: var(--primary);
+}
+
+/* ---------- 7. 排版层级：流体字号 ---------- */
+.hero { min-height: 560px; }
+.hero-inner { padding: 100px 20px 84px; max-width: 900px; }
+.hero h1 {
+  font-size: clamp(2.1rem, calc(1rem + 4.8vw), 3.6rem);
+  line-height: 1.18;
+  letter-spacing: -.02em;
+  font-weight: 800;
+}
+.hero p {
+  font-size: clamp(1.02rem, calc(.95rem + .35vw), 1.2rem);
+  line-height: 1.8;
+  max-width: 660px;
+  margin-left: auto; margin-right: auto;
+  opacity: .94;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 15px; margin-bottom: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .34);
+  background: rgba(255, 255, 255, .12);
+  backdrop-filter: blur(8px);
+  font-size: 13px; font-weight: 600; letter-spacing: .08em;
+  color: #fff;
+}
+.hero-stat .v { font-size: 28px; letter-spacing: -.01em; }
+.section-title {
+  font-size: clamp(1.4rem, calc(1.12rem + 1vw), 1.85rem);
+  letter-spacing: -.01em; line-height: 1.3;
+}
+.page-title {
+  font-size: clamp(1.35rem, calc(1.12rem + .7vw), 1.7rem);
+  letter-spacing: -.01em;
+}
+.slide-cap h3 { font-size: clamp(1.1rem, calc(.95rem + .7vw), 1.5rem); }
+
+/* ---------- 8. 导航：更清晰的当前页指示 ---------- */
+.site-header { box-shadow: 0 1px 0 var(--border); }
+.nav-links > a { position: relative; }
+.nav-links > a.active { background: transparent; color: var(--primary); }
+.nav-links > a.active::after {
+  content: ""; position: absolute; left: 14px; right: 14px; bottom: 4px;
+  height: 2px; border-radius: 2px; background: var(--primary);
+}
+
+/* ---------- 9. 按钮：更大点击区域与克制层次 ---------- */
+.btn { min-height: 40px; font-size: 14px; border-radius: 10px; }
+.btn-sm { min-height: 32px; font-size: 13px; }
+.btn-lg { min-height: 48px; font-size: 15px; padding: 0 28px; }
+.btn-primary { box-shadow: 0 4px 14px rgba(59, 110, 245, .28); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(59, 110, 245, .34); }
+.btn-line:hover { transform: translateY(-1px); background: var(--primary-light); }
+.hero-btns { gap: 12px; }
+
+/* ---------- 10. 表格 / 表单 / 卡片可读性 ---------- */
+.table { font-size: 14px; }
+.table th { font-size: 12.5px; letter-spacing: .02em; padding: 12px 16px; }
+.table td { padding: 13px 16px; }
+.table .num { text-align: right; }
+.table th.sortable { transition: color var(--t-fast); }
+.card { transition: box-shadow var(--t-base), border-color var(--t-base); }
+.card-hd { padding: 15px 20px; }
+.card-bd { padding: 20px; }
+.field label { font-size: 13.5px; }
+.input, .select, .textarea {
+  height: 42px; font-size: 15px; border-radius: 10px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+}
+.textarea { height: auto; }
+.input:focus, .select:focus, .textarea:focus { box-shadow: 0 0 0 3px var(--ring); }
+
+/* ---------- 11. 项目卡片：一致的节奏与呼吸感 ---------- */
+.project-card { border-radius: 16px; }
+.project-card .card-bd {
+  padding: 26px 24px; min-height: 208px;
+  display: flex; flex-direction: column;
+}
+.project-tag {
+  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  border: 1px solid var(--primary-soft);
+  align-self: flex-start;
+}
+.project-card h3 { font-size: 18px; letter-spacing: -.01em; }
+.project-card .text-2 { font-size: 14px; min-height: 0; }
+.project-more { margin-top: auto; padding-top: 10px; font-weight: 600; }
+
+/* ---------- 12. 页脚与实时标记 ---------- */
+.footer-grid { padding: 56px 0 36px; gap: 40px; }
+.footer-qr .qr { border-radius: 10px; font-size: 11px; line-height: 1.4; color: #64748b; }
+.copyright { font-size: 13px; }
+.live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--success); margin-right: 7px; vertical-align: 1px;
+  animation: livePulse 2.4s infinite;
+}
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, .45); }
+  70%  { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+/* ---------- 13. 小字号可读性提升（最小 12px 起） ---------- */
+.footer-qr .qr { font-size: 11px; }
+.table th .arrow { font-size: 11px; }
+.file-item .fmeta { font-size: 12px; }
+.side-group-title { font-size: 12px; }
+.stat-trend { font-size: 12.5px; }
+.field-msg { font-size: 12.5px; }
+.mono { font-size: 13px; }
+.card-hd .sub { font-size: 13px; }
+.stat-label { font-size: 13px; }
+.timeline-date { font-size: 12.5px; }
+
+/* ---------- 14. 响应式补丁 ---------- */
+@media (max-width: 992px) {
+  .footer-grid { gap: 28px; }
+}
+@media (max-width: 768px) {
+  .nav-links { background: var(--surface); }
+  .nav-links > a.active::after { display: none; }
+  .nav-links > a.active { background: var(--primary-light); }
+  .hero { min-height: 0; }
+  .hero-inner { padding: 68px 18px 58px; }
+  .hero-eyebrow { margin-bottom: 18px; font-size: 12px; }
+  .card-hd, .card-bd { padding-left: 16px; padding-right: 16px; }
+  .table th, .table td { padding-left: 12px; padding-right: 12px; }
+  .project-card .card-bd { min-height: 0; padding: 22px 20px; }
+  .back-to-top { right: 14px; bottom: 16px; width: 40px; height: 40px; }
+}
+@media (max-width: 480px) {
+  .theme-toggle { width: 32px; height: 32px; font-size: 14px; }
+  .nav-actions { gap: 8px; }
+}
+
+/* ---------- 15. 减弱动效偏好：内容必须始终可见 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .reveal { opacity: 1 !important; transform: none !important; }
+  .skip-link { transition: none; transform: none; }
+}
+
+/* ---------- 16. 移除内联字号后统一的标题层级 ---------- */
+.about-headline {
+  font-size: clamp(1.15rem, calc(1.02rem + .6vw), 1.5rem);
+  font-weight: 700; line-height: 1.45; letter-spacing: -.01em;
+}
