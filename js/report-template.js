@@ -248,9 +248,10 @@
     return { detections: detections, skipped: skipped };
   }
 
-  /* ---------- 按货物名称聚合明细 ---------- */
-  function aggregate(det, sheets, filename) {
+  /* ---------- 按货物名称聚合明细（先统一口径，再合并车数 / 重量） ---------- */
+  function aggregate(det, sheets, filename, canonDict) {
     var map = {}, date = "";
+    canonDict = canonDict || buildCanonDict(null);
     var fm = String(filename || "").match(/(20\d{2})[-\/.年]?(\d{2})[-\/.月]?(\d{2})/);
     if (fm) date = fm[1] + "-" + fm[2] + "-" + fm[3];
     if (!date) {
@@ -264,13 +265,16 @@
       for (var r = d.headerRow + 1; r < m.length; r++) {
         var row = m[r] || [];
         if (!hasContent(row)) continue;
-        var g = String(row[d.goodsCol] == null ? "" : row[d.goodsCol]).trim();
-        if (EMPTY_GOODS.indexOf(g) > -1) g = "未填写货物";
+        var rawName = String(row[d.goodsCol] == null ? "" : row[d.goodsCol]).trim();
+        if (EMPTY_GOODS.indexOf(rawName) > -1) rawName = "未填写货物";
+        /* 统一口径：白 / 红心 / 鲜 火龙果等一律归并为「火龙果」后再累加 */
+        var g = rawName === "未填写货物" ? rawName : canonicalGoods(rawName, canonDict);
         var w = d.weightCol >= 0 ? toNum(row[d.weightCol]) / d.divisor : 0;
-        if (!map[g]) map[g] = { goods: g, cnt: 0, weight: 0, sources: {} };
+        if (!map[g]) map[g] = { goods: g, cnt: 0, weight: 0, sources: {}, variants: {} };
         map[g].cnt++;
         map[g].weight += w;
         map[g].sources[d.sheet] = true;
+        if (g !== rawName && rawName !== "未填写货物") map[g].variants[rawName] = true;
         if (!date && d.timeCol >= 0) {
           var mm = String(row[d.timeCol] == null ? "" : row[d.timeCol]).match(/(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
           if (mm) date = mm[1] + "-" + pad2(mm[2]) + "-" + pad2(mm[3]);
@@ -279,7 +283,10 @@
     });
     var raw = Object.keys(map).map(function (k) {
       var o = map[k];
-      return { goods: o.goods, cnt: o.cnt, weight: round2(o.weight), sources: Object.keys(o.sources).join("、") };
+      return {
+        goods: o.goods, cnt: o.cnt, weight: round2(o.weight),
+        sources: Object.keys(o.sources).join("、"), variants: Object.keys(o.variants)
+      };
     }).sort(function (a, b) { return b.cnt - a.cnt || b.weight - a.weight; });
     return {
       raw: raw, date: date || today(),
@@ -288,16 +295,80 @@
     };
   }
 
-  /* ---------- 货物名称归一化：把明细货名归到模板清单 ---------- */
-  function normGoods(s) {
-    var t = String(s || "").trim();
-    t = t.replace(/[（(][^）)]*[）)]/g, "");
-    t = t.split(/[,，、\/]/)[0].trim();
-    t = t.replace(/鲜|冷冻|冰鲜|进口|国产/g, "");
-    t = t.replace(/红白心|白心|红心|白|红/g, "");
-    t = t.replace(/[\s\u3000]/g, "");
-    return t;
+  /* ---------- 货物名称统一口径（用户诉求核心） ----------
+   * 白火龙果 / 红心火龙果 / 鲜火龙果 / 火龙果(越南) … 一律按「火龙果」计算。
+   * 做法：清洗（去括号 / 空白）→ 剥离前缀修饰词（鲜 / 红心 / 白 / 进口…）→
+   *       仅当结果命中「标准货物名词库」时才采用，避免把「白砂糖 / 红豆」误并。
+   * 词库 = 内置常见货物 + 用户上传模板的货物项（模板即权威清单，随模板变化）。
+   */
+  var BASE_GOODS = [
+    "火龙果", "菠萝蜜", "木薯淀粉", "服务器用电路板组件", "液晶显示屏", "相机镜头",
+    "电路板组件", "扩展卡", "榴莲", "芒果", "菠萝", "龙眼", "荔枝", "山竹", "红毛丹",
+    "百香果", "香蕉", "西瓜", "椰青", "椰子", "木瓜", "哈密瓜", "柑橘", "橙子",
+    "苹果", "葡萄", "柚子", "红枣", "粽叶", "草绳", "主板", "淀粉", "坚果", "干果",
+    "白砂糖", "红豆", "白糖", "黄糖", "红糖", "大米", "玉米", "木薯", "橡胶", "家具"
+  ];
+  var MOD_PREFIX = /^(鲜|新鲜|冰鲜|冷冻|冻|冷藏|进口|国产|特级|一级|二级|三级|精品|优质|大果|小果|中果|大|小|红白心|红心|白心|白肉|红肉|青皮|黄皮|白|红|青|黄|金|紫|越南|泰国|老挝|缅甸)+/;
+
+  function cleanGoods(s) {
+    return String(s == null ? "" : s)
+      .replace(/[（(【\[][^）)】\]]*[）)】\]]/g, "")
+      .replace(/[\s\u3000]/g, "")
+      .trim();
   }
+  function stripPrefix(c) {
+    var prev, core = c;
+    do { prev = core; core = core.replace(MOD_PREFIX, ""); } while (core !== prev && core.length >= 2);
+    return core;
+  }
+  /* 词典：key = 清洗名 / 核心名，value = 统一后的标准显示名 */
+  function buildCanonDict(items) {
+    var dict = {};
+    BASE_GOODS.forEach(function (n) {
+      var c = cleanGoods(n);
+      if (c.length >= 2) dict[c] = c;             /* 内置词库本身即标准名，不剥前缀 */
+    });
+    (items || []).forEach(function (it) {
+      var c = cleanGoods(it.name);
+      if (!c || c.length < 2) return;
+      var core = stripPrefix(c);
+      if (core !== c && core.length >= 2) {
+        /* 模板项带修饰词（如「鲜火龙果」）→ 归并到已有标准词 */
+        var hit = dict[core] || "";
+        if (!hit) {
+          var bl = 0;
+          Object.keys(dict).forEach(function (k) {
+            if (k.length >= 2 && (core.indexOf(k) > -1 || k.indexOf(core) > -1) && k.length > bl) {
+              hit = String(dict[k]); bl = k.length;
+            }
+          });
+        }
+        dict[c] = hit || core;
+        if (!dict[core]) dict[core] = hit || core;
+      } else {
+        dict[c] = c;                              /* 模板项本身即标准名（如「主板，扩展卡」） */
+      }
+    });
+    return dict;
+  }
+  function canonicalGoods(s, dict) {
+    var original = String(s == null ? "" : s).trim();
+    var c = cleanGoods(s);
+    if (!c) return original;
+    var core = stripPrefix(c);
+    dict = dict || buildCanonDict(null);
+    if (core.length >= 2 && dict[core]) return String(dict[core]);   /* 先按剥前缀核心命中 */
+    if (dict[c]) return String(dict[c]);                              /* 再按原名命中（保护「白砂糖」） */
+    var best = "", bestLen = 0;                                       /* 最后子串最长匹配兜底 */
+    Object.keys(dict).forEach(function (k) {
+      if (k.length >= 2 && (c.indexOf(k) > -1 || core.indexOf(k) > -1) && k.length > bestLen) {
+        best = String(dict[k]); bestLen = k.length;
+      }
+    });
+    return best || original || c;
+  }
+  /* 兼容旧调用：归一化后用于模板项匹配评分，与统计口径保持一致 */
+  function normGoods(s) { return canonicalGoods(s, null); }
   function matchScore(goods, name) {
     if (goods === name) return 3;
     var a = normGoods(goods), b = normGoods(name);
@@ -321,7 +392,8 @@
       var hits = [], cnt = 0, weight = 0;
       (raw || []).forEach(function (r, idx) {
         if (assign[idx] === j) {
-          hits.push(r.goods + "(" + r.cnt + ")");
+          hits.push(r.goods + "(" + r.cnt + ")" +
+            (r.variants && r.variants.length ? "〔含 " + r.variants.join("、") + "〕" : ""));
           cnt += r.cnt; weight += r.weight;
         }
       });
@@ -392,12 +464,14 @@
     });
     out.push({
       name: "货物统计明细",
-      rows: [["货物名称", "车数", "重量(吨)", "来源工作表", "归类情况"]].concat(
+      rows: [["统一货物名称", "车数", "重量(吨)", "来源工作表", "合并来源（原始货名）", "归类情况"]].concat(
         (result.raw || []).map(function (r) {
           var hit = (result.byTemplate || []).filter(function (b) {
             return b.matched && b.matched.indexOf(r.goods + "(") > -1;
           })[0];
-          return [r.goods, r.cnt, r.weight, r.sources, hit ? "→ " + hit.name : (r.goods === "未填写货物" ? "空值（未参与模板归类）" : "未列入模板")];
+          return [r.goods, r.cnt, r.weight, r.sources,
+            (r.variants || []).join("、"),
+            hit ? "→ " + hit.name : (r.goods === "未填写货物" ? "空值（未参与模板归类）" : "未列入模板")];
         }))
     });
     out.push({
@@ -409,7 +483,8 @@
         ["统计日期", meta.date || ""],
         ["统计口径", "车数 = 明细行数；重量 = " + (meta.unitLabel || "毛重(千克) ÷ 1000 = 吨")],
         ["货物名称识别", "自动识别明细表头中的「货物名称 / 品名 / 商品名称」列；无表头的工作表已跳过"],
-        ["归类规则", "明细货名先精确匹配模板清单，再按归一化（去鲜/红心/白心/括号等）匹配；每条明细只归入一个最佳匹配项"],
+        ["货物名称统一口径", "白火龙果 / 红心火龙果 / 鲜火龙果 / 火龙果(产地) 等一律归并为「火龙果」；去括号、空白与鲜/红心/白/进口等前缀修饰词，命中标准货物名词库后合并车数与重量"],
+        ["归类规则", "统一口径后的货名先精确匹配模板清单，再按归一化匹配；每条明细只归入一个最佳匹配项"],
         ["合计行", "按模板内货物行重新求和；区间内无货物行的合计行保留模板原值"],
         ["模板范围", "导出包含模板中的货物统计工作表及统计附表；模板内的原始明细工作表不重复导出"],
         ["", ""],
@@ -428,6 +503,8 @@
     aggregate: aggregate,
     matchItems: matchItems,
     buildFilled: buildFilled,
+    buildCanonDict: buildCanonDict,
+    canonicalGoods: canonicalGoods,
     normGoods: normGoods,
     today: today,
     round2: round2

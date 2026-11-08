@@ -1308,3 +1308,56 @@ button:focus-visible,
   .tl-toolbar .btn { flex: 0 1 auto; }
   .tl-toolbar #tlDirty { width: 100%; }
 }
+
+/* --- 22. 每日报表：历史导入数据面板 / 看板导入货物统计 --- */
+.hist-card { scroll-margin-top: 110px; }
+/* 看板导入面板标题：允许换行并给副标题 / 链接留间距，避免挤成一团 */
+#importPanel .card-hd { flex-wrap: wrap; gap: 4px 12px; }
+.hist-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.hist-toolbar .grow { flex: 1 1 auto; }
+.hist-label { font-size: 13px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+.hist-toolbar .select { flex: 0 0 auto; width: 190px; min-width: 0; }
+.hist-toolbar .btn.danger { color: #dc2626; border-color: rgba(220, 38, 38, .35); }
+.hist-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
+}
+.hist-kpi {
+  padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius, 12px); background: var(--surface);
+}
+.hist-kpi-v { font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--text); font-variant-numeric: tabular-nums; }
+.hist-kpi-l { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+.hist-note { margin-top: 12px; font-size: 12.5px; line-height: 1.7; }
+.hist-card .empty { padding: 22px 12px; text-align: center; }
+.import-panel-meta {
+  padding: 10px 14px; margin-bottom: 14px; border-radius: var(--radius, 12px);
+  background: var(--primary-soft, #eef4ff); color: var(--text-2);
+  font-size: 13px; line-height: 1.8;
+}
+.import-panel-meta b { color: var(--text); }
+#importGoodsTable .empty { padding: 22px 12px; text-align: center; }
+
+:root[data-theme="dark"] .hist-kpi { background: rgba(255, 255, 255, .03); }
+:root[data-theme="dark"] .import-panel-meta { background: rgba(59, 110, 245, .14); }
+:root[data-theme="dark"] .hist-toolbar .btn.danger { color: #f87171; border-color: rgba(248, 113, 113, .35); }
+
+@media (max-width: 768px) {
+  .hist-stats { grid-template-columns: repeat(2, 1fr); }
+  .hist-toolbar .select { flex: 1 1 130px; min-width: 0; }
+  .hist-card .goods-table th,
+  .hist-card .goods-table td { white-space: nowrap; }
+  /* 窄屏改块级排布：标题 / 副标题 / 链接各占一行，不再穿插 */
+  #importPanel .card-hd,
+  .hist-card .card-hd { display: block; font-size: 14.5px; line-height: 1.65; }
+  #importPanel .card-hd .sub,
+  .hist-card .card-hd .sub { display: block; margin-top: 4px; font-size: 12px; }
+  #importPanel .card-hd .btn-link { display: inline-block; margin-top: 6px; }
+}
+@media (max-width: 480px) {
+  .hist-kpi-v { font-size: 18px; }
+  .hist-toolbar { gap: 6px; }
+  .hist-toolbar .btn { flex: 1 1 auto; }
+}

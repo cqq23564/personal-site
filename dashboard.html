@@ -77,10 +77,21 @@
         </div>
       </div>
       <div class="page-notice" id="dashNotice" style="display:none"></div>
-      <div class="page-notice source-hint">本站未与任何生产业务系统对接；本看板及查询统计模块中的预置数据为演示用示意数据，每日报表由使用者每日下班导入的 Excel 表格汇总生成（导入内容由使用者自行负责）。<a href="source.html">查看数据来源与声明 →</a></div>
+      <div class="page-notice source-hint">本站未与任何生产业务系统对接；本看板及查询统计模块中的预置数据为演示用示意数据，每日报表由使用者每日下班导入的 Excel 表格汇总生成（导入内容由使用者自行负责）。导入的货物统计按统计日期保存在本站云端账号下，刷新后自动读回，货物名称按统一口径归并。<a href="source.html">查看数据来源与声明 →</a></div>
 
       <!-- KPI 卡片 -->
       <div class="stat-grid mb-24" id="kpiGrid"></div>
+
+      <!-- 每日报表导入货物统计（云端持久化，按日期归类，刷新不丢失） -->
+      <div class="card mb-24" id="importPanel">
+        <div class="card-hd">📦 每日报表 · 导入货物统计 <span class="sub">按日期归类 · 统一货物名称口径 · 云端持久化</span>
+          <a class="btn-link" href="query-reports.html">前往每日报表 →</a>
+        </div>
+        <div class="card-bd">
+          <div class="import-panel-meta" id="importMeta"></div>
+          <div class="table-wrap" id="importGoodsTable"></div>
+        </div>
+      </div>
 
       <!-- 趋势 + 货物构成 -->
       <div class="grid-2 mb-24">
@@ -89,7 +100,7 @@
           <div class="card-bd"><div class="chart-box" id="trendChart"></div></div>
         </div>
         <div class="card">
-          <div class="card-hd">今日货物构成 <span class="sub">按车数占比</span></div>
+          <div class="card-hd"><span id="goodsDonutTitle">今日货物构成</span> <span class="sub" id="goodsDonutSub">按车数占比</span></div>
           <div class="card-bd"><div class="chart-box" id="goodsDonut"></div></div>
         </div>
       </div>
@@ -207,8 +218,45 @@
         $("#kpiGrid").querySelectorAll("[data-count]").forEach(function (el) { App.animateCount(el); });
       }
 
+      /* ---------- 每日报表：导入货物统计面板（云端按日期持久化，刷新不丢失） ---------- */
+      function renderImportPanel(rows) {
+        var meta = $("#importMeta"), box = $("#importGoodsTable");
+        var dates = {};
+        (rows || []).forEach(function (r) { if (r.rdate) dates[r.rdate] = true; });
+        var dateList = Object.keys(dates).sort().reverse();
+        var latest = dateList[0] || "";
+        var list = (rows || []).filter(function (r) { return r.rdate === latest && r.lane === "明细原值"; });
+        if (!list.length) {
+          meta.innerHTML = '<span class="text-3">暂无导入数据。请在「查询统计 → 每日报表」导入 Excel，数据会按统计日期保存在云端。</span>';
+          box.innerHTML = '<div class="empty">暂无导入货物统计数据</div>';
+          return null;
+        }
+        var cars = list.reduce(function (a, r) { return a + (Number(r.cnt) || 0); }, 0);
+        var wt = list.reduce(function (a, r) { return a + (Number(r.weight) || 0); }, 0);
+        var merged = list.filter(function (r) { return String(r.variants || "").length; }).length;
+        meta.innerHTML = '统计日期 <b>' + App.esc(latest) + '</b> · 共 <b>' + list.length +
+          '</b> 种统一口径货物 / <b>' + cars + '</b> 车次 / <b>' + (Math.round(wt * 100) / 100) +
+          '</b> 吨 · <b>' + merged + '</b> 种货物合并了多种叫法 · 云端共 <b>' + dateList.length +
+          '</b> 天历史数据（数据来源：每日下班导入的 Excel，非生产业务系统）';
+        var h = '<table class="table import-table goods-table"><thead><tr>' +
+          ["统一货物名称", "车数", "重量(吨)", "合并来源（原始货名）", "来源工作表"].map(function (t) { return "<th>" + t + "</th>"; }).join("") +
+          '</tr></thead><tbody>';
+        list.slice(0, 20).forEach(function (r) {
+          h += '<tr><td><b>' + App.esc(r.goods) + '</b></td><td class="mono">' + App.esc(r.cnt) +
+            '</td><td class="mono">' + App.esc(r.weight) + '</td><td>' + (App.esc(r.variants) || "—") +
+            '</td><td>' + App.esc(r.group_name) + '</td></tr>';
+        });
+        h += '</tbody></table>';
+        if (list.length > 20) {
+          h += '<div class="text-3" style="margin-top:8px;font-size:12.5px">仅显示前 20 种，共 ' +
+            list.length + ' 种；完整数据见「每日报表」页。</div>';
+        }
+        box.innerHTML = h;
+        return { date: latest, list: list, dateCount: dateList.length };
+      }
+
       /* ---------- 图表 ---------- */
-      function renderCharts(vehicles, checkpoints, reports) {
+      function renderCharts(vehicles, checkpoints, reports, importInfo) {
         var asc = reports.slice().reverse();
         $("#trendTitle").innerHTML = (asc.length ? "近 " + asc.length + " 日" : "") + '入区 / 出卡趋势 <span class="sub">单位：车</span>';
         App.renderLineChart("#trendChart", {
@@ -219,13 +267,23 @@
           ]
         });
 
+        /* 货物构成：优先用云端最新导入的货物统计（统一口径），无导入数据时回退到在场车辆 */
         var gmap = {};
-        vehicles.forEach(function (v) { if (v.goods && v.goods !== "—") gmap[v.goods] = (gmap[v.goods] || 0) + 1; });
+        if (importInfo && importInfo.list.length) {
+          importInfo.list.forEach(function (r) {
+            if (r.goods && r.goods !== "未填写货物") gmap[r.goods] = (gmap[r.goods] || 0) + (Number(r.cnt) || 0);
+          });
+        } else {
+          vehicles.forEach(function (v) { if (v.goods && v.goods !== "—") gmap[v.goods] = (gmap[v.goods] || 0) + 1; });
+        }
         var gtotal = Object.keys(gmap).reduce(function (s, k) { return s + gmap[k]; }, 0);
         var palette = ["#3b6ef5", "#7c5cff", "#16a34a", "#d97706", "#0891b2", "#94a3b8"];
+        var donutLabel = importInfo ? ("导入货物构成（" + importInfo.date + "）") : "在场货物构成";
+        $("#goodsDonutTitle").textContent = importInfo ? "导入货物构成" : "今日货物构成";
+        $("#goodsDonutSub").textContent = importInfo ? ("按车数占比 · " + importInfo.date) : "按车数占比";
         App.renderDonut("#goodsDonut", Object.keys(gmap).map(function (name, i) {
           return { name: name, value: gtotal ? Math.round(gmap[name] / gtotal * 100) : 0, color: palette[i % palette.length] };
-        }), { label: "在场货物构成", unit: "%" });
+        }), { label: donutLabel, unit: "%" });
 
         var hours = {};
         checkpoints.forEach(function (r) {
@@ -261,6 +319,8 @@
 
       /* ---------- 加载 ---------- */
       async function loadAll() {
+        /* 静态镜像 / 未登录时也渲染导入面板空态引导，避免留下空白卡片 */
+        renderImportPanel([]);
         if (!C.isReady()) { showNotice("当前站点为静态镜像，看板实时数据需在 WorkBuddy 托管域名使用。", true); return; }
         if (!C.isLoggedIn()) {
           showNotice('看板数据需 <a href="login.html?next=dashboard.html" style="color:inherit;text-decoration:underline">登录</a> 后查看（云端数据仅对登录用户开放）。', true);
@@ -270,10 +330,12 @@
           C.tableList("site_vehicles", { order: "entry_at", asc: false }),
           C.tableList("site_checkpoint", { order: "happened_at", asc: false }),
           C.tableList("site_records", { order: "happened_at", asc: false }),
-          C.tableList("site_reports", { order: "rdate", asc: false })
+          C.tableList("site_reports", { order: "rdate", asc: false }),
+          C.tableList("site_report_goods", { order: "rdate", asc: false })
         ]);
-        if (results.some(function (r) { return r.error; })) {
-          showNotice("读取失败：" + App.esc((results.find(function (r) { return r.error; }) || {}).error.message || ""), true);
+        /* 前 4 张表是看板基础数据，任一失败即中止；导入货物统计单独容错，不阻断看板 */
+        if (results.slice(0, 4).some(function (r) { return r.error; })) {
+          showNotice("读取失败：" + App.esc((results.slice(0, 4).find(function (r) { return r.error; }) || {}).error.message || ""), true);
           return;
         }
         var vehicles = (results[0].data || []).map(function (v) {
@@ -282,12 +344,18 @@
         var checkpoints = results[1].data || [];
         var records = results[2].data || [];
         var reports = results[3].data || [];
+        var goodsRows = results[4].error ? [] : (results[4].data || []);
+        var importInfo = renderImportPanel(goodsRows);
         lastVehicles = vehicles; lastReports = reports;
         renderKpis(vehicles, reports);
-        renderCharts(vehicles, checkpoints, reports);
+        renderCharts(vehicles, checkpoints, reports, importInfo);
         renderMap(vehicles, checkpoints, records);
         onSiteTable.setData(vehicles);
-        showNotice("数据实时来自云端：<b>" + vehicles.length + "</b> 辆在场 · <b>" + checkpoints.length + "</b> 条卡口记录 · <b>" + records.length + "</b> 条核放记录 · <b>" + reports.length + "</b> 份日报。在「查询统计」中增删改，看板即时联动。");
+        showNotice("数据实时来自云端：<b>" + vehicles.length + "</b> 辆在场 · <b>" + checkpoints.length +
+          "</b> 条卡口记录 · <b>" + records.length + "</b> 条核放记录 · <b>" + reports.length +
+          "</b> 份日报 · <b>" + goodsRows.length + "</b> 条导入货物统计记录" +
+          (importInfo ? "（最新日期 " + App.esc(importInfo.date) + "）" : "") +
+          "。在「查询统计」中导入 / 增删改，看板即时联动。");
       }
 
       loadAll();
