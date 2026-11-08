@@ -1162,3 +1162,62 @@ button:focus-visible,
   .source-lead { padding: 14px 16px; font-size: 13.5px; }
   .source-card .card-bd p, .source-list { font-size: 14px; }
 }
+
+/* --- 19. 每日报表：Excel 导入区 --- */
+.import-card .card-hd .sub { font-weight: 400; }
+.import-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: var(--primary-soft, #eaf0ff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13.5px;
+}
+.import-label { color: var(--text-2); font-size: 12.5px; }
+.import-meta strong { color: var(--text); }
+.import-hint-inline { font-size: 12px; line-height: 1.6; }
+.import-desc { margin: 0 0 16px; font-size: 13.5px; line-height: 1.85; color: var(--text-2); }
+.import-desc strong { color: var(--text); }
+.import-drop {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius, 12px);
+  background: var(--surface-2, #f8fafc);
+  padding: 26px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.import-drop:hover, .import-drop.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light, #eef3fe);
+}
+.import-drop-icon { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+.import-drop-text { font-size: 15px; font-weight: 600; color: var(--text); }
+.import-drop-sub { font-size: 12.5px; color: var(--text-3); margin: 6px 0 16px; line-height: 1.6; }
+.import-btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.import-preview { margin-top: 18px; }
+.import-preview-hd { font-size: 13.5px; margin-bottom: 10px; color: var(--text-2); line-height: 1.7; }
+.import-preview-hd b { color: var(--text); }
+.import-table { font-size: 13px; min-width: 760px; }
+.import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.import-actions .text-3 { font-size: 12.5px; }
+
+:root[data-theme="dark"] .import-meta { background: rgba(59, 110, 245, .14); }
+:root[data-theme="dark"] .import-drop:hover,
+:root[data-theme="dark"] .import-drop.dragover { background: rgba(59, 110, 245, .12); }
+
+@media (max-width: 768px) {
+  .import-card .card-hd { display: block; font-size: 14.5px; line-height: 1.65; }
+  .import-card .card-hd .sub { display: block; margin-top: 4px; font-size: 12px; }
+  .import-drop { padding: 20px 12px; }
+  .import-drop-sub { font-size: 12px; }
+  .import-meta { font-size: 13px; padding: 10px 12px; }
+  .import-meta .badge { white-space: nowrap; }
+  .import-hint-inline { width: 100%; }
+  .import-actions .btn { flex: 1 1 auto; }
+}

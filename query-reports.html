@@ -66,15 +66,53 @@
       <div class="page-head">
         <div>
           <div class="page-title">📈 每日报表</div>
-          <div class="page-desc">入区 / 出卡 / 核放 / 申报日报，支持明细导出</div>
+          <div class="page-desc">每日下班导入 Excel → 自动生成日报 → 报表可导出</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
           <button class="btn btn-primary hidden" id="rpAddBtn">＋ 新增日报</button>
+          <button class="btn btn-line" id="goImportBtn">📥 导入 Excel</button>
           <button class="btn btn-line" id="exportDetail">📄 导出行车明细</button>
           <button class="btn btn-line" id="exportReport">📥 导出报表数据</button>
         </div>
       </div>
       <div class="page-notice" id="rpNotice" style="display:none"></div>
+
+      <!-- 每日下班 Excel 导入 → 自动生成每日报表 -->
+      <div class="card mb-24 import-card" id="importCard">
+        <div class="card-hd">📥 每日下班导入 Excel · 自动生成每日报表 <span class="sub">支持 .xlsx / .xls / .csv</span></div>
+        <div class="card-bd">
+          <div class="import-meta">
+            <span class="import-label">数据来源</span>
+            <strong id="reportSourceText" data-param="report.source.mode">每日下班导入 Excel 表格</strong>
+            <span class="badge badge-info" id="exportFormatBadge">导出格式：Excel 工作簿</span>
+            <span class="text-3 import-hint-inline">本站未对接任何生产业务系统，报表由使用者导入的表格汇总生成</span>
+          </div>
+          <p class="import-desc">
+            每日下班把当天通行明细 Excel 拖入下方，系统按日期自动汇总为一条日报（入区 / 出卡 / 重空 / 一线放行 / 边民申报 / 异常）；
+            同一天重复导入会<strong>覆盖更新</strong>，不会产生重复数据。也可直接导入已汇总好的日报表。
+          </p>
+          <div class="import-drop" id="importDrop">
+            <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+            <div class="import-drop-inner">
+              <div class="import-drop-icon">📄</div>
+              <div class="import-drop-text">点击选择，或把 Excel / CSV 文件拖到这里</div>
+              <div class="import-drop-sub">支持中文表头：日期 / 时间 / 方向 / 重空 / 放行结果 / 边民申报 / 异常</div>
+              <div class="import-btn-row">
+                <button class="btn btn-primary btn-sm" id="chooseFileBtn">选择文件</button>
+                <button class="btn btn-line btn-sm" id="downloadTplDetail">⬇ 明细模板</button>
+                <button class="btn btn-line btn-sm" id="downloadTplSummary">⬇ 汇总模板</button>
+              </div>
+            </div>
+          </div>
+          <div id="importPreview" class="import-preview" style="display:none"></div>
+          <div class="import-actions" id="importActions" style="display:none">
+            <button class="btn btn-primary" id="confirmImportBtn">✅ 确认导入并生成日报</button>
+            <button class="btn btn-line" id="exportImportedBtn" disabled>📥 导出本次日报</button>
+            <button class="btn btn-line" id="cancelImportBtn">取消</button>
+            <span class="text-3" id="importSummary"></span>
+          </div>
+        </div>
+      </div>
 
       <!-- 今日概览 -->
       <div class="stat-grid mb-24" id="todayStats"></div>
@@ -91,13 +129,13 @@
           <input class="input" id="rpKw" placeholder="🔍 日期（如 11-03）">
           <select class="select" id="rpSort">
             <option value="">默认排序</option>
-            <option value="inTotal-desc">入区最多</option>
-            <option value="outTotal-desc">出卡最多</option>
+            <option value="in_total-desc">入区最多</option>
+            <option value="out_total-desc">出卡最多</option>
             <option value="decl-desc">申报最多</option>
             <option value="abnormal-desc">异常最多</option>
           </select>
           <div class="grow"></div>
-          <span class="text-3" style="font-size:12.5px">💡 导出格式：CSV（Excel 可直接打开）</span>
+          <span class="text-3" style="font-size:12.5px">💡 导出格式：Excel 工作簿 / CSV（均可用 Excel 打开）</span>
         </div>
         <div class="card-bd flush">
           <div class="table-wrap" id="rpTable"></div>
@@ -122,34 +160,288 @@
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script src="js/admin-crud.js"></script>
+  <script src="js/vendor/xlsx.full.min.js"></script>
   <script>
     (function () {
+      "use strict";
       var $ = function (s) { return document.querySelector(s); };
       var C = window.Cloud;
+      var App = window.App;
 
-      /* 云表字段 -> 页面展示字段 */
-      function toRows(list) {
-        return (list || []).map(function (r) {
-          return {
-            id: r.id, date: r.rdate, inTotal: r.in_total, inHeavy: r.in_heavy, inEmpty: r.in_empty,
-            outTotal: r.out_total, outHeavy: r.out_heavy, outEmpty: r.out_empty,
-            release: r.release_cnt, decl: r.decl, abnormal: r.abnormal
+      /* ============ 一、日报字段与表头别名 ============ */
+      /* 表格与云表 site_reports 使用同一套字段名，避免映射错位 */
+      var REPORT_FIELDS = [
+        { key: "rdate", label: "日期" },
+        { key: "in_total", label: "入区总数" },
+        { key: "in_heavy", label: "入区重车" },
+        { key: "in_empty", label: "入区空车" },
+        { key: "out_total", label: "出卡总数" },
+        { key: "out_heavy", label: "出卡重车" },
+        { key: "out_empty", label: "出卡空车" },
+        { key: "release_cnt", label: "一线放行" },
+        { key: "decl", label: "边民申报" },
+        { key: "abnormal", label: "异常次数" }
+      ];
+      var NUM_KEYS = REPORT_FIELDS.slice(1).map(function (f) { return f.key; });
+
+      /* 汇总表（每行已是一天日报）表头别名 */
+      var SUMMARY_ALIASES = {
+        rdate:       ["日期", "业务日期", "统计日期", "报表日期", "date", "rdate"],
+        in_total:    ["入区总数", "入区合计", "入场总数", "进区总数", "入区车次", "入区车辆", "入区"],
+        in_heavy:    ["入区重车", "入区重车数", "入场重车", "进区重车"],
+        in_empty:    ["入区空车", "入区空车数", "入场空车", "进区空车"],
+        out_total:   ["出卡总数", "出卡合计", "出场总数", "出区总数", "出卡车次", "出卡车辆", "出卡", "出区"],
+        out_heavy:   ["出卡重车", "出卡重车数", "出场重车", "出区重车"],
+        out_empty:   ["出卡空车", "出卡空车数", "出场空车", "出区空车"],
+        release_cnt: ["一线放行", "放行", "核放数", "核放", "放行车辆", "放行数"],
+        decl:        ["边民申报", "申报", "申报单", "申报单数", "申报数"],
+        abnormal:    ["异常次数", "异常", "报警", "报警次数", "异常数"]
+      };
+
+      /* 明细表（每行一条通行记录）表头别名 */
+      var DETAIL_ALIASES = {
+        date:     ["日期", "业务日期", "通行日期", "统计日期", "date", "rdate", "发生日期"],
+        time:     ["时间", "通行时间", "发生时间", "过卡时间", "卡口时间", "happened_at", "datetime"],
+        dir:      ["方向", "出入", "进出", "通行方向", "出入方向", "进出方向", "action", "inout", "类型"],
+        kind:     ["重空", "车型", "车辆类型", "重空车", "vtype", "车别"],
+        plate:    ["车牌", "车牌号", "号牌", "plate"],
+        goods:    ["货物", "货类", "goods"],
+        release:  ["放行", "核放结果", "结果", "放行结果", "result", "是否放行"],
+        decl:     ["申报", "边民申报", "是否申报", "申报单号", "decl"],
+        abnormal: ["异常", "报警", "是否异常", "异常标记", "abnormal"]
+      };
+
+      function pad2(n) { return String(n).padStart(2, "0"); }
+      function stamp() { var d = new Date(); return "" + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); }
+      function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+
+      /* 表头归一化：去空格、去括号单位、去标点、转小写 */
+      function normHead(s) {
+        return String(s == null ? "" : s)
+          .replace(/[\s\u3000]/g, "")
+          .replace(/[（(【\[][^）)】\]]*[）)】\]]/g, "")
+          .replace(/[（(【\[].*$/, "")
+          .replace(/[：:,，.。/\\\-_、]/g, "")
+          .toLowerCase();
+      }
+      /* 先精确匹配，再退化为「表头包含别名」 */
+      function findCol(headers, aliases) {
+        var i, a, na, nh;
+        for (a = 0; a < aliases.length; a++) {
+          na = normHead(aliases[a]);
+          for (i = 0; i < headers.length; i++) { if (normHead(headers[i]) === na) return i; }
+        }
+        for (a = 0; a < aliases.length; a++) {
+          na = normHead(aliases[a]);
+          if (na.length < 2) continue;
+          for (i = 0; i < headers.length; i++) {
+            nh = normHead(headers[i]);
+            if (nh.length >= 2 && nh.indexOf(na) > -1) return i;
+          }
+        }
+        return -1;
+      }
+      function num(v) {
+        if (v == null || v === "") return 0;
+        var n = Number(String(v).replace(/[^\d.\-]/g, ""));
+        return isFinite(n) && n > 0 ? Math.round(n) : 0;
+      }
+      function truthy(v) {
+        if (v == null) return false;
+        if (typeof v === "number") return v > 0;
+        var s = String(v).trim().toLowerCase();
+        if (!s) return false;
+        return ["0", "否", "无", "空", "false", "未申报", "未异常", "未放行", "不放行", "待处理", "待核放", "拦截", "拒绝", "失败", "—", "-"].indexOf(s) === -1;
+      }
+      /* 日期兼容：Date 对象 / Excel 序列号 / 2026-11-03 / 2026/11/3 / 11-03 / 20261103 */
+      function normalizeDate(v) {
+        if (v == null || v === "") return "";
+        if (v instanceof Date && !isNaN(v.getTime())) {
+          return v.getFullYear() + "-" + pad2(v.getMonth() + 1) + "-" + pad2(v.getDate());
+        }
+        if (typeof v === "number" && isFinite(v)) {
+          if (v > 20000 && v < 80000) {
+            var d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
+            return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate());
+          }
+          var s0 = String(Math.floor(v));
+          if (/^\d{8}$/.test(s0)) return s0.slice(0, 4) + "-" + s0.slice(4, 6) + "-" + s0.slice(6, 8);
+          return "";
+        }
+        var s = String(v).trim();
+        var m = s.match(/(\d{4})[\/\-\.年](\d{1,2})[\/\-\.月](\d{1,2})/);
+        if (m) return m[1] + "-" + pad2(m[2]) + "-" + pad2(m[3]);
+        var m3 = s.match(/^(\d{8})$/);
+        if (m3) return m3[1].slice(0, 4) + "-" + m3[1].slice(4, 6) + "-" + m3[1].slice(6, 8);
+        var m2 = s.match(/^(\d{1,2})[\/\-\.月](\d{1,2})/);
+        if (m2) return new Date().getFullYear() + "-" + pad2(m2[1]) + "-" + pad2(m2[2]);
+        return "";
+      }
+      function blankDay(d) {
+        var o = { rdate: d };
+        NUM_KEYS.forEach(function (k) { o[k] = 0; });
+        return o;
+      }
+      function hasContent(row) {
+        return row.some(function (c) { return String(c == null ? "" : c).trim() !== ""; });
+      }
+
+      /* ============ 二、两种表格解析 ============ */
+      function parseSummary(matrix) {
+        var headers = matrix[0] || [];
+        var idx = {};
+        REPORT_FIELDS.forEach(function (f) { idx[f.key] = findCol(headers, SUMMARY_ALIASES[f.key]); });
+        if (idx.rdate < 0) return { error: "汇总表里找不到「日期」列，请下载「汇总模板」对照表头。" };
+        var out = [], seen = {};
+        for (var i = 1; i < matrix.length; i++) {
+          var row = matrix[i] || [];
+          if (!hasContent(row)) continue;
+          var d = normalizeDate(row[idx.rdate]);
+          if (!d) continue;
+          var rec = blankDay(d);
+          NUM_KEYS.forEach(function (k) { if (idx[k] >= 0) rec[k] = num(row[idx[k]]); });
+          if (seen[d]) { NUM_KEYS.forEach(function (k) { seen[d][k] += rec[k]; }); }
+          else { seen[d] = rec; out.push(rec); }
+        }
+        return { data: out, mode: "已汇总日报表" };
+      }
+      function parseDetail(matrix) {
+        var headers = matrix[0] || [];
+        var iDate = findCol(headers, DETAIL_ALIASES.date);
+        var iTime = findCol(headers, DETAIL_ALIASES.time);
+        var iDir = findCol(headers, DETAIL_ALIASES.dir);
+        var iKind = findCol(headers, DETAIL_ALIASES.kind);
+        var iRel = findCol(headers, DETAIL_ALIASES.release);
+        var iDecl = findCol(headers, DETAIL_ALIASES.decl);
+        var iAbn = findCol(headers, DETAIL_ALIASES.abnormal);
+        var dateCol = iDate >= 0 ? iDate : iTime;
+        if (dateCol < 0) return { error: "明细表里找不到「日期 / 时间」列，请下载「明细模板」对照表头。" };
+        if (iDir < 0 && iKind < 0) return { error: "明细表里找不到「方向」或「重空」列，无法自动汇总。" };
+        var map = {};
+        for (var i = 1; i < matrix.length; i++) {
+          var row = matrix[i] || [];
+          if (!hasContent(row)) continue;
+          var d = normalizeDate(row[dateCol]);
+          if (!d) continue;
+          if (!map[d]) map[d] = blankDay(d);
+          var r = map[d];
+          var dir = iDir >= 0 ? String(row[iDir] == null ? "" : row[iDir]) : "";
+          var kind = iKind >= 0 ? String(row[iKind] == null ? "" : row[iKind]) : "";
+          var isIn = /入|进/.test(dir), isOut = /出/.test(dir);
+          var heavy = /重/.test(kind), empty = /空/.test(kind);
+          if (isIn) { r.in_total++; if (heavy) r.in_heavy++; else if (empty) r.in_empty++; }
+          else if (isOut) { r.out_total++; if (heavy) r.out_heavy++; else if (empty) r.out_empty++; }
+          if (iRel >= 0 && truthy(row[iRel])) r.release_cnt++;
+          if (iDecl >= 0 && truthy(row[iDecl])) r.decl += typeof row[iDecl] === "number" ? num(row[iDecl]) : 1;
+          if (iAbn >= 0 && truthy(row[iAbn])) r.abnormal += typeof row[iAbn] === "number" ? num(row[iAbn]) : 1;
+        }
+        return {
+          data: Object.keys(map).sort().map(function (k) { return map[k]; }),
+          mode: "通行明细表 → 按日期自动汇总"
+        };
+      }
+      function parseWorkbook(matrix) {
+        var headers = matrix[0] || [];
+        var isSummary = findCol(headers, SUMMARY_ALIASES.in_total) >= 0 ||
+                        findCol(headers, SUMMARY_ALIASES.out_total) >= 0;
+        var res = isSummary ? parseSummary(matrix) : parseDetail(matrix);
+        if (res.error) return res;
+        if (!res.data.length) return { error: "没有解析到有效数据行，请检查表头与日期格式。" };
+        return res;
+      }
+      function readSheet(file) {
+        return new Promise(function (resolve, reject) {
+          var fr = new FileReader();
+          fr.onerror = function () { reject(new Error("文件读取失败，请重试")); };
+          fr.onload = function (e) {
+            try {
+              if (!window.XLSX) throw new Error("Excel 解析组件未加载，请刷新页面重试");
+              var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array", cellDates: true });
+              if (!wb.SheetNames.length) throw new Error("文件中没有工作表");
+              var ws = wb.Sheets[wb.SheetNames[0]];
+              var matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true, blankrows: false });
+              if (!matrix.length) throw new Error("表格为空");
+              resolve(matrix);
+            } catch (err) { reject(err); }
           };
+          fr.readAsArrayBuffer(file);
         });
       }
 
+      /* ============ 三、导出（CSV + Excel 工作簿，无外部依赖） ============ */
+      function reportHeaders() { return REPORT_FIELDS.map(function (f) { return f.label; }); }
+      function dbToRow(r) { return [r.rdate].concat(NUM_KEYS.map(function (k) { return r[k] == null ? 0 : r[k]; })); }
+      function xmlEsc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c];
+        });
+      }
+      function sheetXml(name, rows) {
+        var body = rows.map(function (row) {
+          return "<Row>" + row.map(function (c) {
+            var isNum = typeof c === "number" && isFinite(c);
+            return '<Cell><Data ss:Type="' + (isNum ? "Number" : "String") + '">' +
+              (isNum ? c : xmlEsc(c)) + "</Data></Cell>";
+          }).join("") + "</Row>";
+        }).join("");
+        return '<Worksheet ss:Name="' + xmlEsc(name) + '"><Table>' + body + "</Table></Worksheet>";
+      }
+      function exportWorkbook(filename, sheets) {
+        var xml = '<?xml version="1.0" encoding="UTF-8"?>\r\n' +
+          '<?mso-application progid="Excel.Sheet"?>\r\n' +
+          '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ' +
+          'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+          'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+          'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ' +
+          'xmlns:html="http://www.w3.org/TR/REC-html40">' +
+          sheets.map(function (s) { return sheetXml(s.name, s.rows); }).join("") + "</Workbook>";
+        var blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+        App.toast("已导出 " + filename, "ok");
+      }
+      function exportReports(rows, tag) {
+        if (!rows.length) { App.toast("当前没有可导出的日报数据", "warn"); return; }
+        var fmt = window.__reportFormat || "xlsx";
+        var src = ($("#reportSourceText") && $("#reportSourceText").textContent.trim()) || "每日下班导入 Excel 表格";
+        var fname = "每日报表_" + (tag || stamp());
+        if (fmt === "csv") {
+          App.exportCSV(fname + ".csv", reportHeaders(), rows);
+        } else {
+          var total = ["合计", 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          rows.forEach(function (r) { for (var i = 1; i <= 9; i++) total[i] += Number(r[i]) || 0; });
+          exportWorkbook(fname + ".xls", [
+            { name: "每日报表", rows: [reportHeaders()].concat(rows, [total]) },
+            { name: "数据来源说明", rows: [
+              ["项目", "说明"],
+              ["数据来源", src],
+              ["生成方式", "每日下班导入 Excel 表格后按日期自动汇总生成"],
+              ["记录数", rows.length + " 天"],
+              ["导出时间", new Date().toLocaleString("zh-CN")],
+              ["", ""],
+              ["字段口径", "入区 / 出卡按方向统计，重空按车型统计，放行 / 申报 / 异常按明细标记统计"],
+              ["声明", "本站未与任何生产业务系统对接；导入内容由使用者自行负责"]
+            ] }
+          ]);
+        }
+        C.logAction("每日报表", "导出报表数据", rows.length + " 条 / " + fmt);
+      }
+
+      /* ============ 四、报表表格（直接使用云表字段名） ============ */
       const table = new App.DataTable({
         el: "#rpTable", data: [], pageSize: 7, pager: "#rpPager",
-        keywordEl: "#rpKw", searchKeys: ["date"],
+        keywordEl: "#rpKw", searchKeys: ["rdate"],
         columns: [
-          { key: "date", title: "日期", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
-          { key: "inTotal", title: "入区总数", sortable: true, align: "right" },
-          { key: "inHeavy", title: "重车", sortable: true, align: "right" },
-          { key: "inEmpty", title: "空车", sortable: true, align: "right" },
-          { key: "outTotal", title: "出卡总数", sortable: true, align: "right" },
-          { key: "outHeavy", title: "重车", sortable: true, align: "right" },
-          { key: "outEmpty", title: "空车", sortable: true, align: "right" },
-          { key: "release", title: "一线放行", sortable: true, align: "right" },
+          { key: "rdate", title: "日期", sortable: true, render: v => `<b class="mono">${App.esc(v)}</b>` },
+          { key: "in_total", title: "入区总数", sortable: true, align: "right" },
+          { key: "in_heavy", title: "重车", sortable: true, align: "right" },
+          { key: "in_empty", title: "空车", sortable: true, align: "right" },
+          { key: "out_total", title: "出卡总数", sortable: true, align: "right" },
+          { key: "out_heavy", title: "重车", sortable: true, align: "right" },
+          { key: "out_empty", title: "空车", sortable: true, align: "right" },
+          { key: "release_cnt", title: "一线放行", sortable: true, align: "right" },
           { key: "decl", title: "边民申报", sortable: true, align: "right" },
           {
             key: "abnormal", title: "异常", sortable: true, align: "right",
@@ -167,21 +459,21 @@
 
       /* 今日概览 + 趋势图（随数据刷新） */
       function renderExtras(rows) {
-        var today = rows[0] || { inTotal: 0, inHeavy: 0, outTotal: 0, decl: 0, release: 0, abnormal: 0 };
+        var today = rows[0] || { in_total: 0, in_heavy: 0, out_total: 0, decl: 0, release_cnt: 0, abnormal: 0 };
         $("#todayStats").innerHTML = `
-          <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${today.inTotal}</div><div class="stat-label">最新日入区（车）</div></div></div>
-          <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${today.inHeavy}</div><div class="stat-label">其中重车（车）</div></div></div>
-          <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${today.outTotal}</div><div class="stat-label">最新日出卡（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-value">${today.in_total}</div><div class="stat-label">最新日入区（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">📦</div><div><div class="stat-value">${today.in_heavy}</div><div class="stat-label">其中重车（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange">📤</div><div><div class="stat-value">${today.out_total}</div><div class="stat-label">最新日出卡（车）</div></div></div>
           <div class="stat-card"><div class="stat-icon purple">📋</div><div><div class="stat-value">${today.decl}</div><div class="stat-label">边民申报（单）</div></div></div>
-          <div class="stat-card"><div class="stat-icon cyan">✅</div><div><div class="stat-value">${today.release}</div><div class="stat-label">一线放行（车）</div></div></div>
+          <div class="stat-card"><div class="stat-icon cyan">✅</div><div><div class="stat-value">${today.release_cnt}</div><div class="stat-label">一线放行（车）</div></div></div>
           <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value">${today.abnormal}</div><div class="stat-label">异常（次）</div></div></div>`;
 
         var asc = rows.slice().reverse();
         App.renderLineChart("#reportChart", {
-          labels: asc.map(r => String(r.date).slice(5)),
+          labels: asc.map(r => String(r.rdate).slice(5)),
           series: [
-            { name: "入区", data: asc.map(r => r.inTotal), color: "#3b6ef5", area: true },
-            { name: "出卡", data: asc.map(r => r.outTotal), color: "#d97706", area: true },
+            { name: "入区", data: asc.map(r => r.in_total), color: "#3b6ef5", area: true },
+            { name: "出卡", data: asc.map(r => r.out_total), color: "#d97706", area: true },
             { name: "边民申报", data: asc.map(r => r.decl), color: "#16a34a" }
           ]
         });
@@ -191,7 +483,7 @@
         table: "site_reports", entity: "日报", module: "每日报表",
         notice: "#rpNotice", addBtn: "#rpAddBtn",
         dt: table, order: "rdate", asc: false,
-        editFn: "editRp", delFn: "delRp", label: r => r.date,
+        editFn: "editRp", delFn: "delRp", label: r => r.rdate,
         fields: [
           { key: "rdate", label: "日期", required: true, ph: "2026-11-03", pattern: /^\d{4}-\d{2}-\d{2}$/, hint: "一天只能有一条日报" },
           { key: "in_total", label: "入区总数", type: "number", def: 0 },
@@ -204,20 +496,151 @@
           { key: "decl", label: "边民申报", type: "number", def: 0 },
           { key: "abnormal", label: "异常次数", type: "number", def: 0 }
         ],
-        onLoaded: function (list) { renderExtras(toRows(list)); }
+        onLoaded: function (list) { renderExtras(list || []); }
       });
 
-      /* 单日报表导出 */
+      /* ============ 五、Excel 导入 → 自动生成日报 ============ */
+      var pending = [], lastImported = [];
+
+      function renderPreview(parsed) {
+        pending = parsed.data;
+        var existing = {};
+        rpCrud.rows().forEach(function (r) { existing[r.rdate] = true; });
+        var h = '<div class="import-preview-hd">解析完成 · 识别为 <b>' + App.esc(parsed.mode) +
+          '</b> · 共 <b>' + pending.length + '</b> 天数据（同一天重复导入将覆盖更新）</div>';
+        h += '<div class="table-wrap"><table class="table import-table"><thead><tr>' +
+          reportHeaders().concat(["状态"]).map(function (t) { return "<th>" + App.esc(t) + "</th>"; }).join("") +
+          "</tr></thead><tbody>";
+        pending.slice(0, 12).forEach(function (r) {
+          h += "<tr>" + dbToRow(r).map(function (c) { return "<td>" + App.esc(c) + "</td>"; }).join("") +
+            '<td><span class="badge ' + (existing[r.rdate] ? "badge-warn" : "badge-ok") + '">' +
+            (existing[r.rdate] ? "覆盖更新" : "新增") + "</span></td></tr>";
+        });
+        h += "</tbody></table></div>";
+        if (pending.length > 12) h += '<div class="text-3" style="margin-top:8px;font-size:12.5px">仅预览前 12 天，共 ' + pending.length + ' 天将全部写入。</div>';
+        $("#importPreview").innerHTML = h;
+        $("#importPreview").style.display = "";
+        $("#importActions").style.display = "";
+        $("#importSummary").textContent = "待写入 " + pending.length + " 条日报";
+        $("#exportImportedBtn").disabled = true;
+      }
+      async function handleFile(file) {
+        var name = String(file.name || "").toLowerCase();
+        if (!/\.(xlsx|xls|csv)$/.test(name)) { App.toast("请选择 .xlsx / .xls / .csv 文件", "err"); return; }
+        $("#importActions").style.display = "";
+        $("#importPreview").style.display = "none";
+        $("#exportImportedBtn").disabled = true;
+        $("#importSummary").textContent = "正在解析 " + file.name + " …";
+        try {
+          var matrix = await readSheet(file);
+          var parsed = parseWorkbook(matrix);
+          if (parsed.error) {
+            App.toast(parsed.error, "err");
+            $("#importActions").style.display = "none";
+            $("#importSummary").textContent = "";
+            return;
+          }
+          renderPreview(parsed);
+          App.toast("解析成功：" + parsed.data.length + " 天日报数据", "ok");
+        } catch (err) {
+          App.toast(err.message || "解析失败，请检查文件格式", "err");
+          $("#importActions").style.display = "none";
+          $("#importSummary").textContent = "";
+        }
+      }
+      async function commitImport() {
+        if (!C.isReady()) { App.toast("当前为静态镜像，请在 WorkBuddy 托管域名登录后导入", "err"); return; }
+        if (!C.isAdmin()) { App.toast("仅管理员可导入并生成日报", "err"); return; }
+        if (!pending.length) return;
+        var btn = $("#confirmImportBtn");
+        btn.disabled = true; btn.textContent = "正在生成…";
+        var existing = {};
+        rpCrud.rows().forEach(function (r) { existing[r.rdate] = r.id; });
+        var ok = 0, fail = 0;
+        for (var i = 0; i < pending.length; i++) {
+          var patch = {};
+          NUM_KEYS.forEach(function (k) { patch[k] = pending[i][k]; });
+          var res;
+          if (existing[pending[i].rdate]) {
+            res = await C.tableUpdate("site_reports", existing[pending[i].rdate], patch);
+          } else {
+            res = await C.tableInsert("site_reports", Object.assign({ rdate: pending[i].rdate }, patch));
+          }
+          if (res.error) fail++; else ok++;
+        }
+        btn.disabled = false; btn.textContent = "✅ 确认导入并生成日报";
+        C.logAction("每日报表", "Excel导入生成日报", "成功 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : ""));
+        await rpCrud.load();
+        lastImported = pending.slice();
+        $("#exportImportedBtn").disabled = false;
+        $("#importSummary").textContent = "已生成 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : "");
+        App.toast(fail ? ("已生成 " + ok + " 条，失败 " + fail + " 条（请检查权限）")
+                      : ("已自动生成 " + ok + " 条每日报表，可点击「导出报表数据」下载"), fail ? "warn" : "ok");
+      }
+
+      var drop = $("#importDrop"), fileInput = $("#importFile");
+      $("#chooseFileBtn").addEventListener("click", function () { fileInput.click(); });
+      drop.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest("button")) return;
+        fileInput.click();
+      });
+      ["dragenter", "dragover"].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("dragover"); });
+      });
+      ["dragleave", "drop"].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("dragover"); });
+      });
+      drop.addEventListener("drop", function (e) {
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) handleFile(f);
+      });
+      fileInput.addEventListener("change", function () {
+        if (this.files && this.files[0]) handleFile(this.files[0]);
+        this.value = "";
+      });
+      $("#confirmImportBtn").addEventListener("click", commitImport);
+      $("#cancelImportBtn").addEventListener("click", function () {
+        pending = []; lastImported = [];
+        $("#importPreview").style.display = "none";
+        $("#importActions").style.display = "none";
+        $("#exportImportedBtn").disabled = true;
+        fileInput.value = "";
+      });
+      $("#exportImportedBtn").addEventListener("click", function () {
+        if (!lastImported.length) { App.toast("请先导入生成日报", "warn"); return; }
+        exportReports(lastImported.map(dbToRow), "本次导入_" + stamp());
+      });
+      $("#goImportBtn").addEventListener("click", function () {
+        $("#importCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
+      /* 导入模板（CSV，Excel 可直接打开，填好另存后导入） */
+      $("#downloadTplDetail").addEventListener("click", function () {
+        var d = todayStr();
+        App.exportCSV("每日报表_明细导入模板.csv",
+          ["日期", "时间", "方向", "重空", "车牌", "货物", "放行结果", "边民申报", "异常"],
+          [
+            [d, "08:12", "入区", "重车", "桂A12345", "水果", "已放行", "是", "否"],
+            [d, "08:35", "入区", "空车", "桂A23456", "—", "已放行", "否", "否"],
+            [d, "09:02", "出卡", "重车", "桂A34567", "坚果", "已放行", "是", "否"],
+            [d, "17:40", "出卡", "重车", "桂A45678", "水果", "待处理", "否", "是"]
+          ]);
+        App.toast("明细模板已下载，用 Excel 填写后导入即可", "ok");
+      });
+      $("#downloadTplSummary").addEventListener("click", function () {
+        App.exportCSV("每日报表_汇总导入模板.csv", reportHeaders(),
+          [[todayStr(), 128, 96, 32, 121, 88, 33, 240, 156, 2]]);
+        App.toast("汇总模板已下载，用 Excel 填写后导入即可", "ok");
+      });
+
+      /* ============ 六、原有导出能力 ============ */
       window.exportDay = function (id) {
         var r = rpCrud.rows().find(function (x) { return x.id === id; });
         if (!r) return;
-        App.exportCSV("日报_" + r.rdate + ".csv",
-          ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
-          [[r.rdate, r.in_total, r.in_heavy, r.in_empty, r.out_total, r.out_heavy, r.out_empty, r.release_cnt, r.decl, r.abnormal]]);
+        App.exportCSV("日报_" + r.rdate + ".csv", reportHeaders(), [dbToRow(r)]);
         C.logAction("每日报表", "导出日报", r.rdate);
       };
 
-      /* 排序快捷方式 */
       document.getElementById("rpSort").addEventListener("change", function () {
         const [k, dir] = this.value.split("-");
         if (!k) { table.sortKey = null; }
@@ -225,26 +648,43 @@
         table.render();
       });
 
-      document.getElementById("exportReport").addEventListener("click", () => {
-        App.exportCSV("每日报表.csv",
-          ["日期", "入区总数", "入区重车", "入区空车", "出卡总数", "出卡重车", "出卡空车", "一线放行", "边民申报", "异常"],
-          table.filtered.map(r => [r.date, r.inTotal, r.inHeavy, r.inEmpty, r.outTotal, r.outHeavy, r.outEmpty, r.release, r.decl, r.abnormal]));
+      document.getElementById("exportReport").addEventListener("click", function () {
+        exportReports(table.filtered.map(dbToRow), stamp());
       });
 
       /* 行车明细导出（取云端卡口记录，可按日期过滤） */
-      document.getElementById("exportDetail").addEventListener("click", async () => {
-        this.disabled = true;
+      document.getElementById("exportDetail").addEventListener("click", async function () {
+        var btn = this;
+        btn.disabled = true;
         var res = await C.tableList("site_checkpoint", { order: "happened_at", asc: false });
-        this.disabled = false;
+        btn.disabled = false;
         if (res.error) { App.toast(res.error.message, "err"); return; }
         var kw = $("#rpKw").value.trim();
-        var rows = (res.data || []).filter(function (r) { return !kw || String(r.happened_at).indexOf(kw.replace("-", "-")) > -1 || String(r.happened_at).slice(5).indexOf(kw) > -1; });
+        var rows = (res.data || []).filter(function (r) {
+          return !kw || String(r.happened_at).indexOf(kw) > -1 || String(r.happened_at).slice(5).indexOf(kw) > -1;
+        });
         App.exportCSV("行车明细.csv",
           ["车牌", "闸口", "通道", "类型", "货物", "动作", "时间", "核放结果"],
           rows.map(r => [r.plate, r.gate, r.channel, r.vtype, r.goods, r.action, r.happened_at, r.result]));
         App.toast("已导出 " + rows.length + " 条行车明细", "ok");
         C.logAction("每日报表", "导出行车明细", rows.length + " 条");
       });
+
+      /* 报表参数：数据来源（由 applyHomeParams 联动显示）+ 导出格式 */
+      async function loadReportParams() {
+        if (!C.isReady() || !C.isLoggedIn()) return;
+        var res = await C.listParams();
+        if (res.error) return;
+        (res.data || []).forEach(function (p) {
+          if (p.pkey === "report.export.format") {
+            var fmt = String(p.pvalue || "xlsx").toLowerCase();
+            window.__reportFormat = fmt === "csv" ? "csv" : "xlsx";
+            $("#exportFormatBadge").textContent = "导出格式：" + (fmt === "csv" ? "CSV" : "Excel 工作簿");
+          }
+        });
+      }
+      loadReportParams();
+      C.onChange(loadReportParams);
     })();
   </script>
 </body>

@@ -132,6 +132,10 @@
                 <option value="K::home.stat.modules::首页-公开资料·查验效能提升">统计 · 查验效能提升</option>
                 <option value="K::home.stat.efficiency::首页-公开资料·调度人力减少">统计 · 调度人力减少</option>
               </optgroup>
+              <optgroup label="报表参数（每日报表页）">
+                <option value="K::report.source.mode::报表-数据来源::报表参数">每日报表 · 数据来源</option>
+                <option value="K::report.export.format::报表-导出格式::报表参数">每日报表 · 导出格式（xlsx / csv）</option>
+              </optgroup>
               <optgroup label="绑定到页面任意元素（新增参数即可改）">
                 <option value="S::.hero-inner h1::dom.hero.title">首页大标题整体（.hero-inner h1）</option>
                 <option value="S::.section-title::dom.section.title">所有区块标题（.section-title）</option>
@@ -272,7 +276,7 @@
           $("#pfKey").value = parts[1];
           if (!$("#pfName").value.trim()) $("#pfName").value = parts[2];
           $("#pfTarget").value = "";
-          $("#pfGroup").value = "首页数据";
+          $("#pfGroup").value = parts[3] || "首页数据";
         } else if (parts[0] === "S") {
           $("#pfTarget").value = parts[1];
           $("#pfKey").value = parts[2];
