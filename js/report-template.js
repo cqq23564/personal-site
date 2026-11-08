@@ -302,7 +302,13 @@
    */
   function fmtDate(v) {
     if (v instanceof Date && !isNaN(v.getTime())) {
-      return v.getFullYear() + "-" + pad2(v.getMonth() + 1) + "-" + pad2(v.getDate());
+      var d = new Date(v.getTime());
+      /* SheetJS 会把 Excel 的「2026-11-07 00:00」解析成 UTC 15:59:17，
+       * 在 GMT+8 落成本地 23:59:17（比整日少约 43 秒），直接 getDate() 会退回前一天。
+       * 把贴近次日午夜的异常值吸附到次日，消除 1900 历元 / 时区转换误差。 */
+      var mins = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+      if (mins >= 23 * 60 + 58) d = new Date(d.getTime() + 5 * 60 * 1000);
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
     }
     return "";
   }
@@ -318,20 +324,23 @@
     var all = sheets || [], date = "", rawItems = [], metrics = [];
     var goodsSheets = {}, classSheets = {};
 
-    /* 1) 统计日期：单元格日期 > 文件名 */
-    for (var si = 0; si < all.length && !date; si++) {
-      var mm = all[si].matrix || [];
-      for (var r0 = 0; r0 < Math.min(mm.length, 4) && !date; r0++) {
-        var row0 = mm[r0] || [];
-        for (var c0 = 0; c0 < Math.min(row0.length, 5); c0++) {
-          var v = row0[c0];
-          if (v instanceof Date) { date = fmtDate(v); if (date) break; }
-          var mt = String(v == null ? "" : v).match(/(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
-          if (mt) { date = mt[1] + "-" + pad2(mt[2]) + "-" + pad2(mt[3]); break; }
+    /* 1) 统计日期：文件名优先（用户按当天命名，最可靠），单元格日期兜底。
+     *    Excel 整日日期经 SheetJS 可能偏一天，故不让它覆盖文件名日期。 */
+    date = dateFromName(filename);
+    if (!date) {
+      for (var si = 0; si < all.length && !date; si++) {
+        var mm = all[si].matrix || [];
+        for (var r0 = 0; r0 < Math.min(mm.length, 4) && !date; r0++) {
+          var row0 = mm[r0] || [];
+          for (var c0 = 0; c0 < Math.min(row0.length, 5); c0++) {
+            var v = row0[c0];
+            if (v instanceof Date) { date = fmtDate(v); if (date) break; }
+            var mt = String(v == null ? "" : v).match(/(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+            if (mt) { date = mt[1] + "-" + pad2(mt[2]) + "-" + pad2(mt[3]); break; }
+          }
         }
       }
     }
-    if (!date) date = dateFromName(filename);
     if (!date) date = today();
 
     /* 2) 逐表按表头识别「货物列组」与「车辆类别列组」 */
