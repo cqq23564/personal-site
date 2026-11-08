@@ -1268,3 +1268,43 @@ button:focus-visible,
   .goods-table { min-width: 560px; }
   .goods-table td:nth-child(5) { max-width: 200px; }
 }
+
+/* --- 21. 成长经历：参数管理页专用增删改排序 --- */
+.tl-card { scroll-margin-top: 110px; }  /* 锚点跳转时避开固定导航，避免标题被遮住 */
+.tl-card:target { box-shadow: 0 0 0 2px var(--primary), var(--shadow); }
+.tl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.tl-toolbar .grow { flex: 1 1 auto; }
+.tl-list { display: flex; flex-direction: column; gap: 10px; }
+.tl-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; border: 1px solid var(--border);
+  border-radius: var(--radius, 12px); background: var(--surface);
+  transition: border-color .2s, background .2s;
+}
+.tl-row.current { border-left: 3px solid var(--primary); background: var(--primary-soft, #eef4ff); }
+.tl-idx {
+  flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2, #f1f5f9); color: var(--text-2);
+  font-size: 12.5px; font-weight: 600;
+}
+.tl-row.current .tl-idx { background: var(--primary); color: #fff; }
+.tl-body { flex: 1 1 auto; min-width: 0; }
+.tl-date { font-size: 12.5px; color: var(--text-3); }
+.tl-title { font-weight: 600; font-size: 14.5px; margin: 3px 0; color: var(--text); }
+.tl-text { font-size: 13px; color: var(--text-2); line-height: 1.7; overflow-wrap: anywhere; }
+.tl-ops { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: flex-end; max-width: 210px; }
+.tl-ops .btn-link { font-size: 12.5px; white-space: nowrap; }
+.tl-ops .btn-link:disabled { opacity: .35; cursor: not-allowed; }
+.tl-list .empty { padding: 22px 12px; }
+
+:root[data-theme="dark"] .tl-row.current { background: rgba(59, 110, 245, .12); }
+:root[data-theme="dark"] .tl-idx { background: rgba(255, 255, 255, .08); }
+:root[data-theme="dark"] .tl-row.current .tl-idx { background: var(--primary); color: #fff; }
+
+@media (max-width: 768px) {
+  .tl-row { flex-wrap: wrap; gap: 10px; }
+  .tl-ops { width: 100%; max-width: none; justify-content: flex-start; padding-left: 42px; }
+  .tl-toolbar .btn { flex: 0 1 auto; }
+  .tl-toolbar #tlDirty { width: 100%; }
+}

@@ -388,6 +388,104 @@
     }
   }
 
+  /* ---------- 首页「成长经历」：由 home.timeline.N.* 参数动态渲染（可增删改排序） ----------
+   * 不再写死 4 条 DOM：编号 N 决定顺序，任意条数均可；参数管理页整组保存后即时生效。
+   */
+  var TIMELINE_RE = /^home\.timeline\.(\d+)\.(date|title|text)$/;
+  var TIMELINE_FIELDS = ["date", "title", "text"];
+  var TIMELINE_LABEL = { date: "时间", title: "标题", text: "正文" };
+  function tlEsc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  /** 聚合 site_params 里所有 home.timeline.N.* -> [{date,title,text}]，按编号升序 */
+  function timelineFromParams(list) {
+    var map = {};
+    (list || []).forEach(function (p) {
+      var m = TIMELINE_RE.exec(p.pkey || "");
+      if (!m) return;
+      var n = Number(m[1]);
+      if (!map[n]) map[n] = { date: "", title: "", text: "" };
+      map[n][m[2]] = p.pvalue == null ? "" : String(p.pvalue);
+    });
+    return Object.keys(map).map(Number).sort(function (a, b) { return a - b; })
+      .map(function (n) { return map[n]; })
+      .filter(function (it) { return it.date || it.title || it.text; });
+  }
+  /** 首页时间线动态渲染；无云端参数时显示空状态（未登录 / 静态镜像时本函数不执行，保留静态兜底） */
+  function renderTimeline(list) {
+    var box = document.getElementById("homeTimeline");
+    if (!box) return;
+    var items = timelineFromParams(list);
+    if (!items.length) {
+      box.innerHTML = '<div class="empty" style="padding:10px 0"><div class="ico">🧭</div>还没有成长经历，管理员可到「参数管理 → 成长经历」添加</div>';
+      return;
+    }
+    box.innerHTML = items.map(function (it, i) {
+      return '<div class="timeline-item' + (i === 0 ? "" : " done") + '">' +
+        '<div class="timeline-date">' + tlEsc(it.date) + "</div>" +
+        '<div class="timeline-title">' + tlEsc(it.title) + "</div>" +
+        '<div class="timeline-text">' + tlEsc(it.text) + "</div></div>";
+    }).join("");
+  }
+  /** 参数管理页读取成长经历（按编号聚合） */
+  async function listTimeline() {
+    var res = homeParamsCache ? { data: homeParamsCache } : await listParams();
+    if (res.error) return { data: [], error: res.error };
+    return { data: timelineFromParams(res.data), error: null };
+  }
+  /** 整组保存成长经历：复用已有参数 id 更新、新增缺失编号、删除多余编号，只广播一次 */
+  async function saveTimeline(items) {
+    if (!state.ready) return { error: { message: unavailableText() } };
+    if (!isAdmin()) return { error: { message: "仅管理员可修改成长经历" } };
+    var r = await cloud.auth.getSession();
+    if (!r || r.error || !r.data) return { error: { message: "登录已过期，请重新登录" } };
+    try {
+      var res = await listParams();
+      if (res.error) return { error: res.error };
+      var olds = (res.data || []).filter(function (p) { return /^home\.timeline\.\d+\./.test(p.pkey || ""); });
+      var oldMap = {};
+      olds.forEach(function (p) { oldMap[p.pkey] = p; });
+      var keep = {};
+      var list = items || [];
+      for (var n = 0; n < list.length; n++) {
+        for (var f = 0; f < TIMELINE_FIELDS.length; f++) {
+          var key = TIMELINE_FIELDS[f];
+          var pkey = "home.timeline." + (n + 1) + "." + key;
+          var payload = {
+            pname: "经历" + (n + 1) + "-" + TIMELINE_LABEL[key],
+            pvalue: String(list[n][key] == null ? "" : list[n][key]),
+            pgroup: "成长经历",
+            remark: "成长经历第" + (n + 1) + "条（参数管理页可增删改排序）",
+            updated_at: nowISO()
+          };
+          keep[pkey] = true;
+          var old = oldMap[pkey];
+          var op;
+          if (old) {
+            op = await cloud.database.from("site_params").update(payload).eq("id", old.id).select();
+          } else {
+            var row = { pkey: pkey };
+            Object.keys(payload).forEach(function (k) { row[k] = payload[k]; });
+            op = await cloud.database.from("site_params").insert(row).select();
+          }
+          if (op && op.error) return { error: op.error };
+          if (op && op.data && !op.data.length) return { error: { message: "保存失败：没有权限（仅管理员可修改）或记录不存在" } };
+        }
+      }
+      /* 删除编号超出新列表的旧条目（例如从 4 条删到 2 条） */
+      for (var i = 0; i < olds.length; i++) {
+        if (keep[olds[i].pkey]) continue;
+        var d = await cloud.database.from("site_params").delete().eq("id", olds[i].id);
+        if (d && d.error) return { error: d.error };
+      }
+      homeParamsCache = null;
+      emit();
+      return { data: list };
+    } catch (e) { return { error: { message: "网络异常，保存成长经历失败" } }; }
+  }
+
   /**
    * 全站文案联动（真实数据，无需改代码）：
    * 1) 页面 [data-param] 元素按 pkey 取值；
@@ -416,6 +514,8 @@
         document.querySelectorAll(sel).forEach(function (el) { setParamValue(el, v, true); });
       } catch (e) { /* 选择器非法时忽略，不影响页面 */ }
     });
+    /* 成长经历：按云端参数动态渲染任意条数（增删改排序后即时生效） */
+    renderTimeline(list);
   }
   listeners.push(applyHomeParams);
 
@@ -758,6 +858,9 @@
     listParams: listParams,
     saveParam: saveParam,
     deleteParam: deleteParam,
+    listTimeline: listTimeline,
+    saveTimeline: saveTimeline,
+    renderTimeline: renderTimeline,
     applyHomeParams: applyHomeParams,
     mountMenus: mountMenus,
     sendPhoneCode: sendPhoneCode,

@@ -13,7 +13,7 @@ personal-site/
 ├── dashboard.html        数据看板（KPI / 折线·柱状·环形图 / 园区平面示意 / 在场车辆表）
 ├── system-menus.html     菜单管理（树形表格、显示隐藏、增删）
 ├── system-users.html     用户管理 + 注册审核（Tabs、批量通过）
-├── system-params.html    参数管理（分组筛选、编辑、导出）
+├── system-params.html    参数管理（分组筛选、编辑、导出、成长经历增删改排序）
 ├── system-logs.html      操作日志（统计卡、筛选、导出、清空）
 ├── query-vehicles.html   在场车辆查询（滞留 72h 预警表）
 ├── query-checkpoint.html 卡口车辆管理（多选、批量抬杆）
@@ -44,7 +44,7 @@ python -m http.server 8899        # 或 npx serve .
 | 核心 | 文字 / 图片 / 视频 / 表格 | 首页、各功能页 |
 | 核心 | 表单提交 / 按钮 / 链接 / 轮播图 | 首页、登录注册、留言板 |
 | 核心 | 响应式（≥1200/992/768/480 断点，移动端汉堡菜单） | 全站 |
-| 系统管理 | 菜单管理、用户管理、参数管理、操作日志、注册审核 | system-*.html |
+| 系统管理 | 菜单管理、用户管理、参数管理、操作日志、注册审核；首页「成长经历」由云端参数动态渲染，可新增 / 编辑 / 删除 / 上移下移并即时生效 | system-*.html |
 | 查询统计 | 在场车辆、卡口车辆、核放记录、每日报表；Excel 导入自动生成日报、报表模板上传、货物名称自动识别与按模板归类统计、报表导出（Excel 工作簿 / CSV） | query-*.html |
 | 用户管理 | 登录、注册、个人中心 | login / register / profile |
 | 数据可视化 | 折线图、柱状图、环形图（纯 SVG）、园区平面示意图、数据表格 | dashboard 等 |
@@ -58,6 +58,7 @@ python -m http.server 8899        # 或 npx serve .
 - 表单校验规则通过 `data-rule` 声明（required / min:n / phone / email / account / pwd / captcha）。
 - 每日报表支持「每日下班导入 Excel（.xlsx / .xls / .csv）→ 按日期自动汇总生成日报 → 报表导出」闭环；解析由本地 `js/vendor/xlsx.full.min.js` 与 `js/report-template.js` 提供，不依赖外部 CDN。
 - 支持上传自定义报表模板：自动解析模板的「货物名称 / 车数 / 重量」列组与合计行，自动识别明细里的货物名称列，按货物名称归类统计并回填成模板格式的报表；模板文件存云端（`site_report_templates`），统计结果存 `site_report_goods`。
+- 首页「成长经历」不再写死 4 条：条目由云端 `site_params` 的 `home.timeline.N.*`（date / title / text）聚合，编号 N 决定顺序，任意条数均可；在「参数管理 → 成长经历」专用管理区增删改排序后整组保存，首页即时生效，无需改代码或重新发布。
 - 导出为浏览器端生成：CSV（带 BOM，Excel 可直接打开）或 Excel 工作簿（SpreadsheetML `.xls`）；模板统计报表含模板货物统计表及「按模板归类 / 货物统计明细 / 数据来源说明」附表，无需后端。
 
 ## 数据来源与合规声明

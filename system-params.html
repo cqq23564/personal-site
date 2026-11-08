@@ -66,18 +66,38 @@
       <div class="page-head">
         <div>
           <div class="page-title">🔧 参数管理 <span id="permBadge" class="badge badge-ok plain" style="display:none;margin-left:8px"></span></div>
-          <div class="page-desc">全站参数配置，保存后立即生效；可新增参数并绑定到页面任意元素，或新增菜单与按钮</div>
+          <div class="page-desc">全站参数配置，保存后立即生效；可新增参数并绑定到页面任意元素；「成长经历」用下方专用管理区增删改排序</div>
         </div>
         <button class="btn btn-primary" id="addParamBtn">＋ 新增参数</button>
       </div>
       <div class="page-notice" id="paramNotice" style="display:none"></div>
+
+      <!-- 成长经历：专用可视化管理（增删改排序，整组保存后首页即时生效） -->
+      <div class="card mb-24 tl-card" id="timelineCard">
+        <div class="card-hd">🧭 成长经历 · 专用管理 <span class="sub">可新增 / 编辑 / 删除 / 上移下移，保存后首页时间线即时生效</span></div>
+        <div class="card-bd">
+          <div class="page-notice" id="tlNotice" style="display:none"></div>
+          <div class="tl-toolbar">
+            <button class="btn btn-primary btn-sm" id="tlAddBtn">＋ 新增经历</button>
+            <button class="btn btn-line btn-sm" id="tlResetBtn">↺ 重新载入</button>
+            <div class="grow"></div>
+            <span class="text-3" id="tlDirty" style="display:none;font-size:12.5px;color:#d97706">● 有未保存的修改</span>
+            <button class="btn btn-primary btn-sm" id="tlSaveBtn">💾 保存并实时生效</button>
+          </div>
+          <div id="tlList" class="tl-list"></div>
+          <div class="text-3" style="font-size:12.5px;margin-top:12px;line-height:1.7">
+            说明：第 1 条为「当前」节点（高亮），其余为已完成节点；列表顺序即首页显示顺序。保存时整组写回云端参数
+            <span class="mono">home.timeline.N.*</span>，无需改代码、无需重新发布。
+          </div>
+        </div>
+      </div>
 
       <div class="card">
         <div class="table-toolbar">
           <input class="input" id="paramKw" placeholder="🔍 参数名称 / 键名">
           <select class="select" id="paramGroup">
             <option value="">全部分组</option>
-            <option>首页数据</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option>
+            <option>首页数据</option><option>成长经历</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option>
           </select>
           <div class="grow"></div>
           <button class="btn btn-line btn-sm" id="exportParams">📥 导出</button>
@@ -137,6 +157,10 @@
                 <option value="K::report.export.format::报表-导出格式::报表参数">每日报表 · 导出格式（xlsx / csv）</option>
                 <option value="K::report.goods.weight.unit::报表-货物重量口径::报表参数">每日报表 · 货物重量口径说明</option>
               </optgroup>
+              <optgroup label="成长经历">
+                <option value="T::timelineCard">🧭 前往「成长经历」专用管理（新增 / 删除 / 排序）</option>
+                <option value="K::home.section.timeline::首页-成长经历标题">成长经历 · 区块标题</option>
+              </optgroup>
               <optgroup label="绑定到页面任意元素（新增参数即可改）">
                 <option value="S::.hero-inner h1::dom.hero.title">首页大标题整体（.hero-inner h1）</option>
                 <option value="S::.section-title::dom.section.title">所有区块标题（.section-title）</option>
@@ -150,7 +174,7 @@
           </div>
           <div class="form-row">
             <div class="field"><label>分组</label>
-              <select class="select" id="pfGroup"><option>首页数据</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
+              <select class="select" id="pfGroup"><option>首页数据</option><option>成长经历</option><option>场站参数</option><option>通关参数</option><option>报表参数</option><option>文件参数</option><option>安全参数</option></select></div>
             <div class="field"><label>目标元素选择器（可选）</label><input class="input mono" id="pfTarget" placeholder="如：.footer-text 或 #heroDesc">
               <div class="text-3" style="font-size:12px;margin-top:4px">填 CSS 选择器后，参数值直接写到匹配元素上，可改页面任意文案</div></div>
           </div>
@@ -160,6 +184,25 @@
       <div class="modal-ft">
         <button class="btn btn-line" data-modal-close>取消</button>
         <button class="btn btn-primary" id="pfSaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成长经历编辑弹窗 -->
+  <div class="modal-mask" id="tlModal">
+    <div class="modal">
+      <div class="modal-hd"><span id="tlModalTitle">新增经历</span><button class="modal-close" data-modal-close>✕</button></div>
+      <div class="modal-bd">
+        <form id="tlForm" novalidate>
+          <div class="field"><label>时间 / 日期<span class="req">*</span></label><input class="input" id="tlDate" placeholder="如：2026 - 至今"></div>
+          <div class="field"><label>标题 / 岗位<span class="req">*</span></label><input class="input" id="tlTitle" placeholder="如：园区运营中心 · 系统管理员"></div>
+          <div class="field"><label>描述</label><textarea class="textarea" id="tlText" style="min-height:90px" placeholder="这段经历做了什么……"></textarea></div>
+          <div class="field-msg" id="tlFormMsg"></div>
+        </form>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-line" data-modal-close>取消</button>
+        <button class="btn btn-primary" id="tlFormSave">保存本条</button>
       </div>
     </div>
   </div>
@@ -186,6 +229,9 @@
       var rows = [];
       var canManage = false;
       var editingId = null;
+      var tlItems = [];      // 成长经历草稿（本地编辑，保存后整组写回云端）
+      var tlDirty = false;
+      var tlEditing = -1;    // -1 表示新增
 
       function showNotice(html, warn) {
         if (!notice) return;
@@ -227,14 +273,19 @@
       /* ---------- 加载 ---------- */
       async function loadData() {
         if (!C.isReady()) {
+          canManage = false; tlButtons(false); tlRender();
           showNotice("当前站点为静态镜像，云端参数需在 WorkBuddy 托管域名使用。", true);
+          tlNotice("当前站点为静态镜像，成长经历管理需在 WorkBuddy 托管域名登录后使用。", true);
           return;
         }
         if (!C.isLoggedIn()) {
+          canManage = false; tlButtons(false); tlRender();
           showNotice('请先 <a href="login.html?next=system-params.html" style="color:inherit;text-decoration:underline">登录</a> 后再管理参数。', true);
+          tlNotice('请先 <a href="login.html?next=system-params.html" style="color:inherit;text-decoration:underline">登录</a> 后再管理成长经历。', true);
           return;
         }
         canManage = C.isAdmin();
+        tlButtons(canManage);
         var badge = $("#permBadge");
         if (badge && C.isSuperAdmin && C.isSuperAdmin()) {
           badge.textContent = "👑 超级管理员 · 最高权限（可增改删全部参数）";
@@ -245,6 +296,11 @@
         if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
         rows = res.data || [];
         paramTable.setData(rows);
+        /* 有未保存的草稿时不覆盖，避免用户正在编辑的经历被冲掉 */
+        if (!tlDirty) tlLoad(tlFromRows(rows));
+        tlNotice(canManage
+          ? "共 <b>" + tlItems.length + "</b> 条经历。可新增 / 编辑 / 删除 / 上移下移，改完点「💾 保存并实时生效」，首页时间线即时更新。"
+          : "你当前是普通用户，成长经历仅 <b>管理员</b> 可修改（以下仅供查看）。", !canManage);
         if (canManage) {
           showNotice("共 <b>" + rows.length + "</b> 项参数，全部可增 / 改 / 删，保存后<b>立即生效</b>。键名以 <b>home.</b> 开头驱动首页文案与数字；" +
             "新增参数时填写「目标元素选择器」即可改页面任意位置文字，无需改代码。");
@@ -283,6 +339,10 @@
           $("#pfKey").value = parts[2];
           if (!$("#pfName").value.trim()) $("#pfName").value = "自定义-" + parts[2];
           $("#pfGroup").value = "首页数据";
+        } else if (parts[0] === "T") {
+          var card = document.getElementById(parts[1]);
+          if (card && card.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
+          App.toast("已定位到「成长经历」专用管理，可新增 / 删除 / 排序", "ok");
         }
       });
 
@@ -332,6 +392,142 @@
         App.toast(editingId ? "已保存并实时生效" : "参数已创建并生效", "ok");
         C.logAction("参数管理", editingId ? "修改参数" : "新增参数", pname);
         loadData();
+      });
+
+      /* ---------- 成长经历：专用增删改排序管理 ---------- */
+      function tlNotice(html, warn) {
+        var el = $("#tlNotice");
+        if (!el) return;
+        el.innerHTML = html || "";
+        el.className = "page-notice" + (warn ? " warn" : "");
+        el.style.display = html ? "" : "none";
+      }
+      function tlButtons(canEdit) {
+        ["tlAddBtn", "tlSaveBtn"].forEach(function (id) {
+          var b = $("#" + id);
+          if (b) b.classList.toggle("hidden", !canEdit);
+        });
+      }
+      /* 把 site_params 原始行聚合为 [{date,title,text}]，按 home.timeline.N 的 N 升序 */
+      function tlFromRows(list) {
+        var map = {};
+        (list || []).forEach(function (p) {
+          var m = /^home\.timeline\.(\d+)\.(date|title|text)$/.exec(p.pkey || "");
+          if (!m) return;
+          var n = Number(m[1]);
+          if (!map[n]) map[n] = { date: "", title: "", text: "" };
+          map[n][m[2]] = p.pvalue == null ? "" : String(p.pvalue);
+        });
+        return Object.keys(map).map(Number).sort(function (a, b) { return a - b; })
+          .map(function (n) { return map[n]; })
+          .filter(function (it) { return it.date || it.title || it.text; });
+      }
+      function tlMarkDirty() {
+        tlDirty = true;
+        var d = $("#tlDirty");
+        if (d) d.style.display = "";
+      }
+      function tlRender() {
+        var box = $("#tlList");
+        if (!box) return;
+        if (!tlItems.length) {
+          box.innerHTML = '<div class="empty"><div class="ico">🧭</div>还没有成长经历，' +
+            (canManage ? '点「＋ 新增经历」添加，保存后首页时间线即显示' : '请在 WorkBuddy 托管域名登录后由管理员添加') + '</div>';
+          return;
+        }
+        box.innerHTML = tlItems.map(function (it, i) {
+          return '<div class="tl-row' + (i === 0 ? " current" : "") + '">' +
+            '<div class="tl-idx">' + (i + 1) + "</div>" +
+            '<div class="tl-body">' +
+              '<div class="tl-date">' + App.esc(it.date) + (i === 0 ? '<span class="badge badge-ok plain" style="margin-left:8px">当前</span>' : "") + "</div>" +
+              '<div class="tl-title">' + App.esc(it.title) + "</div>" +
+              '<div class="tl-text">' + App.esc(it.text) + "</div>" +
+            "</div>" +
+            '<div class="tl-ops">' +
+              '<button class="btn-link" data-tl="up" data-i="' + i + '"' + (i === 0 ? " disabled" : "") + ">↑ 上移</button>" +
+              '<button class="btn-link" data-tl="down" data-i="' + i + '"' + (i === tlItems.length - 1 ? " disabled" : "") + ">↓ 下移</button>" +
+              '<button class="btn-link" data-tl="edit" data-i="' + i + '">✎ 编辑</button>' +
+              '<button class="btn-link danger" data-tl="del" data-i="' + i + '">✕ 删除</button>' +
+            "</div></div>";
+        }).join("");
+      }
+      function tlLoad(items) {
+        tlItems = (items || []).map(function (it) {
+          return { date: it.date || "", title: it.title || "", text: it.text || "" };
+        });
+        tlDirty = false;
+        var d = $("#tlDirty");
+        if (d) d.style.display = "none";
+        tlRender();
+      }
+      function tlOpenForm(idx) {
+        tlEditing = idx;
+        $("#tlModalTitle").textContent = idx < 0 ? "新增经历" : "编辑第 " + (idx + 1) + " 条经历";
+        var it = idx < 0 ? { date: "", title: "", text: "" } : tlItems[idx];
+        $("#tlDate").value = it.date || "";
+        $("#tlTitle").value = it.title || "";
+        $("#tlText").value = it.text || "";
+        $("#tlFormMsg").textContent = "";
+        App.openModal("tlModal");
+      }
+      $("#tlList").addEventListener("click", function (e) {
+        var node = e.target;
+        if (node && node.nodeType === 3) node = node.parentNode;
+        var b = node && node.closest ? node.closest("[data-tl]") : null;
+        if (!b || b.disabled) return;
+        if (!canManage) { App.toast("仅管理员可修改成长经历", "err"); return; }
+        var act = b.getAttribute("data-tl");
+        var i = Number(b.getAttribute("data-i"));
+        if (!tlItems[i]) return;
+        if (act === "up" && i > 0) {
+          var tmp = tlItems[i - 1]; tlItems[i - 1] = tlItems[i]; tlItems[i] = tmp;
+          tlMarkDirty(); tlRender();
+        } else if (act === "down" && i < tlItems.length - 1) {
+          var tmp2 = tlItems[i + 1]; tlItems[i + 1] = tlItems[i]; tlItems[i] = tmp2;
+          tlMarkDirty(); tlRender();
+        } else if (act === "edit") {
+          tlOpenForm(i);
+        } else if (act === "del") {
+          if (!confirm("确定删除第 " + (i + 1) + " 条经历「" + (tlItems[i].title || tlItems[i].date) + "」？\n删除后需点「💾 保存并实时生效」才会写回云端。")) return;
+          tlItems.splice(i, 1); tlMarkDirty(); tlRender();
+        }
+      });
+      $("#tlAddBtn").addEventListener("click", function () {
+        if (!canManage) { App.toast("仅管理员可修改成长经历", "err"); return; }
+        tlOpenForm(-1);
+      });
+      $("#tlResetBtn").addEventListener("click", async function () {
+        if (tlDirty && !confirm("有未保存的修改，确定放弃并重新载入云端数据？")) return;
+        var res = await C.listTimeline();
+        if (res.error) { App.toast(res.error.message, "err"); return; }
+        tlLoad(res.data);
+        App.toast("已重新载入云端成长经历", "ok");
+      });
+      $("#tlFormSave").addEventListener("click", function () {
+        var date = $("#tlDate").value.trim();
+        var title = $("#tlTitle").value.trim();
+        var text = $("#tlText").value.trim();
+        if (!date && !title && !text) { $("#tlFormMsg").textContent = "请至少填写时间、标题或描述中的一项"; return; }
+        var item = { date: date, title: title, text: text };
+        if (tlEditing < 0) tlItems.push(item); else tlItems[tlEditing] = item;
+        tlMarkDirty();
+        tlRender();
+        App.closeModal("tlModal");
+        App.toast("已" + (tlEditing < 0 ? "添加" : "修改") + "，记得点「💾 保存并实时生效」", "ok");
+      });
+      $("#tlSaveBtn").addEventListener("click", async function () {
+        if (!canManage) { App.toast("仅管理员可修改成长经历", "err"); return; }
+        var btn = this;
+        btn.disabled = true;
+        tlDirty = false;   // emit 会触发 loadData() 重载，先清标记避免草稿覆盖云端结果
+        var res = await C.saveTimeline(tlItems);
+        btn.disabled = false;
+        if (res.error) { tlDirty = true; $("#tlDirty").style.display = ""; App.toast(res.error.message, "err"); return; }
+        var d = $("#tlDirty");
+        if (d) d.style.display = "none";
+        App.toast("成长经历已保存，首页时间线即时生效（共 " + tlItems.length + " 条）", "ok");
+        C.logAction("参数管理", "保存成长经历", "共 " + tlItems.length + " 条，顺序已更新");
+        tlNotice("已保存 <b>" + tlItems.length + "</b> 条成长经历，首页时间线已即时更新。");
       });
 
       /* ---------- 导出 ---------- */

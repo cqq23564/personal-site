@@ -216,9 +216,11 @@
   <!-- ============ 时间线 ============ -->
   <section class="section">
     <div class="wrap-wide">
-      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.timeline">成长经历</h2></div>
+      <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.timeline">成长经历</h2>
+        <a class="btn btn-line btn-sm" id="editTimelineBtn" href="system-params.html#timelineCard" style="display:none;margin-left:auto">✎ 编辑经历</a>
+      </div>
       <div class="card reveal"><div class="card-bd">
-        <div class="timeline">
+        <div class="timeline" id="homeTimeline">
           <div class="timeline-item"><div class="timeline-date" data-param="home.timeline.1.date">2026 - 至今</div><div class="timeline-title" data-param="home.timeline.1.title">园区运营中心 · 系统管理员</div><div class="timeline-text" data-param="home.timeline.1.text">负责进出口场站数字化系统建设，主导车辆在场监管、卡口核放、每日报表三条主线从 0 到 1 落地。</div></div>
           <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.2.date">2023 - 2026</div><div class="timeline-title" data-param="home.timeline.2.title">通关服务部 · 报关专员</div><div class="timeline-text" data-param="home.timeline.2.text">深耕互市贸易通关实务，熟悉申报、查验、卡口放行全流程，参与单证与流程标准化工作。</div></div>
           <div class="timeline-item done"><div class="timeline-date" data-param="home.timeline.3.date">2021 - 2023</div><div class="timeline-title" data-param="home.timeline.3.title">某科技公司 · 前端工程师</div><div class="timeline-text" data-param="home.timeline.3.text">负责数据可视化与中后台系统开发，沉淀了一套可复用的组件与图表体系。</div></div>
@@ -336,6 +338,17 @@
   <script src="js/cloud.js"></script>
   <script src="js/gallery.js"></script>
   <script>
+    /* 成长经历：管理员可见的编辑入口（云服务会话就绪后按权限显示） */
+    (function () {
+      var C = window.Cloud;
+      function sync() {
+        var btn = document.getElementById("editTimelineBtn");
+        if (btn) btn.style.display = (C.isReady() && C.isAdmin()) ? "inline-flex" : "none";
+      }
+      sync();
+      C.onChange(sync);
+    })();
+
     /* 留言板（云端真实数据） */
     (function () {
       var C = window.Cloud;
