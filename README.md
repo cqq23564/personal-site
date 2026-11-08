@@ -10,7 +10,11 @@ personal-site/
 ├── login.html            登录（账号 + 密码 + 验证码）
 ├── register.html         注册（表单校验 + 协议确认）
 ├── profile.html          个人中心（基本资料 / 安全设置 / 我的文件 / 操作记录）
-├── dashboard.html        数据看板（KPI / 折线·柱状·环形图 / 园区平面示意 / 在场车辆表）
+├── dashboard.html        B卡数据看板（已接入：KPI / 折线·柱状·环形图 / 园区平面示意 / 在场车辆表 / 导入日报联动）
+├── dashboard-hushi.html       互市数据看板（独立页面 · 待接入该卡口样例）
+├── dashboard-chukou.html      出口数据看板（独立页面 · 待接入该卡口样例）
+├── dashboard-linggongli.html  零公里数据看板（独立页面 · 待接入该卡口样例）
+├── dashboard-chayanqu.html    查验区数据看板（独立页面 · 待接入该卡口样例）
 ├── system-menus.html     菜单管理（树形表格、显示隐藏、增删）
 ├── system-users.html     用户管理 + 注册审核（Tabs、批量通过）
 ├── system-params.html    参数管理（分组筛选、编辑、导出、成长经历增删改排序）
@@ -24,6 +28,7 @@ personal-site/
 ├── js/data.js            演示数据（改这里即可接真实数据）
 ├── js/main.js            交互引擎（DataTable / 图表 / 示意图 / 表单校验 / 导出等）
 ├── js/report-template.js 报表模板解析 / 货物名称识别与统一口径归并 / 按模板归类统计 / 回填导出
+├── js/dashboard-gates.js 5 个卡口看板注册表 / 切换条 / 未接入卡口空态与占位 KPI
 ├── js/vendor/xlsx.full.min.js  本地 SheetJS（Excel 解析，不依赖 CDN）
 └── assets/img/           AI 生成配图（banner/gallery/avatar）
 ```
@@ -61,6 +66,7 @@ python -m http.server 8899        # 或 npx serve .
 - **货物名称统一口径**：`js/report-template.js` 的 `canonicalGoods / buildCanonDict / aggregate` 在聚合前先把「白火龙果 / 红心火龙果 / 鲜火龙果 / 火龙果(产地)」等归并为「火龙果」再合并车数与重量；词库 = 内置常见货物 + 用户上传模板的货物项 + 云端参数 `report.goods.canon.extra` 扩充的自定义标准名（在「参数管理 → 报表参数」修改，即时生效，不写死），剥前缀仅在命中标准词库时生效，避免误并「白砂糖 / 红豆」。导出与面板均保留「合并来源（原始货名）」列以便核对。
 - **按日期持久化、刷新不丢失**：`commitGoods()` 按 `rdate` 整组替换写入 `site_report_goods`（含 `variants` 合并来源列，同一天重复导入覆盖更新，不残留旧叫法重复行）；`query-reports.html` 的 `loadGoodsCloud()` 在页面初始化与 `Cloud.onChange` 时读回，重建货物统计状态并渲染「历史导入数据」面板（日期切换 / 导出该日 / 删除该日）；`dashboard.html` 的 `loadAll()` 增查该表，新增「导入货物统计」面板，并把货物构成环形图切换为最新导入日期的统一口径数据。
 - **已汇总报表导入 + 看板首屏联动**：`js/report-template.js` 的 `parseDailyReport()` 按表头自动识别成品报表（如 B 卡报表）里的「货物名称 / 车数 / 重量」列组与车辆验放合计，不写死工作表名、卡口名与货物清单；`query-reports.html` 的 `handleFile()` 优先走该模式，按统计日期把入区 / 出区车数、重量、统一口径货物品种写入 `site_reports`（新增 `gate / in_weight / out_weight / goods_kinds / source` 列）并整组替换写入 `site_report_goods`；`dashboard.html` 首屏 6 个 KPI 优先展示这些导入值，趋势图 / 货物构成 / 导入货物统计面板同步。任何解析结果全 0 时都**不会写入全 0 日报**，避免覆盖真实数据。图表层 `renderLineChart / renderBarChart / renderDonut` 对空 / 全 0 数据做了除零保护，数字动画支持小数。
+- **5 个卡口数据看板**：`dashboard.html`（B卡，已接入真实导入数据）、`dashboard-hushi.html`（互市）、`dashboard-chukou.html`（出口）、`dashboard-linggongli.html`（零公里）、`dashboard-chayanqu.html`（查验区）。注册表与切换条在 `js/dashboard-gates.js`，全站侧边栏「数据看板 · 5 个卡口」分组均提供 5 个入口。**各卡口需要查询的数据及报表口径不同**，未接入的 4 个看板显示空态与「接入需要提供」清单（卡口名称/编号、数据文件工作表与表头、目标报表模板、统计口径），不套用 B 卡结构、不填示意数字；样例到齐后按卡口独立定制指标。云端 `site_reports` / `site_report_goods` 已有 `gate` 维度，现有数据标记 `bcard`。
 - 首页「成长经历」不再写死 4 条：条目由云端 `site_params` 的 `home.timeline.N.*`（date / title / text）聚合，编号 N 决定顺序，任意条数均可；在「参数管理 → 成长经历」专用管理区增删改排序后整组保存，首页即时生效，无需改代码或重新发布。
 - 导出为浏览器端生成：CSV（带 BOM，Excel 可直接打开）或 Excel 工作簿（SpreadsheetML `.xls`）；模板统计报表含模板货物统计表及「按模板归类 / 货物统计明细 / 数据来源说明」附表，无需后端。
 

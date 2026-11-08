@@ -91,6 +91,11 @@
           整组写入本站云端账号下的 <code>site_report_goods</code> 表；同一天重复导入会覆盖更新，不会残留旧叫法的重复行。刷新页面、更换浏览器或设备登录后，
           「每日报表 → 历史导入数据」面板、「数据看板 → 导入货物统计」面板与<strong>数据看板首屏 KPI</strong>（入区 / 出区车数、重量、统一口径货物品种）都会自动读回云端数据，
           可按日期切换查看，并支持导出该日报表或删除该日数据。这些结果仅来自使用者导入的表格，本站不校验、不背书其真实性。</p>
+        <p><strong>5 个卡口数据看板</strong>：数据看板已按 B卡 / 互市 / 出口 / 零公里 / 查验区拆分为 5 个独立页面。
+          由于各卡口「需要查询的数据及报表是不一样的」，目前仅 B卡看板接入了使用者导入的 Excel 数据；其余 4 个看板保持明确的空态，
+          <strong>不套用 B 卡的表头、工作表或统计口径，也不填入示意数字</strong>，页面仅列出接入该卡口所需提供的样例信息（卡口名称/编号、
+          数据文件的工作表清单与表头、目标报表模板或差异点、统计口径）。待使用者提供对应样例后再按卡口独立配置指标并展示，
+          在此之前这 4 个看板不代表任何真实或示意业务量。</p>
         <ul class="source-list">
           <li>本站<strong>未</strong>与「边境贸易（浦寨）慧眼智控嵌入式管理平台」或任何生产业务系统建立接口、账号、凭证或数据同步关系。</li>
           <li>站内<strong>不包含、也不展示</strong>海关监管数据、商业秘密、个人敏感信息或其他未公开数据；使用者若导入含上述内容的表格，应自行完成脱敏与合规审查。</li>
@@ -185,7 +190,11 @@
         <div>
           <h4>快速导航</h4>
           <a href="index.html#about">关于我</a>
-          <a href="dashboard.html">数据看板</a>
+          <a href="dashboard.html">B卡数据看板</a>
+          <a href="dashboard-hushi.html">互市数据看板</a>
+          <a href="dashboard-chukou.html">出口数据看板</a>
+          <a href="dashboard-linggongli.html">零公里数据看板</a>
+          <a href="dashboard-chayanqu.html">查验区数据看板</a>
           <a href="system-menus.html">系统管理</a>
           <a href="query-vehicles.html">查询统计</a>
           <a href="files.html">文件管理</a>

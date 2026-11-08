@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>数据看板 · 陈庆棋个人主页</title>
+  <title>B卡数据看板 · 陈庆棋个人主页</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-gate="bcard">
 
   <header class="site-header">
     <div class="wrap-wide nav">
@@ -39,8 +39,12 @@
     <!-- ============ 侧边栏 ============ -->
     <aside class="sidebar">
       <div class="side-group">
-        <div class="side-group-title">数据看板</div>
-        <a class="side-link active" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+        <div class="side-group-title">数据看板 · 5 个卡口</div>
+        <a class="side-link active" data-gate="bcard" href="dashboard.html"><span class="ico">🅱️</span>B卡数据看板</a>
+        <a class="side-link" data-gate="hushi" href="dashboard-hushi.html"><span class="ico">🛒</span>互市数据看板</a>
+        <a class="side-link" data-gate="chukou" href="dashboard-chukou.html"><span class="ico">📤</span>出口数据看板</a>
+        <a class="side-link" data-gate="linggongli" href="dashboard-linggongli.html"><span class="ico">📍</span>零公里数据看板</a>
+        <a class="side-link" data-gate="chayanqu" href="dashboard-chayanqu.html"><span class="ico">🔍</span>查验区数据看板</a>
       </div>
       <div class="side-group">
         <div class="side-group-title">系统管理</div>
@@ -68,7 +72,7 @@
     <main class="main">
       <div class="page-head">
         <div>
-          <div class="page-title">📊 首页驾驶舱</div>
+          <div class="page-title" id="gateBoardTitle">🅱️ B卡数据看板</div>
           <div class="page-desc"><span class="live-dot" aria-hidden="true"></span>演示用示意数据 · 最后更新 <span id="nowTime"></span> · 随查询统计模块联动</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
@@ -76,6 +80,10 @@
           <button class="btn btn-primary" id="exportDash">📥 导出今日日报</button>
         </div>
       </div>
+
+      <!-- 5 个卡口看板切换条：B卡（已接入）/ 互市 / 出口 / 零公里 / 查验区 -->
+      <nav class="gate-switcher" id="gateSwitcher" aria-label="卡口数据看板切换"></nav>
+
       <div class="page-notice" id="dashNotice" style="display:none"></div>
       <div class="page-notice source-hint">本站未与任何生产业务系统对接；本看板及查询统计模块中的预置数据为演示用示意数据，每日报表由使用者每日下班导入的 Excel 表格汇总生成（导入内容由使用者自行负责）。导入的日报汇总与货物统计按统计日期保存在本站云端账号下，刷新后自动读回，货物名称按统一口径归并，首屏 KPI、趋势图与货物构成同步显示导入的车数 / 重量。<a href="source.html">查看数据来源与声明 →</a></div>
 
@@ -145,8 +153,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
+  <script src="js/dashboard-gates.js"></script>
   <script>
     (function () {
+      if (window.GateDash) GateDash.mount();
       var $ = function (s) { return document.querySelector(s); };
       var C = window.Cloud;
       var notice = $("#dashNotice");

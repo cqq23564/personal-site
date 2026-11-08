@@ -37,8 +37,12 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="side-group">
-        <div class="side-group-title">数据看板</div>
-        <a class="side-link" href="dashboard.html"><span class="ico">📊</span>首页驾驶舱</a>
+        <div class="side-group-title">数据看板 · 5 个卡口</div>
+        <a class="side-link" data-gate="bcard" href="dashboard.html"><span class="ico">🅱️</span>B卡数据看板</a>
+        <a class="side-link" data-gate="hushi" href="dashboard-hushi.html"><span class="ico">🛒</span>互市数据看板</a>
+        <a class="side-link" data-gate="chukou" href="dashboard-chukou.html"><span class="ico">📤</span>出口数据看板</a>
+        <a class="side-link" data-gate="linggongli" href="dashboard-linggongli.html"><span class="ico">📍</span>零公里数据看板</a>
+        <a class="side-link" data-gate="chayanqu" href="dashboard-chayanqu.html"><span class="ico">🔍</span>查验区数据看板</a>
       </div>
       <div class="side-group">
         <div class="side-group-title">系统管理</div>
@@ -236,6 +240,8 @@
       var $ = function (s) { return document.querySelector(s); };
       var C = window.Cloud;
       var App = window.App;
+      /* 当前导入流程对应 B卡看板；多卡口样例到齐后改为按所选卡口写入 */
+      var CURRENT_GATE = "bcard";
 
       /* ============ 一、日报字段与表头别名 ============ */
       /* 表格与云表 site_reports 使用同一套字段名，避免映射错位 */
@@ -731,7 +737,7 @@
           in_total: t.inCars, in_heavy: t.inHeavy, in_empty: t.inEmpty,
           out_total: t.outCars, out_heavy: t.outHeavy, out_empty: t.outEmpty,
           in_weight: t.inWeight, out_weight: t.outWeight,
-          goods_kinds: t.goodsKinds, source: d.source, gate: d.gate || ""
+          goods_kinds: t.goodsKinds, source: d.source, gate: d.gate || CURRENT_GATE
         };
         var existing = {};
         rpCrud.rows().forEach(function (r) { existing[r.rdate] = r.id; });
@@ -1179,11 +1185,11 @@
         var date = goodsState.date;
         var rows = [];
         (goodsState.byTemplate || []).forEach(function (b) {
-          rows.push({ rdate: date, goods: b.name, lane: b.lane, group_name: "按模板归类",
+          rows.push({ rdate: date, gate: CURRENT_GATE, goods: b.name, lane: b.lane, group_name: "按模板归类",
             cnt: b.cnt, weight: b.weight, source: b.matched || goodsState.filename, variants: "" });
         });
         goodsState.raw.forEach(function (r) {
-          rows.push({ rdate: date, goods: r.goods, lane: "明细原值", group_name: r.sources,
+          rows.push({ rdate: date, gate: CURRENT_GATE, goods: r.goods, lane: "明细原值", group_name: r.sources,
             cnt: r.cnt, weight: r.weight, source: goodsState.filename,
             variants: (r.variants || []).join("、") });
         });
@@ -1191,7 +1197,10 @@
         writingGoods = true;
         /* 先清空该日期的旧记录，避免统一口径后「白火龙果 / 鲜火龙果」等旧行残留 */
         var ex = await C.tableList("site_report_goods", { order: "id", asc: true });
-        var old = (ex.data || []).filter(function (r) { return r.rdate === date; });
+        /* 只替换本卡口同日的旧记录，避免多卡口时误删其它卡口数据 */
+        var old = (ex.data || []).filter(function (r) {
+          return r.rdate === date && (r.gate || CURRENT_GATE) === CURRENT_GATE;
+        });
         for (var j = 0; j < old.length; j++) await C.tableRemove("site_report_goods", old[j].id);
         var ok = 0, fail = 0;
         for (var i = 0; i < rows.length; i++) {
