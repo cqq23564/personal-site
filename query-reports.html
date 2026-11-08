@@ -73,6 +73,8 @@
           <button class="btn btn-line" id="goImportBtn">📥 导入 Excel</button>
           <button class="btn btn-line" id="exportDetail">📄 导出行车明细</button>
           <button class="btn btn-line" id="exportReport">📥 导出报表数据</button>
+          <button class="btn btn-line" id="exportGoods">📦 导出货物统计</button>
+          <button class="btn btn-primary" id="exportTemplateReport" disabled>📊 导出模板报表</button>
         </div>
       </div>
       <div class="page-notice" id="rpNotice" style="display:none"></div>
@@ -85,18 +87,21 @@
             <span class="import-label">数据来源</span>
             <strong id="reportSourceText" data-param="report.source.mode">每日下班导入 Excel 表格</strong>
             <span class="badge badge-info" id="exportFormatBadge">导出格式：Excel 工作簿</span>
+            <span class="badge badge-warn" id="importTplBadge">模板：未上传</span>
             <span class="text-3 import-hint-inline">本站未对接任何生产业务系统，报表由使用者导入的表格汇总生成</span>
           </div>
           <p class="import-desc">
-            每日下班把当天通行明细 Excel 拖入下方，系统按日期自动汇总为一条日报（入区 / 出卡 / 重空 / 一线放行 / 边民申报 / 异常）；
+            每日下班把当天通行明细 Excel 拖入下方，系统按日期自动汇总为一条日报（入区 / 出卡 / 重空 / 一线放行 / 边民申报 / 异常），
+            同时<strong>自动识别「货物名称」列</strong>，按当前上传的模板口径统计车数与重量（毛重千克 ÷ 1000 = 吨）；
             同一天重复导入会<strong>覆盖更新</strong>，不会产生重复数据。也可直接导入已汇总好的日报表。
+            <strong>若表格只有货物明细（如进出记录）、不含日报汇总列，仍会自动完成货物统计与模板报表导出，仅跳过日报生成。</strong>
           </p>
           <div class="import-drop" id="importDrop">
             <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
             <div class="import-drop-inner">
               <div class="import-drop-icon">📄</div>
               <div class="import-drop-text">点击选择，或把 Excel / CSV 文件拖到这里</div>
-              <div class="import-drop-sub">支持中文表头：日期 / 时间 / 方向 / 重空 / 放行结果 / 边民申报 / 异常</div>
+              <div class="import-drop-sub">支持中文表头：货物名称 / 日期 / 时间 / 方向 / 重空 / 放行结果 / 边民申报 / 异常</div>
               <div class="import-btn-row">
                 <button class="btn btn-primary btn-sm" id="chooseFileBtn">选择文件</button>
                 <button class="btn btn-line btn-sm" id="downloadTplDetail">⬇ 明细模板</button>
@@ -114,8 +119,49 @@
         </div>
       </div>
 
+      <!-- 报表模板：上传 / 解析 / 云端保存 -->
+      <div class="card mb-24 import-card tpl-card" id="templateCard">
+        <div class="card-hd">🧩 报表模板 · 货物名称自动识别 <span class="sub">上传你的 Excel 模板，按模板口径统计导入的明细</span></div>
+        <div class="card-bd">
+          <div class="import-meta tpl-meta">
+            <span class="import-label">当前模板</span>
+            <strong id="tplName">尚未上传模板</strong>
+            <span class="badge badge-info" id="tplSheetBadge">0 个工作表</span>
+            <span class="badge badge-info" id="tplGoodsBadge">0 个货物项</span>
+            <span class="text-3 import-hint-inline">模板只需上传一次；每日导入明细时自动识别货物名称并按模板统计</span>
+          </div>
+          <p class="import-desc">
+            上传你自己的报表模板（如 B 卡报表）：系统自动识别「货物名称 / 车数 / 重量」列组与合计行，
+            再把每日导入的明细按货物名称归类、填回模板格式并导出。模板保存在云端，刷新后自动恢复。
+          </p>
+          <div class="import-btn-row tpl-btn-row">
+            <button class="btn btn-primary btn-sm" id="uploadTplBtn">📤 上传报表模板</button>
+            <button class="btn btn-line btn-sm" id="downloadTplBtn" disabled>⬇ 下载当前模板</button>
+            <button class="btn btn-line btn-sm" id="downloadStdTplBtn">⬇ 标准模板样例</button>
+            <button class="btn btn-line btn-sm" id="clearTplBtn" disabled>清除模板</button>
+          </div>
+          <div class="text-3" style="font-size:12.5px;margin-top:10px">重量口径：<span id="tplWeightNote" data-param="report.goods.weight.unit">毛重(千克) ÷ 1000 = 吨</span></div>
+          <input type="file" id="templateFile" accept=".xlsx,.xls" hidden>
+          <div id="tplPreview" class="tpl-preview" style="display:none"></div>
+        </div>
+      </div>
+
       <!-- 今日概览 -->
       <div class="stat-grid mb-24" id="todayStats"></div>
+
+      <!-- 货物名称统计 -->
+      <div class="card mb-24" id="goodsCard" style="display:none">
+        <div class="card-hd">📦 货物名称统计 <span class="sub">按模板清单归类 / 明细原值双视角</span></div>
+        <div class="card-bd">
+          <div class="goods-tabs" id="goodsTabs">
+            <button class="goods-tab active" data-tab="byTemplate">按模板清单归类</button>
+            <button class="goods-tab" data-tab="byRaw">明细原值</button>
+            <span class="text-3" id="goodsWeightRule">重量口径：毛重(千克) ÷ 1000 = 吨</span>
+          </div>
+          <div class="table-wrap" id="goodsTableWrap"></div>
+          <div class="text-3 goods-summary" id="goodsSummary"></div>
+        </div>
+      </div>
 
       <!-- 报表趋势 -->
       <div class="card mb-24">
@@ -161,6 +207,7 @@
   <script src="js/cloud.js"></script>
   <script src="js/admin-crud.js"></script>
   <script src="js/vendor/xlsx.full.min.js"></script>
+  <script src="js/report-template.js"></script>
   <script>
     (function () {
       "use strict";
@@ -508,6 +555,13 @@
         rpCrud.rows().forEach(function (r) { existing[r.rdate] = true; });
         var h = '<div class="import-preview-hd">解析完成 · 识别为 <b>' + App.esc(parsed.mode) +
           '</b> · 共 <b>' + pending.length + '</b> 天数据（同一天重复导入将覆盖更新）</div>';
+        if (goodsState) {
+          var gTotal = goodsState.raw.reduce(function (a, r) { return a + r.cnt; }, 0);
+          h += '<div class="import-goods-note">📦 同时识别到 <b>' + goodsState.detections.length +
+            '</b> 个含「货物名称」的工作表，共 <b>' + goodsState.raw.length + '</b> 种货物 / <b>' + gTotal +
+            '</b> 车次' + (tplState ? '，已按「' + App.esc(tplState.filename) + '」模板清单归类' : '（尚未上传模板，仅按明细原值统计）') +
+            (goodsState.skipped.length ? '；无表头已跳过：' + App.esc(goodsState.skipped.join("、")) : '') + '</div>';
+        }
         h += '<div class="table-wrap"><table class="table import-table"><thead><tr>' +
           reportHeaders().concat(["状态"]).map(function (t) { return "<th>" + App.esc(t) + "</th>"; }).join("") +
           "</tr></thead><tbody>";
@@ -524,24 +578,71 @@
         $("#importSummary").textContent = "待写入 " + pending.length + " 条日报";
         $("#exportImportedBtn").disabled = true;
       }
+      /* 仅货物统计模式：明细表不含日报汇总列时，跳过日报生成但保留货物统计与模板导出 */
+      function renderGoodsOnly(reason) {
+        pending = [];
+        var gTotal = goodsState.raw.reduce(function (a, r) { return a + r.cnt; }, 0);
+        var h = '<div class="import-preview-hd">该文件未包含日报汇总所需表头，<b>已跳过日报生成</b>；货物名称统计已完成。</div>';
+        h += '<div class="import-goods-note">📦 识别到 <b>' + goodsState.detections.length +
+          '</b> 个含「货物名称」的工作表，共 <b>' + goodsState.raw.length + '</b> 种货物 / <b>' + gTotal + '</b> 车次' +
+          (tplState ? '，已按「' + App.esc(tplState.filename) + '」模板清单归类' : '（尚未上传模板，仅按明细原值统计）') +
+          (goodsState.skipped.length ? '；无表头已跳过：' + App.esc(goodsState.skipped.join("、")) : '') + '</div>';
+        h += '<div class="text-3" style="margin-top:8px;font-size:12.5px">原因：' + App.esc(reason) +
+          '。可在上方「报表模板」区继续上传模板，并用「导出模板报表 / 导出货物统计」下载结果。</div>';
+        $("#importPreview").innerHTML = h;
+        $("#importPreview").style.display = "";
+        $("#importActions").style.display = "";
+        $("#importSummary").textContent = "仅货物统计，不写入日报";
+        $("#exportImportedBtn").disabled = true;
+        $("#confirmImportBtn").textContent = "✅ 确认写入货物统计";
+      }
       async function handleFile(file) {
         var name = String(file.name || "").toLowerCase();
         if (!/\.(xlsx|xls|csv)$/.test(name)) { App.toast("请选择 .xlsx / .xls / .csv 文件", "err"); return; }
         $("#importActions").style.display = "";
         $("#importPreview").style.display = "none";
         $("#exportImportedBtn").disabled = true;
+        $("#confirmImportBtn").textContent = "✅ 确认导入并生成日报";
         $("#importSummary").textContent = "正在解析 " + file.name + " …";
         try {
+          /* 1) 货物名称自动识别 + 按模板统计（读全部工作表），与日报解析解耦：
+                用户上传的进出记录往往只有「磅单编号/车牌号/货物名称/毛重/入场时间」，
+                不含日报汇总列；此时仍要完成货物统计，不能因日报解析失败而中断。 */
+          var goodsOk = false;
+          if (window.ReportTpl) {
+            try {
+              var all = await window.ReportTpl.readWorkbook(file);
+              runGoodsStat(all, file.name);
+              goodsOk = !!(goodsState && goodsState.raw.length);
+            } catch (ge) { console.warn("货物统计跳过：", ge); }
+          }
+          /* 2) 日报汇总解析 */
           var matrix = await readSheet(file);
           var parsed = parseWorkbook(matrix);
           if (parsed.error) {
+            if (goodsOk) {
+              renderGoodsOnly(parsed.error);
+              App.toast("已按模板完成货物统计（该文件不含日报汇总表头，已跳过日报生成）", "ok");
+              return;
+            }
             App.toast(parsed.error, "err");
             $("#importActions").style.display = "none";
             $("#importSummary").textContent = "";
             return;
           }
+          /* 3) 明细表若只解析出全 0 日报（进出记录通常缺方向/重空列），不写入垃圾日报，
+                仅保留货物统计，避免每天导入把真实日报覆盖成 0 */
+          var allZero = parsed.data.length > 0 && parsed.data.every(function (r) {
+            return NUM_KEYS.every(function (k) { return !r[k]; });
+          });
+          if (allZero && /明细表/.test(parsed.mode || "") && goodsOk) {
+            renderGoodsOnly("明细表未解析出有效的入区/出区/重空等日报数值（表头缺方向 / 重空列）");
+            App.toast("已按模板完成货物统计（该明细表无日报汇总数值，已跳过日报生成）", "ok");
+            return;
+          }
           renderPreview(parsed);
-          App.toast("解析成功：" + parsed.data.length + " 天日报数据", "ok");
+          App.toast("解析成功：" + parsed.data.length + " 天日报数据" +
+            (goodsState ? "，识别 " + goodsState.raw.length + " 种货物" : ""), "ok");
         } catch (err) {
           App.toast(err.message || "解析失败，请检查文件格式", "err");
           $("#importActions").style.display = "none";
@@ -551,8 +652,10 @@
       async function commitImport() {
         if (!C.isReady()) { App.toast("当前为静态镜像，请在 WorkBuddy 托管域名登录后导入", "err"); return; }
         if (!C.isAdmin()) { App.toast("仅管理员可导入并生成日报", "err"); return; }
-        if (!pending.length) return;
+        var goodsOnly = !pending.length;
+        if (goodsOnly && !(goodsState && goodsState.raw.length)) return;
         var btn = $("#confirmImportBtn");
+        var label = goodsOnly ? "✅ 确认写入货物统计" : "✅ 确认导入并生成日报";
         btn.disabled = true; btn.textContent = "正在生成…";
         var existing = {};
         rpCrud.rows().forEach(function (r) { existing[r.rdate] = r.id; });
@@ -568,14 +671,20 @@
           }
           if (res.error) fail++; else ok++;
         }
-        btn.disabled = false; btn.textContent = "✅ 确认导入并生成日报";
-        C.logAction("每日报表", "Excel导入生成日报", "成功 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : ""));
-        await rpCrud.load();
-        lastImported = pending.slice();
-        $("#exportImportedBtn").disabled = false;
-        $("#importSummary").textContent = "已生成 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : "");
-        App.toast(fail ? ("已生成 " + ok + " 条，失败 " + fail + " 条（请检查权限）")
-                      : ("已自动生成 " + ok + " 条每日报表，可点击「导出报表数据」下载"), fail ? "warn" : "ok");
+        btn.disabled = false; btn.textContent = label;
+        if (goodsOnly) {
+          $("#importSummary").textContent = "货物统计已写入，未生成日报";
+          App.toast("已写入货物统计（该文件不含日报汇总表头，未生成日报）", "ok");
+        } else {
+          C.logAction("每日报表", "Excel导入生成日报", "成功 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : ""));
+          await rpCrud.load();
+          lastImported = pending.slice();
+          $("#exportImportedBtn").disabled = false;
+          $("#importSummary").textContent = "已生成 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : "");
+          App.toast(fail ? ("已生成 " + ok + " 条，失败 " + fail + " 条（请检查权限）")
+                        : ("已自动生成 " + ok + " 条每日报表，可点击「导出报表数据」下载"), fail ? "warn" : "ok");
+        }
+        await commitGoods();
       }
 
       var drop = $("#importDrop"), fileInput = $("#importFile");
@@ -600,10 +709,12 @@
       });
       $("#confirmImportBtn").addEventListener("click", commitImport);
       $("#cancelImportBtn").addEventListener("click", function () {
-        pending = []; lastImported = [];
+        pending = []; lastImported = []; goodsState = null; detailState = null;
+        $("#goodsCard").style.display = "none";
         $("#importPreview").style.display = "none";
         $("#importActions").style.display = "none";
         $("#exportImportedBtn").disabled = true;
+        $("#confirmImportBtn").textContent = "✅ 确认导入并生成日报";
         fileInput.value = "";
       });
       $("#exportImportedBtn").addEventListener("click", function () {
@@ -669,6 +780,330 @@
         App.toast("已导出 " + rows.length + " 条行车明细", "ok");
         C.logAction("每日报表", "导出行车明细", rows.length + " 条");
       });
+
+      /* ============ 七、报表模板上传 + 货物名称自动识别 ============ */
+      var T = window.ReportTpl;
+      var tplState = null, goodsState = null, detailState = null, goodsTab = "byTemplate";
+
+      function esc(s) { return App.esc(s == null ? "" : s); }
+      function tplSheet(name) {
+        if (!tplState) return null;
+        return (tplState.sheets || []).filter(function (s) { return s.name === name; })[0] || null;
+      }
+      function setTemplateInfo() {
+        var has = !!tplState;
+        $("#tplName").textContent = has ? (tplState.name || tplState.filename) : "尚未上传模板";
+        $("#tplSheetBadge").textContent = has ? (((tplState.sheetNames || []).length || tplState.sheetCount || 0) + " 个工作表") : "0 个工作表";
+        $("#tplGoodsBadge").textContent = has ? (tplState.items.length + " 个货物项") : "0 个货物项";
+        var b = $("#importTplBadge");
+        b.textContent = has ? ("模板：" + String(tplState.name || tplState.filename).slice(0, 16)) : "模板：未上传";
+        b.className = "badge " + (has ? "badge-ok" : "badge-warn");
+        $("#downloadTplBtn").disabled = !has;
+        $("#clearTplBtn").disabled = !has;
+        $("#exportTemplateReport").disabled = !has;
+      }
+
+      function renderTemplatePreview() {
+        if (!tplState) { $("#tplPreview").style.display = "none"; return; }
+        var h = '<div class="tpl-preview-hd">✅ 模板解析成功 · <b>' + tplState.groups.length +
+          '</b> 个货物列组 · <b>' + tplState.items.length + '</b> 个货物项 · <b>' +
+          tplState.totalRows.length + '</b> 个合计行 · 核心表：<b>' +
+          esc(tplState.sheets.map(function (s) { return s.name; }).join("、")) + '</b></div>';
+        h += '<div class="table-wrap"><table class="table import-table"><thead><tr>' +
+          ["工作表", "分类列", "货物名称", "模板原车数", "模板原重量"].map(function (t) { return "<th>" + t + "</th>"; }).join("") +
+          "</tr></thead><tbody>";
+        tplState.items.slice(0, 12).forEach(function (it) {
+          var g = tplState.groups[it.groupIndex] || {};
+          var sh = tplSheet(it.sheet);
+          var row = (sh && sh.matrix[it.row]) || [];
+          h += "<tr><td>" + esc(it.sheet) + "</td><td>" + esc(it.lane) + "</td><td><b>" + esc(it.name) +
+            "</b></td><td>" + esc(row[g.carCol]) + "</td><td>" + esc(row[g.wtCol]) + "</td></tr>";
+        });
+        h += "</tbody></table></div>";
+        if (tplState.items.length > 12) {
+          h += '<div class="text-3" style="margin-top:8px;font-size:12.5px">仅预览前 12 项，共 ' +
+            tplState.items.length + ' 项；合计行将在导出时按货物行重新求和。</div>';
+        }
+        $("#tplPreview").innerHTML = h;
+        $("#tplPreview").style.display = "";
+      }
+
+      function renderGoods() {
+        var box = $("#goodsCard");
+        if (!goodsState) { box.style.display = "none"; return; }
+        box.style.display = "";
+        var headers, rows, useTpl = goodsTab === "byTemplate" && tplState;
+        if (useTpl) {
+          headers = ["分类列", "货物名称（模板）", "车数", "重量(吨)", "匹配到的明细货物"];
+          rows = goodsState.byTemplate.map(function (b) { return [b.lane, b.name, b.cnt, b.weight, b.matched || "—"]; });
+        } else {
+          headers = ["货物名称（明细原值）", "车数", "重量(吨)", "来源工作表", "模板归类"];
+          rows = goodsState.raw.map(function (r) {
+            var hit = (goodsState.byTemplate || []).filter(function (b) {
+              return b.matched && b.matched.indexOf(r.goods + "(") > -1;
+            })[0];
+            return [r.goods, r.cnt, r.weight, r.sources,
+              hit ? ("→ " + hit.name) : (r.goods === "未填写货物" ? "空值（未参与归类）" : "未列入模板")];
+          });
+        }
+        var h = '<table class="table import-table goods-table"><thead><tr>' +
+          headers.map(function (t) { return "<th>" + t + "</th>"; }).join("") + "</tr></thead><tbody>";
+        rows.forEach(function (r) {
+          h += "<tr>" + r.map(function (c, i) {
+            return "<td" + (i >= 2 && i <= 3 ? ' class="mono"' : "") + ">" + esc(c) + "</td>";
+          }).join("") + "</tr>";
+        });
+        h += "</tbody></table>";
+        $("#goodsTableWrap").innerHTML = h;
+        $("#goodsWeightRule").textContent = "重量口径：" + goodsState.unitLabel;
+        document.querySelectorAll("#goodsTabs .goods-tab").forEach(function (b) {
+          b.classList.toggle("active", b.getAttribute("data-tab") === goodsTab);
+          b.disabled = b.getAttribute("data-tab") === "byTemplate" && !tplState;
+        });
+        var total = goodsState.raw.reduce(function (a, r) { return a + r.cnt; }, 0);
+        $("#goodsSummary").innerHTML = "共 <b>" + goodsState.raw.length + "</b> 种货物 / <b>" + total +
+          "</b> 车次 · 统计日期 <b>" + esc(goodsState.date) + "</b> · " + esc(goodsState.unitLabel) +
+          " · 识别 <b>" + goodsState.detections.length + "</b> 个含货物名称的工作表" +
+          (goodsState.skipped.length ? ("（无表头已跳过：" + esc(goodsState.skipped.join("、")) + "）") : "") +
+          (goodsState.unmatched && goodsState.unmatched.length ? (" · <b>" + goodsState.unmatched.length + "</b> 种货物未列入模板") : "");
+      }
+
+      function runGoodsStat(all, filename) {
+        if (!T) return;
+        var det = T.detectGoods(all.sheets);
+        var agg = T.aggregate(det, all.sheets, filename);
+        var res = tplState ? T.matchItems(agg.raw, tplState.items) : {
+          byTemplate: [],
+          unmatched: agg.raw.filter(function (r) { return r.goods !== "未填写货物"; }),
+          blank: agg.raw.filter(function (r) { return r.goods === "未填写货物"; })[0] || null
+        };
+        goodsState = {
+          raw: agg.raw, date: agg.date, unitLabel: agg.unitLabel,
+          detections: det.detections, skipped: det.skipped,
+          byTemplate: res.byTemplate, unmatched: res.unmatched, blank: res.blank,
+          filename: filename
+        };
+        detailState = { sheets: all.sheets, filename: filename };
+        if (!tplState) goodsTab = "byRaw";
+        renderGoods();
+      }
+
+      /* ---- 模板云端存取 ---- */
+      async function saveTemplateCloud(file) {
+        if (!C.isReady() || !C.isAdmin()) { App.toast("静态镜像 / 非管理员：模板仅本次会话有效", "warn"); return; }
+        var client = C.client && C.client();
+        if (!client) return;
+        try {
+          var uid = (C.state.user && C.state.user.id) || "";
+          var path = client.storage.sharedPath(uid, "files/report_tpl_" + stamp() + "_" + Date.now() + ".xlsx");
+          var up = await client.storage.upload(path, file, { contentType: file.type || "application/octet-stream", cacheControl: "3600" });
+          if (up && up.error) throw new Error(up.error.message || "上传失败");
+          var p = C.state.profile || {};
+          var row = {
+            owner_name: p.nickname || p.name || "陈庆棋",
+            name: tplState.name, filename: tplState.filename,
+            sheet_count: tplState.sheetCount || 0, goods_count: tplState.items.length,
+            config: T.buildConfig(tplState), storage_path: path,
+            updated_at: new Date().toISOString()
+          };
+          var old = await C.tableList("site_report_templates", { order: "created_at", asc: false });
+          var ins = await client.database.from("site_report_templates").insert(row).select();
+          if (ins && ins.error) throw new Error(ins.error.message || "台账写入失败");
+          /* 云端只保留最新一份模板：全部旧记录一并移除，避免「清除模板」后刷新又恢复旧模板 */
+          (old.data || []).forEach(function (o) { C.tableRemove("site_report_templates", o.id); });
+          if (ins.data && ins.data[0]) tplState.id = ins.data[0].id;
+          tplState.storagePath = path;
+          App.toast("模板已保存到云端，刷新后自动恢复", "ok");
+          C.logAction("每日报表", "上传报表模板", tplState.filename + " / " + tplState.items.length + " 个货物项");
+        } catch (e) {
+          App.toast("模板云端保存失败：" + (e && e.message || e) + "（本地仍可用）", "warn");
+        }
+      }
+
+      async function loadTemplateCloud() {
+        if (!T || !C.isReady() || !C.isLoggedIn()) { setTemplateInfo(); return; }
+        try {
+          var res = await C.tableList("site_report_templates", { order: "created_at", asc: false });
+          var row = (res.data || [])[0];
+          if (!row) { setTemplateInfo(); return; }
+          var tpl = T.restoreConfig(row.config);
+          if (!tpl) { setTemplateInfo(); return; }
+          tpl.id = row.id; tpl.storagePath = row.storage_path || "";
+          tpl.name = row.name || tpl.filename; tpl.filename = row.filename || tpl.filename;
+          tplState = tpl;
+          setTemplateInfo();
+          renderTemplatePreview();
+          if (goodsState) {
+            var r2 = T.matchItems(goodsState.raw, tplState.items);
+            goodsState.byTemplate = r2.byTemplate; goodsState.unmatched = r2.unmatched; goodsState.blank = r2.blank;
+            goodsTab = "byTemplate";
+            renderGoods();
+          }
+        } catch (e) { console.warn("模板云端恢复失败", e); setTemplateInfo(); }
+      }
+
+      async function handleTemplateFile(file) {
+        var lname = String(file.name || "").toLowerCase();
+        if (!/\.(xlsx|xls)$/.test(lname)) { App.toast("模板请上传 .xlsx / .xls 文件", "err"); return; }
+        $("#tplPreview").style.display = "none";
+        try {
+          var all = await T.readWorkbook(file);
+          var tpl = T.parseTemplate(all.sheets, file.name);
+          if (!tpl.items.length) {
+            App.toast("未识别到货物统计列组：模板需有「货物名称 / 车数 / 重量」表头", "err");
+            return;
+          }
+          tpl.name = file.name.replace(/\.(xlsx|xls)$/i, "");
+          tplState = tpl;
+          setTemplateInfo();
+          renderTemplatePreview();
+          if (goodsState) {
+            var r2 = T.matchItems(goodsState.raw, tplState.items);
+            goodsState.byTemplate = r2.byTemplate; goodsState.unmatched = r2.unmatched; goodsState.blank = r2.blank;
+            goodsTab = "byTemplate";
+            renderGoods();
+          }
+          await saveTemplateCloud(file);
+          App.toast("模板上传成功：" + tpl.groups.length + " 个列组 / " + tpl.items.length + " 个货物项", "ok");
+        } catch (e) { App.toast(e.message || "模板解析失败", "err"); }
+      }
+
+      async function downloadCurrentTemplate() {
+        if (!tplState || !tplState.storagePath) { App.toast("当前模板仅本次会话有效，无云端原始文件", "warn"); return; }
+        var client = C.client && C.client();
+        if (!client) { App.toast("当前域名未接入云服务", "err"); return; }
+        try {
+          var res = await client.storage.createSignedUrls([tplState.storagePath], 300);
+          var arr = (res && res.data) || [];
+          var url = (arr[0] || {}).signedUrl || (arr[0] || {}).signedURL;
+          if (!url) throw new Error("链接签发失败");
+          var a = document.createElement("a");
+          a.href = url; a.download = tplState.filename || "报表模板.xlsx";
+          a.target = "_blank"; a.rel = "noopener";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } catch (e) { App.toast("下载失败：" + (e && e.message || e), "err"); }
+      }
+
+      async function clearTemplate() {
+        if (!tplState) return;
+        if (!confirm("确定清除当前模板？云端保存的模板也会一并移除。")) return;
+        if (C.isReady() && C.isAdmin() && tplState.id) {
+          await C.tableRemove("site_report_templates", tplState.id);
+          var client = C.client && C.client();
+          if (client && tplState.storagePath) await client.storage.remove([tplState.storagePath]).catch(function () { });
+        }
+        var oldName = tplState.filename;
+        tplState = null;
+        $("#tplPreview").style.display = "none";
+        setTemplateInfo();
+        if (goodsState) {
+          goodsState.byTemplate = [];
+          goodsState.unmatched = goodsState.raw.filter(function (r) { return r.goods !== "未填写货物"; });
+          goodsTab = "byRaw";
+          renderGoods();
+        }
+        C.logAction("每日报表", "清除报表模板", oldName);
+        App.toast("模板已清除", "ok");
+      }
+
+      /* ---- 货物统计写入云端 ---- */
+      async function commitGoods() {
+        if (!goodsState || !C.isReady() || !C.isAdmin()) return;
+        var rows = [];
+        (goodsState.byTemplate || []).forEach(function (b) {
+          rows.push({ rdate: goodsState.date, goods: b.name, lane: b.lane, group_name: "按模板归类",
+            cnt: b.cnt, weight: b.weight, source: b.matched || goodsState.filename });
+        });
+        goodsState.raw.forEach(function (r) {
+          rows.push({ rdate: goodsState.date, goods: r.goods, lane: "明细原值", group_name: r.sources,
+            cnt: r.cnt, weight: r.weight, source: goodsState.filename });
+        });
+        if (!rows.length) return;
+        var existing = {};
+        var ex = await C.tableList("site_report_goods", { order: "id", asc: true });
+        (ex.data || []).forEach(function (r) {
+          if (r.rdate === goodsState.date) existing[r.rdate + "|" + r.goods + "|" + r.group_name] = r.id;
+        });
+        var ok = 0, fail = 0;
+        for (var i = 0; i < rows.length; i++) {
+          var key = rows[i].rdate + "|" + rows[i].goods + "|" + rows[i].group_name;
+          var res = existing[key]
+            ? await C.tableUpdate("site_report_goods", existing[key], rows[i])
+            : await C.tableInsert("site_report_goods", rows[i]);
+          if (res.error) fail++; else ok++;
+        }
+        C.logAction("每日报表", "货物统计写入", goodsState.date + " / " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : ""));
+        App.toast("货物统计已写入 " + ok + " 条" + (fail ? "，失败 " + fail + " 条" : ""), fail ? "warn" : "ok");
+      }
+
+      /* ---- 导出 ---- */
+      function exportFilled() {
+        if (!tplState) { App.toast("请先上传报表模板", "warn"); return; }
+        if (!goodsState) { App.toast("请先导入明细数据", "warn"); return; }
+        var sheets = T.buildFilled(tplState, goodsState, {
+          templateName: tplState.filename, detailName: goodsState.filename,
+          date: goodsState.date, unitLabel: goodsState.unitLabel
+        });
+        exportWorkbook("模板统计报表_" + String(goodsState.date || stamp()).replace(/-/g, "") + ".xls", sheets);
+        C.logAction("每日报表", "导出模板统计报表", tplState.filename + " / " + goodsState.raw.length + " 种货物");
+      }
+      function exportGoodsCSV() {
+        if (!goodsState) { App.toast("请先导入明细数据", "warn"); return; }
+        App.exportCSV("货物统计_" + goodsState.date + ".csv",
+          ["货物名称", "车数", "重量(吨)", "来源工作表"],
+          goodsState.raw.map(function (r) { return [r.goods, r.cnt, r.weight, r.sources]; }));
+        C.logAction("每日报表", "导出货物统计", goodsState.raw.length + " 种货物");
+      }
+      function downloadStdTemplate() {
+        var d = todayStr();
+        exportWorkbook("每日报表_标准模板样例.xls", [
+          { name: "入区", rows: [
+            [d, "B卡地磅报表（标准模板样例）"],
+            ["序号", "总署一线入区统计", "车数", "重量", "排序", "正贸统计", "车数", "重量"],
+            [1, "火龙果", 0, 0, 1, "鲜榴莲", 0, 0],
+            [2, "芒果", 0, 0, 2, "鲜菠萝蜜", 0, 0],
+            ["", "", "", "", 3, "鲜火龙果", 0, 0],
+            ["", "", "", "", 4, "木薯淀粉", 0, 0],
+            ["水果合计", "", 0, 0, "", "", 0, 0],
+            ["", "", "", "", "", "", "", ""],
+            [1, "草绳", 0, 0],
+            [2, "粽叶", 0, 0],
+            ["干货合计", "", 0, 0],
+            ["总署一线入区合计", "", 0, 0, "", "正贸合计", 0]
+          ] },
+          { name: "填写说明", rows: [
+            ["项目", "说明"],
+            ["用法", "把本文件当作「报表模板」上传；每日导入的明细只需含「货物名称」「毛重(千克)」表头"],
+            ["统计口径", "车数 = 明细行数；重量 = 毛重(千克) ÷ 1000 = 吨"],
+            ["列组", "模板可含多组「货物名称列 / 车数 / 重量」，如左右双栏；含「合计」的行会按货物行重新求和"],
+            ["货物名称", "自动识别表头里的 货物名称 / 品名 / 商品名称；无表头的工作表会跳过"]
+          ] }
+        ]);
+        App.toast("标准模板样例已下载，可按需修改后上传", "ok");
+      }
+
+      /* ---- 事件绑定 ---- */
+      $("#uploadTplBtn").addEventListener("click", function () { $("#templateFile").click(); });
+      $("#templateFile").addEventListener("change", function () {
+        if (this.files && this.files[0]) handleTemplateFile(this.files[0]);
+        this.value = "";
+      });
+      $("#downloadTplBtn").addEventListener("click", downloadCurrentTemplate);
+      $("#clearTplBtn").addEventListener("click", clearTemplate);
+      $("#downloadStdTplBtn").addEventListener("click", downloadStdTemplate);
+      $("#exportTemplateReport").addEventListener("click", exportFilled);
+      $("#exportGoods").addEventListener("click", exportGoodsCSV);
+      $("#goodsTabs").addEventListener("click", function (e) {
+        var b = e.target.closest && e.target.closest(".goods-tab");
+        if (!b || b.disabled) return;
+        goodsTab = b.getAttribute("data-tab");
+        renderGoods();
+      });
+
+      /* ---- 初始化：先恢复云端模板 ---- */
+      setTemplateInfo();
+      loadTemplateCloud();
+      C.onChange(function () { if (!tplState) loadTemplateCloud(); });
 
       /* 报表参数：数据来源（由 applyHomeParams 联动显示）+ 导出格式 */
       async function loadReportParams() {
