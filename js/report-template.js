@@ -295,6 +295,147 @@
     };
   }
 
+  /* ---------- 已汇总报表解析（用户每日下班导入的成品报表，如「B卡报表」） ----------
+   * 与逐车明细不同：这类文件里「货物名称 / 车数 / 重量」已按列组汇总好，
+   * 另有「类别 / 车数 / 重量」的车辆验放统计表。按表头自动识别列组，
+   * 不写死工作表名、卡口名与货物清单，返回可直接写入 site_reports / site_report_goods 的汇总。
+   */
+  function fmtDate(v) {
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      return v.getFullYear() + "-" + pad2(v.getMonth() + 1) + "-" + pad2(v.getDate());
+    }
+    return "";
+  }
+  function dateFromName(filename) {
+    var fm = String(filename || "").match(/(20\d{2})[-\/.年]?(\d{1,2})[-\/.月]?(\d{1,2})/);
+    if (fm) return fm[1] + "-" + pad2(fm[2]) + "-" + pad2(fm[3]);
+    var f2 = String(filename || "").match(/(20\d{6})/);
+    if (f2) return f2[1].slice(0, 4) + "-" + f2[1].slice(4, 6) + "-" + f2[1].slice(6, 8);
+    return "";
+  }
+
+  function parseDailyReport(sheets, filename, canonDict) {
+    var all = sheets || [], date = "", rawItems = [], metrics = [];
+    var goodsSheets = {}, classSheets = {};
+
+    /* 1) 统计日期：单元格日期 > 文件名 */
+    for (var si = 0; si < all.length && !date; si++) {
+      var mm = all[si].matrix || [];
+      for (var r0 = 0; r0 < Math.min(mm.length, 4) && !date; r0++) {
+        var row0 = mm[r0] || [];
+        for (var c0 = 0; c0 < Math.min(row0.length, 5); c0++) {
+          var v = row0[c0];
+          if (v instanceof Date) { date = fmtDate(v); if (date) break; }
+          var mt = String(v == null ? "" : v).match(/(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+          if (mt) { date = mt[1] + "-" + pad2(mt[2]) + "-" + pad2(mt[3]); break; }
+        }
+      }
+    }
+    if (!date) date = dateFromName(filename);
+    if (!date) date = today();
+
+    /* 2) 逐表按表头识别「货物列组」与「车辆类别列组」 */
+    all.forEach(function (sh) {
+      var m = sh.matrix || [], headerRow = -1, carCols = [], wtCols = [];
+      for (var r = 0; r < Math.min(m.length, 12); r++) {
+        var cc = findCols(m[r] || [], CAR_HINTS), ww = findCols(m[r] || [], WT_HINTS);
+        if (cc.length && ww.length) { headerRow = r; carCols = cc; wtCols = ww; break; }
+      }
+      if (headerRow < 0) return;
+      var hdr = m[headerRow] || [], groups = [];
+      carCols.forEach(function (carCol) {
+        var nameCol = -1;
+        for (var c = carCol - 1; c >= 0; c--) {
+          var raw = String(hdr[c] == null ? "" : hdr[c]).trim();
+          if (!raw || SKIP_HEAD.test(raw)) continue;
+          if (findCols([hdr[c]], CAR_HINTS).length || findCols([hdr[c]], WT_HINTS).length) continue;
+          nameCol = c; break;
+        }
+        if (nameCol < 0) return;
+        var headText = String(hdr[nameCol] == null ? "" : hdr[nameCol]).trim();
+        var nextCar = 99999;
+        carCols.forEach(function (x) { if (x > carCol && x < nextCar) nextCar = x; });
+        var wtCol = -1;
+        wtCols.forEach(function (w) { if (wtCol < 0 && w > carCol && w < nextCar) wtCol = w; });
+        if (wtCol < 0) wtCol = carCol + 1;
+        groups.push({ nameCol: nameCol, carCol: carCol, wtCol: wtCol,
+                      lane: headText, isGoods: NAME_RE.test(headText) });
+      });
+      if (!groups.length) return;
+      var hasGoods = groups.some(function (g) { return g.isGoods; });
+      if (hasGoods) goodsSheets[sh.name] = true; else classSheets[sh.name] = true;
+
+      for (var rr = headerRow + 1; rr < m.length; rr++) {
+        var row = m[rr] || [];
+        if (!hasContent(row)) continue;
+        groups.forEach(function (g) {
+          var nm = String(row[g.nameCol] == null ? "" : row[g.nameCol]).trim();
+          if (!nm) return;
+          var cars = toNum(row[g.carCol]), wt = toNum(row[g.wtCol]);
+          /* 合计行 / 车辆类别行 → 指标；不参与货物名称归并 */
+          if (TOTAL_RE.test(nm) || /空车|车头|重车|退运|总车数|类别/.test(nm) || !g.isGoods) {
+            metrics.push({ sheet: sh.name, label: nm, cars: cars, weight: wt, goodsSheet: g.isGoods });
+            return;
+          }
+          if (NON_ITEM_RE.test(nm) || /^\d+(\.\d+)?$/.test(nm) || (!cars && !wt)) return;
+          rawItems.push({ name: nm, cnt: cars, weight: wt, lane: g.lane, sheet: sh.name });
+        });
+      }
+    });
+
+    /* 3) 统一货物名称口径：词库 = 内置 + 本报表货物项（报表标准名优先）+ 模板/参数扩展 */
+    var dict = buildCanonDict(rawItems.map(function (x) { return { name: x.name }; }));
+    if (canonDict) {
+      Object.keys(canonDict).forEach(function (k) { if (dict[k] == null) dict[k] = canonDict[k]; });
+    }
+    var gmap = {};
+    rawItems.forEach(function (x) {
+      var canon = canonicalGoods(x.name, dict);
+      if (!gmap[canon]) gmap[canon] = { goods: canon, cnt: 0, weight: 0, lanes: {}, variants: {} };
+      gmap[canon].cnt += x.cnt;
+      gmap[canon].weight += x.weight;
+      gmap[canon].lanes[x.lane] = true;
+      if (canon !== x.name) gmap[canon].variants[x.name] = true;
+    });
+    var goods = Object.keys(gmap).map(function (k) {
+      var o = gmap[k];
+      return { goods: o.goods, cnt: o.cnt, weight: round2(o.weight),
+               lanes: Object.keys(o.lanes), variants: Object.keys(o.variants) };
+    }).sort(function (a, b) { return b.cnt - a.cnt || b.weight - a.weight; });
+
+    /* 4) 汇总指标：入区车数 / 重量由货物项推导，空车与出区取「合计 / 类别」行 */
+    var inHeavy = goods.reduce(function (s, g) { return s + g.cnt; }, 0);
+    var inWeight = round2(goods.reduce(function (s, g) { return s + g.weight; }, 0));
+    var inEmpty = metrics.filter(function (x) { return x.goodsSheet && /空车|车头/.test(x.label); })
+                         .reduce(function (s, x) { return s + x.cars; }, 0);
+    var explicitIn = metrics.filter(function (x) { return x.goodsSheet && /总车数/.test(x.label) && x.cars > 0; });
+    var inCars = explicitIn.length ? explicitIn[explicitIn.length - 1].cars : inHeavy + inEmpty;
+
+    var outM = metrics.filter(function (x) { return !x.goodsSheet; });
+    var outTotalRows = outM.filter(function (x) { return /合计|总计/.test(x.label) && x.cars > 0; });
+    var outCars = outTotalRows.length ? outTotalRows[outTotalRows.length - 1].cars
+      : outM.reduce(function (s, x) { return s + x.cars; }, 0);
+    var outWtRows = outM.filter(function (x) { return /合计|总计/.test(x.label) && x.weight > 0; });
+    var outWeight = round2(outWtRows.length ? outWtRows[outWtRows.length - 1].weight
+      : outM.reduce(function (s, x) { return s + x.weight; }, 0));
+    var outHeavy = outM.filter(function (x) { return /重车/.test(x.label); })
+                       .reduce(function (s, x) { return s + x.cars; }, 0);
+    var outEmpty = outM.filter(function (x) { return /空车/.test(x.label); })
+                       .reduce(function (s, x) { return s + x.cars; }, 0);
+
+    return {
+      date: date, gate: "", source: filename || "",
+      sheetNames: all.map(function (s) { return s.name; }),
+      goodsSheets: Object.keys(goodsSheets), classSheets: Object.keys(classSheets),
+      goods: goods, metrics: metrics,
+      totals: {
+        inCars: inCars, inHeavy: inHeavy, inEmpty: inEmpty, inWeight: inWeight,
+        outCars: outCars, outHeavy: outHeavy, outEmpty: outEmpty, outWeight: outWeight,
+        goodsKinds: goods.length
+      }
+    };
+  }
+
   /* ---------- 货物名称统一口径（用户诉求核心） ----------
    * 白火龙果 / 红心火龙果 / 鲜火龙果 / 火龙果(越南) … 一律按「火龙果」计算。
    * 做法：清洗（去括号 / 空白）→ 剥离前缀修饰词（鲜 / 红心 / 白 / 进口…）→
@@ -501,6 +642,7 @@
     restoreConfig: restoreConfig,
     detectGoods: detectGoods,
     aggregate: aggregate,
+    parseDailyReport: parseDailyReport,
     matchItems: matchItems,
     buildFilled: buildFilled,
     buildCanonDict: buildCanonDict,

@@ -77,7 +77,7 @@
         </div>
       </div>
       <div class="page-notice" id="dashNotice" style="display:none"></div>
-      <div class="page-notice source-hint">本站未与任何生产业务系统对接；本看板及查询统计模块中的预置数据为演示用示意数据，每日报表由使用者每日下班导入的 Excel 表格汇总生成（导入内容由使用者自行负责）。导入的货物统计按统计日期保存在本站云端账号下，刷新后自动读回，货物名称按统一口径归并。<a href="source.html">查看数据来源与声明 →</a></div>
+      <div class="page-notice source-hint">本站未与任何生产业务系统对接；本看板及查询统计模块中的预置数据为演示用示意数据，每日报表由使用者每日下班导入的 Excel 表格汇总生成（导入内容由使用者自行负责）。导入的日报汇总与货物统计按统计日期保存在本站云端账号下，刷新后自动读回，货物名称按统一口径归并，首屏 KPI、趋势图与货物构成同步显示导入的车数 / 重量。<a href="source.html">查看数据来源与声明 →</a></div>
 
       <!-- KPI 卡片 -->
       <div class="stat-grid mb-24" id="kpiGrid"></div>
@@ -181,10 +181,15 @@
         ]
       });
 
-      /* ---------- KPI（日报口径 + 车辆实时） ---------- */
-      function renderKpis(vehicles, reports) {
+      /* ---------- KPI：优先展示导入日报的真实数据，无导入时回退到车辆实时口径 ----------
+       * 用户每日下班导入的 Excel（已汇总报表 / 逐车明细）会写入 site_reports，
+       * 首屏必须直接显示这些数字，而不是只显示空的在场车辆表。 */
+      function renderKpis(vehicles, reports, importInfo) {
         var latest = reports[0] || {};
         var prev = reports[1] || {};
+        var hasImport = !!(Number(latest.in_total) || Number(latest.out_total) ||
+                           Number(latest.in_weight) || Number(latest.out_weight) ||
+                           String(latest.source || ""));
         var declSum = reports.reduce(function (s, r) { return s + (Number(r.decl) || 0); }, 0);
         var stranded = vehicles.filter(function (v) { return v.status === "滞留预警" || Number(v.dwell || 0) > 72; });
         lastStranded = stranded.length;
@@ -193,18 +198,32 @@
           var d = ((cur - pre) / pre) * 100;
           return { up: d >= 0, txt: (d >= 0 ? "▲ +" : "▼ ") + d.toFixed(1) + "%" };
         }
-        var t1 = trend(Number(latest.in_total) || 0, Number(prev.in_total) || 0);
-        var t2 = trend(Number(latest.out_total) || 0, Number(prev.out_total) || 0);
-        var t3 = trend(Number(latest.release_cnt) || 0, Number(prev.release_cnt) || 0);
-        var dayTag = latest.rdate ? "（" + String(latest.rdate).slice(5) + "）" : "";
-        var kpis = [
-          { label: "在场车辆", value: vehicles.length, unit: "辆", icon: "🚛", color: "blue", up: null, trend: "实时" },
-          { label: "入区" + dayTag, value: Number(latest.in_total) || 0, unit: "车", icon: "📥", color: "green", up: t1.up, trend: t1.txt },
-          { label: "出卡" + dayTag, value: Number(latest.out_total) || 0, unit: "车", icon: "📤", color: "orange", up: t2.up, trend: t2.txt },
-          { label: "滞留超72小时", value: lastStranded, unit: "车", icon: "⚠️", color: "red", up: false, trend: lastStranded ? "待处理" : "正常" },
-          { label: "一线放行(过驳)" + dayTag, value: Number(latest.release_cnt) || 0, unit: "车", icon: "✅", color: "cyan", up: t3.up, trend: t3.txt },
-          { label: "边民申报总数", value: declSum, unit: "单", icon: "📋", color: "purple", up: true, trend: "累计" }
-        ];
+        var kpis;
+        if (hasImport) {
+          /* 日期放在右侧标签，不写进卡片标题——窄卡片里「（11-07）」会被拆行 */
+          var tag = String(latest.rdate || "").slice(5);
+          kpis = [
+            { label: "入区总车数", value: Number(latest.in_total) || 0, unit: "车", icon: "📥", color: "green", up: null, trend: "导入 " + tag },
+            { label: "出区总车数", value: Number(latest.out_total) || 0, unit: "车", icon: "📤", color: "orange", up: null, trend: "导入 " + tag },
+            { label: "入区重车", value: Number(latest.in_heavy) || 0, unit: "车", icon: "🚛", color: "blue", up: null, trend: "空车 " + (Number(latest.in_empty) || 0) },
+            { label: "入区重量", value: Number(latest.in_weight) || 0, unit: "吨", icon: "⚖️", color: "cyan", up: null, trend: "货物合计" },
+            { label: "出区重量", value: Number(latest.out_weight) || 0, unit: "吨", icon: "🏋️", color: "purple", up: null, trend: "验放合计" },
+            { label: "统一口径货物", value: Number(latest.goods_kinds) || (importInfo ? importInfo.list.length : 0), unit: "种", icon: "📦", color: "red", up: null, trend: "已归并" }
+          ];
+        } else {
+          var t1 = trend(Number(latest.in_total) || 0, Number(prev.in_total) || 0);
+          var t2 = trend(Number(latest.out_total) || 0, Number(prev.out_total) || 0);
+          var t3 = trend(Number(latest.release_cnt) || 0, Number(prev.release_cnt) || 0);
+          var dayTag2 = latest.rdate ? "（" + String(latest.rdate).slice(5) + "）" : "";
+          kpis = [
+            { label: "在场车辆", value: vehicles.length, unit: "辆", icon: "🚛", color: "blue", up: null, trend: "实时" },
+            { label: "入区" + dayTag2, value: Number(latest.in_total) || 0, unit: "车", icon: "📥", color: "green", up: t1.up, trend: t1.txt },
+            { label: "出卡" + dayTag2, value: Number(latest.out_total) || 0, unit: "车", icon: "📤", color: "orange", up: t2.up, trend: t2.txt },
+            { label: "滞留超72小时", value: lastStranded, unit: "车", icon: "⚠️", color: "red", up: false, trend: lastStranded ? "待处理" : "正常" },
+            { label: "一线放行(过驳)" + dayTag2, value: Number(latest.release_cnt) || 0, unit: "车", icon: "✅", color: "cyan", up: t3.up, trend: t3.txt },
+            { label: "边民申报总数", value: declSum, unit: "单", icon: "📋", color: "purple", up: true, trend: "累计" }
+          ];
+        }
         $("#kpiGrid").innerHTML = kpis.map(k => `
           <div class="stat-card">
             <div class="stat-icon ${k.color}">${k.icon}</div>
@@ -346,16 +365,25 @@
         var reports = results[3].data || [];
         var goodsRows = results[4].error ? [] : (results[4].data || []);
         var importInfo = renderImportPanel(goodsRows);
+        var latestReport = reports[0] || {};
+        var hasImport = !!(Number(latestReport.in_total) || Number(latestReport.out_total) ||
+                           Number(latestReport.in_weight) || Number(latestReport.out_weight) ||
+                           String(latestReport.source || ""));
         lastVehicles = vehicles; lastReports = reports;
-        renderKpis(vehicles, reports);
+        renderKpis(vehicles, reports, importInfo);
         renderCharts(vehicles, checkpoints, reports, importInfo);
         renderMap(vehicles, checkpoints, records);
         onSiteTable.setData(vehicles);
-        showNotice("数据实时来自云端：<b>" + vehicles.length + "</b> 辆在场 · <b>" + checkpoints.length +
-          "</b> 条卡口记录 · <b>" + records.length + "</b> 条核放记录 · <b>" + reports.length +
-          "</b> 份日报 · <b>" + goodsRows.length + "</b> 条导入货物统计记录" +
-          (importInfo ? "（最新日期 " + App.esc(importInfo.date) + "）" : "") +
-          "。在「查询统计」中导入 / 增删改，看板即时联动。");
+        var imp = hasImport
+          ? ("最新导入日报 <b>" + App.esc(String(latestReport.rdate || "")) + "</b>：入区 <b>" +
+             (Number(latestReport.in_total) || 0) + "</b> 车 / <b>" + (Number(latestReport.in_weight) || 0) +
+             "</b> 吨，出区 <b>" + (Number(latestReport.out_total) || 0) + "</b> 车 / <b>" +
+             (Number(latestReport.out_weight) || 0) + "</b> 吨；")
+          : "暂无导入日报；";
+        showNotice("数据实时来自云端：" + imp + "共 <b>" + reports.length +
+          "</b> 份日报 · <b>" + goodsRows.length + "</b> 条导入货物统计 · " + vehicles.length +
+          " 辆在场 · " + checkpoints.length + " 条卡口记录 · " + records.length +
+          " 条核放记录。在「查询统计 → 每日报表」导入后，首屏 KPI 与图表即时联动。");
       }
 
       loadAll();
@@ -366,8 +394,12 @@
       document.getElementById("exportDash").addEventListener("click", () => {
         var latest = lastReports[0] || {};
         App.exportCSV("园区日报_" + (latest.rdate || new Date().toISOString().slice(0, 10)) + ".csv",
-          ["日期", "入区车数", "出卡车数", "一线放行", "边民申报", "异常", "在场车辆", "滞留超72h"],
-          [[latest.rdate || "—", latest.in_total || 0, latest.out_total || 0, latest.release_cnt || 0, latest.decl || 0, latest.abnormal || 0, lastVehicles.length, lastStranded]]);
+          ["日期", "入区总车数", "入区重车", "入区空车", "入区重量(吨)", "出区总车数", "出区重车", "出区空车",
+           "出区重量(吨)", "统一口径货物", "一线放行", "边民申报", "异常", "在场车辆", "滞留超72h", "数据来源"],
+          [[latest.rdate || "—", latest.in_total || 0, latest.in_heavy || 0, latest.in_empty || 0, latest.in_weight || 0,
+            latest.out_total || 0, latest.out_heavy || 0, latest.out_empty || 0, latest.out_weight || 0,
+            latest.goods_kinds || 0, latest.release_cnt || 0, latest.decl || 0, latest.abnormal || 0,
+            lastVehicles.length, lastStranded, latest.source || "每日下班导入 Excel"]]);
         C.logAction("数据看板", "导出今日日报", latest.rdate || "");
         App.toast("已导出日报", "ok");
       });

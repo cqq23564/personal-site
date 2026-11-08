@@ -1361,3 +1361,9 @@ button:focus-visible,
   .hist-toolbar { gap: 6px; }
   .hist-toolbar .btn { flex: 1 1 auto; }
 }
+
+/* --- 23. 数据看板：导入日报 KPI 桌面 3×2 对齐、标签防拆行 --- */
+@media (min-width: 1100px) {
+  #kpiGrid.stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+#kpiGrid .stat-trend { white-space: nowrap; }

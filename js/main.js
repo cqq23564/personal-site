@@ -294,11 +294,16 @@
   /* ================= 数字动画 ================= */
   function animateCount(el) {
     const target = Number(el.dataset.count || 0);
+    /* 吨数等含小数的值保留最多 2 位小数；整数仍按整数递增 */
+    const isFloat = String(el.dataset.count || "").indexOf(".") > -1;
+    const fmt = isFloat
+      ? (n => Number(n.toFixed(2)).toLocaleString("zh-CN", { maximumFractionDigits: 2 }))
+      : (n => Math.round(n).toLocaleString("zh-CN"));
     const dur = 900, t0 = performance.now();
     function step(t) {
       const p = Math.min(1, (t - t0) / dur);
       const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(target * eased).toLocaleString("zh-CN");
+      el.textContent = fmt(target * eased);
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
@@ -593,7 +598,9 @@
     if (!box) return;
     const W = 720, H = 260, padL = 46, padR = 16, padT = 18, padB = 34;
     const labels = opt.labels, series = opt.series;
-    const maxV = Math.max(...series.flatMap(s => s.data)) * 1.15;
+    /* 全 0 / 空数据时 Math.max 会得到 0 或 -Infinity，除零会让 SVG 坐标变成 NaN */
+    const rawMax = Math.max(...series.flatMap(s => s.data));
+    const maxV = (isFinite(rawMax) && rawMax > 0) ? rawMax * 1.15 : 1;
     const iw = W - padL - padR, ih = H - padT - padB;
     const x = i => padL + (labels.length === 1 ? iw / 2 : (i / (labels.length - 1)) * iw);
     const y = v => padT + ih - (v / maxV) * ih;
@@ -653,9 +660,10 @@
     if (!box) return;
     const W = 720, H = 240, padL = 40, padR = 12, padT = 14, padB = 30;
     const labels = opt.labels, series = opt.series;
-    const maxV = Math.max(...series.flatMap(s => s.data)) * 1.15;
+    const rawMax = Math.max(...series.flatMap(s => s.data));
+    const maxV = (isFinite(rawMax) && rawMax > 0) ? rawMax * 1.15 : 1;
     const iw = W - padL - padR, ih = H - padT - padB;
-    const groupW = iw / labels.length;
+    const groupW = labels.length ? iw / labels.length : iw;
     const barW = Math.max(4, (groupW - 10) / series.length - 3);
     const y = v => padT + ih - (v / maxV) * ih;
     const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}` });
@@ -699,6 +707,11 @@
     if (!box) return;
     const size = 220, cx = size / 2, cy = size / 2, r = 78, sw = 30;
     const total = items.reduce((a, b) => a + b.value, 0);
+    /* 无数据时不要画出 NaN 圆弧，直接给空状态 */
+    if (!total || !isFinite(total)) {
+      box.innerHTML = '<div class="empty">暂无数据</div>';
+      return;
+    }
     const svg = svgEl("svg", { viewBox: `0 0 ${size} ${size}` });
     let angle = -Math.PI / 2;
     items.forEach(it => {
