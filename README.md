@@ -15,6 +15,8 @@ personal-site/
 ├── dashboard-chukou.html      出口数据看板（独立页面 · 待接入该卡口样例）
 ├── dashboard-linggongli.html  零公里数据看板（独立页面 · 待接入该卡口样例）
 ├── dashboard-chayanqu.html    查验区数据看板（独立页面 · 待接入该卡口样例）
+├── import-stranded.html  滞留 72 小时中国出口重车 · 导入台账（清单式 / 表头式自动识别 + 按原版式生成报表 + 合计校验 + 按日期云端归档 + 历史批次 + 导出 + 模板下载）
+├── dashboard-stranded.html 滞留 72 小时中国出口重车 · 专题看板（清单口径 KPI / 同版式报表 / 车型与入场日期分布 / 日期趋势 / 明细，只读云端）
 ├── system-menus.html     菜单管理（树形表格、显示隐藏、增删）
 ├── system-users.html     用户管理 + 注册审核（Tabs、批量通过）
 ├── system-params.html    参数管理（分组筛选、编辑、导出、成长经历增删改排序）
@@ -29,6 +31,8 @@ personal-site/
 ├── js/main.js            交互引擎（DataTable / 图表 / 示意图 / 表单校验 / 导出等）
 ├── js/report-template.js 报表模板解析 / 货物名称识别与统一口径归并 / 按模板归类统计 / 回填导出
 ├── js/dashboard-gates.js 5 个卡口看板注册表 / 切换条 / 未接入卡口空态与占位 KPI
+├── js/stranded.js        滞留重车专题：清单式报表解析 / 表头别名识别 / 同版式报表生成 / 日期归一 / 按日期归类 / 指标聚合（纯逻辑层，可在 Node 下单测）
+├── js/stranded-report.js 清单式报表渲染 / CSV 导出 / 空白模板（不含示意数据）
 ├── js/vendor/xlsx.full.min.js  本地 SheetJS（Excel 解析，不依赖 CDN）
 └── assets/img/           AI 生成配图（banner/gallery/avatar）
 ```
@@ -67,6 +71,9 @@ python -m http.server 8899        # 或 npx serve .
 - **按日期持久化、刷新不丢失**：`commitGoods()` 按 `rdate` 整组替换写入 `site_report_goods`（含 `variants` 合并来源列，同一天重复导入覆盖更新，不残留旧叫法重复行）；`query-reports.html` 的 `loadGoodsCloud()` 在页面初始化与 `Cloud.onChange` 时读回，重建货物统计状态并渲染「历史导入数据」面板（日期切换 / 导出该日 / 删除该日）；`dashboard.html` 的 `loadAll()` 增查该表，新增「导入货物统计」面板，并把货物构成环形图切换为最新导入日期的统一口径数据。
 - **已汇总报表导入 + 看板首屏联动**：`js/report-template.js` 的 `parseDailyReport()` 按表头自动识别成品报表（如 B 卡报表）里的「货物名称 / 车数 / 重量」列组与车辆验放合计，不写死工作表名、卡口名与货物清单；`query-reports.html` 的 `handleFile()` 优先走该模式，按统计日期把入区 / 出区车数、重量、统一口径货物品种写入 `site_reports`（新增 `gate / in_weight / out_weight / goods_kinds / source` 列）并整组替换写入 `site_report_goods`；`dashboard.html` 首屏 6 个 KPI 优先展示这些导入值，趋势图 / 货物构成 / 导入货物统计面板同步。任何解析结果全 0 时都**不会写入全 0 日报**，避免覆盖真实数据。图表层 `renderLineChart / renderBarChart / renderDonut` 对空 / 全 0 数据做了除零保护，数字动画支持小数。
 - **5 个卡口数据看板**：`dashboard.html`（B卡，已接入真实导入数据）、`dashboard-hushi.html`（互市）、`dashboard-chukou.html`（出口）、`dashboard-linggongli.html`（零公里）、`dashboard-chayanqu.html`（查验区）。注册表与切换条在 `js/dashboard-gates.js`，全站侧边栏「数据看板 · 5 个卡口」分组均提供 5 个入口。**各卡口需要查询的数据及报表口径不同**，未接入的 4 个看板显示空态与「接入需要提供」清单（卡口名称/编号、数据文件工作表与表头、目标报表模板、统计口径），不套用 B 卡结构、不填示意数字；样例到齐后按卡口独立定制指标。云端 `site_reports` / `site_report_goods` 已有 `gate` 维度，现有数据标记 `bcard`。
+- **滞留 72 小时中国出口重车专题（清单式报表）**：`import-stranded.html` 每日下班导入 Excel/CSV。首选识别**无表头清单式报表**：首行标题「2026年10月8日中国车出口滞留72小时」（提供统计日期与阈值），每行「车牌　重车　M月D日」，末行「合计：14车」；三列、空格、Tab、整行连写、多工作表混合均可识别（`js/stranded.js` 的 `parseStrandedList`）。导入后在预览与看板**按原版式自动生成同款报表**（标题 / 车牌 / 车型 / 入场日期 / 合计），并核对合计车数与实际识别行数，可导出 CSV；`js/stranded-report.js` 负责渲染、导出与空白模板（模板不含任何示意业务数据）。
+- **清单口径与不编造原则**：标题已声明「滞留 72 小时」，每行按 1 辆计入滞留与达阈值车辆；统计日期取自标题（中文纯文本，无 Excel 整日日期偏移），国籍 / 方向取自标题文字。明细只有「M月D日」、无年份与时刻，**不足以推算精确滞留小时数，故 `dwell_hours=0` / `dwell_basis='declared'`，不计算、不展示、不编造时长**；看板在该模式下把 KPI 切换为重车 / 空车 / 明细条数 / 归档批次，时长分布保持空态、构成图改看车型、业务维度改看入场日期分布。入场月日晚于统计日期时给出提示但不改写原文。需要精确时长请用带「滞留时长(h)」列的标准台账模板。
+- **兼容旧格式与持久化**：带中文表头的逐车明细清单 / 汇总统计表仍按别名识别（≥3 字段且含「车牌」或「货物」列，避免误收 B卡入区/出区统计表），统计日期优先取文件名。同日重导按 `rdate` 整组替换写入 `site_stranded_trucks`（含 `vehicle_type / entry_label / report_title / dwell_basis` 四列），历史批次可切换日期 / 导出 / 删除。阈值由 `site_params.stranded.threshold.hours`（默认 72）控制。逻辑层 `js/stranded.js` 为纯函数，可在 Node 下直接单测。该专题是独立业务口径，不并入 5 卡口切换条。
 - 首页「成长经历」不再写死 4 条：条目由云端 `site_params` 的 `home.timeline.N.*`（date / title / text）聚合，编号 N 决定顺序，任意条数均可；在「参数管理 → 成长经历」专用管理区增删改排序后整组保存，首页即时生效，无需改代码或重新发布。
 - 导出为浏览器端生成：CSV（带 BOM，Excel 可直接打开）或 Excel 工作簿（SpreadsheetML `.xls`）；模板统计报表含模板货物统计表及「按模板归类 / 货物统计明细 / 数据来源说明」附表，无需后端。
 

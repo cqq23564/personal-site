@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>滞留重车导入 · 陈庆棋个人主页</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap-wide nav">
+      <a class="nav-brand" href="index.html"><span class="nav-logo">陈</span>陈庆棋 · 个人主页</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="dashboard.html" class="active">数据看板</a>
+        <a href="system-menus.html">系统管理</a>
+        <a href="query-vehicles.html">查询统计</a>
+        <a href="files.html">文件管理</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="nav-search"><input id="navSearch" placeholder="搜索车牌 / 货物 / 单号"></div>
+        <div class="dropdown">
+          <button class="nav-user"><img src="assets/img/avatar.png" alt=""><span>陈庆棋</span>▾</button>
+          <div class="dropdown-menu">
+            <a href="profile.html">🙋 个人中心</a>
+            <a href="dashboard.html">📊 数据看板</a>
+            <a href="files.html">📁 文件管理</a>
+            <div class="divider"></div>
+            <button id="logoutBtn">🚪 退出登录</button>
+          </div>
+        </div>
+        <button class="hamburger">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+  <aside class="sidebar">
+      <div class="side-group">
+        <div class="side-group-title">专题看板</div>
+        <a class="side-link active" href="import-stranded.html"><span class="ico">📥</span>滞留重车导入</a>
+        <a class="side-link" href="dashboard-stranded.html"><span class="ico">⏱️</span>滞留 72h 看板</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">数据看板 · 5 个卡口</div>
+        <a class="side-link" data-gate="bcard" href="dashboard.html"><span class="ico">🅱️</span>B卡数据看板</a>
+        <a class="side-link" data-gate="hushi" href="dashboard-hushi.html"><span class="ico">🛒</span>互市数据看板</a>
+        <a class="side-link" data-gate="chukou" href="dashboard-chukou.html"><span class="ico">📤</span>出口数据看板</a>
+        <a class="side-link" data-gate="linggongli" href="dashboard-linggongli.html"><span class="ico">📍</span>零公里数据看板</a>
+        <a class="side-link" data-gate="chayanqu" href="dashboard-chayanqu.html"><span class="ico">🔍</span>查验区数据看板</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">系统管理</div>
+        <a class="side-link" href="system-users.html"><span class="ico">👤</span>用户管理</a>
+        <a class="side-link" href="system-menus.html"><span class="ico">📑</span>菜单管理</a>
+        <a class="side-link" href="system-params.html"><span class="ico">🔧</span>参数管理</a>
+        <a class="side-link" href="system-logs.html"><span class="ico">📜</span>操作日志</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">查询统计</div>
+        <a class="side-link" href="query-vehicles.html"><span class="ico">🚛</span>在场车辆查询</a>
+        <a class="side-link" href="query-checkpoint.html"><span class="ico">🛂</span>卡口车辆管理</a>
+        <a class="side-link" href="query-records.html"><span class="ico">✅</span>核放记录查询</a>
+        <a class="side-link" href="query-reports.html"><span class="ico">📈</span>每日报表</a>
+      </div>
+      <div class="side-group">
+        <div class="side-group-title">其他</div>
+        <a class="side-link" href="files.html"><span class="ico">📁</span>文件管理</a>
+        <a class="side-link" href="profile.html"><span class="ico">🙋</span>个人中心</a>
+        <a class="side-link" href="index.html"><span class="ico">🏠</span>返回主页</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <div class="page-title">📥 滞留 72 小时中国出口重车 · 导入台账</div>
+          <div class="page-desc">每日下班导入当天滞留清单 · 按统计日期云端归档 · 刷新 / 换设备不丢失</div>
+        </div>
+        <div class="flex gap-8" style="flex-wrap:wrap">
+          <a class="btn btn-line" href="dashboard-stranded.html">⏱️ 专题看板</a>
+          <button class="btn btn-line" id="stRefreshBtn">🔄 重新载入</button>
+          <button class="btn btn-primary" id="stExportBtn" disabled>📥 导出当前批次</button>
+        </div>
+      </div>
+
+      <div class="page-notice source-hint">
+        本专题台账由使用者<strong>每日下班手动导入 Excel / CSV</strong> 生成，本站<strong>未</strong>与任何生产业务系统或海关监管平台对接，
+        不含真实监管业务数据；表内数据由导入者自行负责。<a href="source.html">查看数据来源与声明 →</a>
+      </div>
+
+      <!-- 导入 -->
+      <div class="card mb-24 import-card" id="stImportCard">
+        <div class="card-hd">📥 导入滞留重车清单 <span class="sub">支持 .xlsx / .xls / .csv · 清单式 / 表头式自动识别</span></div>
+        <div class="card-bd">
+          <div class="import-meta">
+            <span class="import-label">预警阈值</span>
+            <strong id="stThreshold">72 小时</strong>
+            <span class="badge badge-info" id="stBatchBadge">已归档 0 天</span>
+            <span class="text-3 import-hint-inline">可在「参数管理」中修改 stranded.threshold.hours</span>
+          </div>
+          <p class="import-desc">
+            <strong>① 清单式报表（推荐，按你给的版式自动生成同款报表）</strong>：首行标题
+            <code>2026年10月8日中国车出口滞留72小时</code>，下面每行一辆车
+            <code>浙JB8983　重车　11月4日</code>（三列、空格、Tab 或整行连写均可识别），末行 <code>合计：14车</code>。
+            导入后<strong>自动生成同版式报表</strong>并核对合计车数；统计日期取自标题，同一日期重复导入会<strong>整组覆盖更新</strong>。
+            标题已声明「滞留 72 小时」，每行按 1 辆计入达阈值车辆；明细只有「M月D日」、无年份与时刻，
+            <strong>故不推算、不编造精确滞留时长</strong>，需要精确时长请用标准台账模板。
+            <br><strong>② 逐车明细清单 / ③ 汇总统计表</strong>：按表头中文别名自动识别，不要求固定列位置
+            （车牌号 / 入场时间 / 滞留时长(h) / 货物名称 / 车次（辆）/ 重量(T) 等）；统计日期优先取文件名中的日期。
+          </p>
+          <div class="import-drop" id="stDrop">
+            <input type="file" id="stFile" accept=".xlsx,.xls,.csv" hidden>
+            <div class="import-drop-inner">
+              <div class="import-drop-icon">📄</div>
+              <div class="import-drop-text">点击选择，或把 Excel / CSV 文件拖到这里</div>
+              <div class="import-drop-sub">可直接导入现成的「标题 + 车牌/重车/日期 + 合计」清单；也可下载模板按版式填写</div>
+              <div class="import-btn-row">
+                <button class="btn btn-primary btn-sm" id="stChooseBtn">选择文件</button>
+                <button class="btn btn-line btn-sm" id="stDownloadListTpl">⬇ 清单式模板</button>
+                <button class="btn btn-line btn-sm" id="stDownloadTpl">⬇ 标准台账模板</button>
+              </div>
+            </div>
+          </div>
+          <div id="stPreview" class="import-preview" style="display:none"></div>
+          <div class="import-actions" id="stActions" style="display:none">
+            <button class="btn btn-primary" id="stConfirmBtn">✅ 确认导入并归档</button>
+            <button class="btn btn-line" id="stCancelBtn">取消</button>
+            <span class="text-3" id="stSummary"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史批次 -->
+      <div class="card mb-24 hist-card" id="stHistoryCard">
+        <div class="card-hd">🗓 历史归档批次 · 按统计日期归类 <span class="sub">云端持久化 · 刷新自动读回</span></div>
+        <div class="card-bd">
+          <div class="hist-toolbar">
+            <label class="hist-label" for="stDate">统计日期</label>
+            <select class="select" id="stDate"></select>
+            <span class="badge badge-info" id="stRowBadge">0 条</span>
+            <div class="grow"></div>
+            <button class="btn btn-line btn-sm" id="stExportDayBtn" disabled>📥 导出该日</button>
+            <button class="btn btn-line btn-sm danger" id="stDeleteBtn" style="display:none">🗑 删除该日</button>
+          </div>
+          <div class="hist-stats" id="stStats"></div>
+          <div class="table-wrap" id="stTable"></div>
+          <div class="text-3 hist-note" id="stNote"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <div class="copyright" style="border:none">
+        <span>© 2026 陈庆棋 · 个人主页 · 个人技术作品集（演示数据）</span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="index.html">返回首页</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="js/cloud-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/vendor/xlsx.full.min.js"></script>
+  <script src="js/stranded.js"></script>
+  <script src="js/stranded-report.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var $ = function (s) { return document.querySelector(s); };
+    var C = window.Cloud, App = window.App, S = window.Stranded, SR = window.StrandedReport;
+    var TABLE = "site_stranded_trucks";
+    var cloudRows = [], pending = null, batches = [], curDate = "", threshold = 72, busy = false;
+
+    function esc(s) { return App.esc(s); }
+    function fmt(n) { return Number(n || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }); }
+
+    /* ---------- 读取阈值参数 ---------- */
+    async function loadThreshold() {
+      var r = await C.tableList("site_params");
+      (r.data || []).forEach(function (p) {
+        if (p.pkey === "stranded.threshold.hours" && Number(p.pvalue) > 0) threshold = Number(p.pvalue);
+      });
+      $("#stThreshold").textContent = threshold + " 小时";
+    }
+
+    /* ---------- 云端读回 + 按日期分组 ---------- */
+    async function loadCloud() {
+      var r = await C.tableList(TABLE, { order: "rdate", asc: false });
+      if (r.error) {
+        $("#stNote").textContent = "读取云端数据失败：" + (r.error.message || "请先登录");
+        renderHistory([]);
+        return;
+      }
+      cloudRows = r.data || [];
+      renderHistory(cloudRows);
+    }
+
+    function renderHistory(rows) {
+      batches = S.byDate(rows, threshold);
+      var sel = $("#stDate");
+      if (curDate && batches.some(function (b) { return b.date === curDate; })) {
+        /* keep */ } else { curDate = batches.length ? batches[0].date : ""; }
+      sel.innerHTML = batches.length
+        ? batches.map(function (b) { return '<option value="' + esc(b.date) + '">' + esc(b.date) + "（" + b.rows.length + " 条）</option>"; }).join("")
+        : '<option value="">暂无归档批次</option>';
+      sel.value = curDate;
+      $("#stBatchBadge").textContent = "已归档 " + batches.length + " 天";
+      $("#stExportBtn").disabled = !rows.length;
+      $("#stExportDayBtn").disabled = !curDate;
+      $("#stDeleteBtn").style.display = curDate && C.isAdmin() ? "" : "none";
+      renderBatch();
+    }
+
+    function renderBatch() {
+      var b = null;
+      batches.forEach(function (x) { if (x.date === curDate) b = x; });
+      var s = b ? b.stats : S.summarize([], threshold);
+      $("#stRowBadge").textContent = b ? b.rows.length + " 条" : "0 条";
+      function typeCnt(name) {
+        var hit = s.vehicleTypes.filter(function (x) { return x.name === name; })[0];
+        return hit ? hit.value : 0;
+      }
+      /* 清单式台账没有精确滞留时长 / 货物 / 重量依据，换成可核对的真实指标 */
+      var kpis = s.listMode ? [
+        ["滞留车辆", s.cars, "辆"], ["≥" + threshold + "h 预警", s.over, "辆"],
+        ["重车", typeCnt("重车"), "辆"], ["空车", typeCnt("空车"), "辆"],
+        ["明细记录", s.rows, "条"], ["归档批次", batches.length, "天"]
+      ] : [
+        ["滞留车辆", s.cars, "辆"], ["≥" + threshold + "h 预警", s.over, "辆"],
+        ["最长滞留", s.maxDwell, "h"], ["平均滞留", s.avgDwell, "h"],
+        ["货物品种", s.goodsKinds, "种"], ["累计重量", s.weight, "吨"]
+      ];
+      $("#stStats").innerHTML = '<div class="hist-kpi-grid">' + kpis.map(function (k) {
+        return '<div class="hist-kpi"><div class="hist-kpi-label">' + esc(k[0]) + '</div>' +
+          '<div class="hist-kpi-value">' + (b ? fmt(k[1]) : "—") + '</div>' +
+          '<div class="hist-kpi-unit">' + esc(k[2]) + '</div></div>';
+      }).join("") + '</div>';
+
+      if (!b || !b.rows.length) {
+        $("#stTable").innerHTML = '<div class="empty st-empty">📭 暂无归档数据。<br>先在上方导入当日滞留清单，数据会按统计日期保存在云端，刷新或换设备登录后自动读回。</div>';
+        $("#stNote").textContent = "本站不预置示意数字；导入前所有指标显示「—」。";
+        return;
+      }
+      /* 清单式批次：按原版式列出明细，不展示无依据的时长 / 货物 / 重量列 */
+      if (b.stats.listMode) {
+        var lhead = ["序号", "车牌号", "车型", "入场日期", "国籍", "方向", "状态", "来源文件"];
+        var lbody = b.rows.map(function (r, i) {
+          return "<tr>" + [i + 1, r.plate || "—", r.vehicle_type || "—", r.entry_label || "—",
+            r.nation || "—", r.direction || "—", r.status || "—", r.source || "—"]
+            .map(function (v, k) { return "<td" + (k === 0 ? ' class="num"' : "") + ">" + esc(v) + "</td>"; }).join("") + "</tr>";
+        }).join("");
+        $("#stTable").innerHTML = '<table class="table goods-table"><thead><tr>' +
+          lhead.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") +
+          "</tr></thead><tbody>" + lbody + "</tbody></table>";
+        $("#stNote").textContent = "清单式台账：" + (b.rows[0].report_title || "—") +
+          " · 共 " + b.rows.length + " 辆；入场日期按导入原文保留，未推算滞留时长。";
+        return;
+      }
+      var head = ["车牌号", "挂车牌", "国籍", "进出场区", "贸易方式", "货物名称", "车次", "重量(T)", "入场时间", "滞留时长(h)", "状态", "滞留原因", "跟进人", "形态", "来源文件"];
+      var body = b.rows.map(function (r) {
+        var over = Number(r.dwell_hours) >= threshold;
+        var plain = [r.plate || "—", r.trailer_plate || "—", r.nation || "—", r.direction || "—",
+          r.trade_mode || "—", r.goods || "—", r.car_cnt, r.weight, r.entry_at || "—"];
+        var dwell = '<b class="' + (over ? "st-over" : "") + '">' + esc(fmt(r.dwell_hours)) + "</b>";
+        var tail = [r.status || "—", r.reason || "—", r.contact || "—",
+          r.row_kind === "summary" ? "汇总" : "逐车", r.source || "—"];
+        return "<tr>" + plain.map(function (v, i) {
+          return '<td' + (i >= 6 ? ' class="num"' : "") + ">" + esc(v) + "</td>";
+        }).join("") + '<td class="num">' + dwell + "</td>" +
+          tail.map(function (v) { return "<td>" + esc(v) + "</td>"; }).join("") + "</tr>";
+      }).join("");
+      $("#stTable").innerHTML = '<table class="table goods-table"><thead><tr>' +
+        head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") +
+        "</tr></thead><tbody>" + body + "</tbody></table>";
+      $("#stNote").textContent = "来源：" + (b.rows[0].source || "—") + " · 共 " + b.rows.length +
+        " 条记录；「≥" + threshold + "h」按参数 stranded.threshold.hours 判定；红色数值表示已达预警阈值。";
+    }
+
+    /* ---------- 文件解析 ---------- */
+    function readSheets(file) {
+      return new Promise(function (resolve, reject) {
+        var fr = new FileReader();
+        fr.onerror = function () { reject(new Error("文件读取失败")); };
+        fr.onload = function (e) {
+          try {
+            if (!window.XLSX) throw new Error("Excel 解析组件未加载，请刷新重试");
+            var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array", cellDates: true });
+            if (!wb.SheetNames || !wb.SheetNames.length) throw new Error("文件中没有工作表");
+            resolve(wb.SheetNames.map(function (n) {
+              return { name: n, matrix: XLSX.utils.sheet_to_json(wb.Sheets[n],
+                { header: 1, defval: "", raw: true, blankrows: true }) || [] };
+            }));
+          } catch (err) { reject(err); }
+        };
+        fr.readAsArrayBuffer(file);
+      });
+    }
+
+    async function handleFile(file) {
+      if (!file) return;
+      $("#stSummary").textContent = "正在解析…";
+      try {
+        var sheets = await readSheets(file);
+        var d = S.parseWorkbook(sheets, file.name, { threshold: threshold });
+        if (!d.rows.length) {
+          App.toast("未识别到有效滞留重车数据，请确认表头或换用标准模板", "warn");
+          $("#stPreview").style.display = "block";
+          $("#stPreview").innerHTML = '<div class="import-preview-hd">文件：<b>' + esc(file.name) +
+            '</b><br>识别到工作表：' + esc(d.sheetNames.join("、")) +
+            '<br><span style="color:var(--danger)">' + esc(d.warnings.join("；") || "无有效数据行") +
+            '</span><br>提示：请确认含「2026年10月8日中国车出口滞留72小时」这类标题行，或含「车牌号」「货物名称」等至少 3 个可识别字段的中文表头；B卡报表的入区/出区统计表不会计入。</div>';
+          $("#stActions").style.display = "none";
+          pending = null;
+          return;
+        }
+        pending = d;
+        renderPreview(d, file.name);
+      } catch (e) {
+        App.toast("解析失败：" + e.message, "warn");
+        $("#stSummary").textContent = "解析失败";
+        pending = null;
+      }
+    }
+
+    function renderPreview(d, filename) {
+      var s = d.stats, isList = d.mode === "list";
+      var lines = [
+        "文件：<b>" + esc(filename) + "</b>　统计日期：<b>" + esc(d.date) + "</b>　阈值：<b>" + threshold + "h</b>",
+        "识别模式：<b>" + (isList ? "清单式报表（按原版式生成）" : "带表头台账") + "</b>　工作表：" +
+          esc(d.matchedSheets.map(function (m) { return m.sheet + "（第" + m.headerRow + "行）"; }).join("、")),
+        "解析结果：<b>" + d.rows.length + "</b> 条记录 / <b>" + fmt(s.cars) + "</b> 辆，其中 ≥" + threshold +
+          "h <b>" + fmt(s.over) + "</b> 辆" + (isList ? "" : "，最长 " + fmt(s.maxDwell) + "h，" + s.goodsKinds + " 种货物")
+      ];
+      if (isList && d.declaredTotal !== null) {
+        lines.push(d.totalMatched
+          ? '<span style="color:#16a34a">合计校验通过：原报表 ' + d.declaredTotal + " 车 = 识别明细 " + d.rows.length + " 行</span>"
+          : '<span style="color:var(--danger)">合计不一致：原报表 ' + d.declaredTotal + " 车，识别明细 " + d.rows.length + " 行，请核对</span>");
+      }
+      if (d.warnings.length) lines.push('<span class="st-warn-line">提示：' + esc(d.warnings.join("；")) + "</span>");
+
+      var detailHtml;
+      if (isList && d.report) {
+        detailHtml = '<div class="st-report-hd">📄 自动生成的报表（与导入清单同版式）' +
+          '<button class="btn btn-line btn-sm" id="stExportReportBtn">⬇ 导出该报表</button></div>' +
+          '<div id="stReportCard" class="st-report-wrap"></div>';
+      } else {
+        var head = ["车牌号", "国籍", "贸易方式", "货物名称", "车次", "重量(T)", "入场时间", "滞留时长(h)", "形态"];
+        var body = d.rows.slice(0, 8).map(function (r) {
+          return "<tr>" + [r.plate || "—", r.nation || "—", r.trade_mode || "—", r.goods || "—",
+            r.car_cnt, r.weight, r.entry_at || "—", r.dwell_hours,
+            r.row_kind === "summary" ? "汇总" : "逐车"].map(function (v) {
+              return "<td>" + esc(v) + "</td>";
+            }).join("") + "</tr>";
+        }).join("");
+        detailHtml = '<div class="table-wrap"><table class="table goods-table"><thead><tr>' +
+          head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") +
+          "</tr></thead><tbody>" + body + "</tbody></table></div>" +
+          (d.rows.length > 8 ? '<p class="text-3">仅预览前 8 条，共 ' + d.rows.length + " 条。</p>" : "");
+      }
+      $("#stPreview").innerHTML = '<div class="import-preview-hd">' + lines.join("<br>") + "</div>" + detailHtml;
+      $("#stPreview").style.display = "block";
+      $("#stActions").style.display = "flex";
+      $("#stSummary").textContent = "确认后写入 " + d.date + " 批次（同日旧数据将被替换）";
+      if (isList && d.report) {
+        SR.render($("#stReportCard"), d.report);
+        var eb = $("#stExportReportBtn");
+        if (eb) eb.addEventListener("click", function () { SR.download(d.report); });
+      }
+    }
+
+    /* ---------- 写入：按统计日期整组替换 ---------- */
+    async function commit() {
+      if (!pending || busy) return;
+      busy = true;
+      var btn = $("#stConfirmBtn"); btn.disabled = true; btn.textContent = "正在写入…";
+      try {
+        var date = pending.date;
+        var old = cloudRows.filter(function (r) { return String(r.rdate || "").slice(0, 10) === date; });
+        for (var i = 0; i < old.length; i++) {
+          var del = await C.tableRemove(TABLE, old[i].id);
+          if (del && del.error) throw new Error("清理旧批次失败：" + (del.error.message || "权限不足"));
+        }
+        for (var j = 0; j < pending.rows.length; j++) {
+          var ins = await C.tableInsert(TABLE, pending.rows[j]);
+          if (ins && ins.error) throw new Error("写入第 " + (j + 1) + " 条失败：" + (ins.error.message || "权限不足"));
+        }
+        C.logAction("滞留重车", "导入滞留重车清单",
+          date + " / " + pending.rows.length + " 条 / " + pending.stats.cars + " 辆 / " + (pending.rows[0].source || "—"));
+        curDate = date;
+        pending = null;
+        $("#stPreview").style.display = "none";
+        $("#stActions").style.display = "none";
+        $("#stFile").value = "";
+        await loadCloud();
+        App.toast("已归档 " + date + " 批次：" + (old.length ? "覆盖旧数据，" : "") + "写入成功", "ok");
+      } catch (e) {
+        App.toast(e.message, "warn");
+        $("#stSummary").textContent = e.message;
+      } finally {
+        busy = false; btn.disabled = false; btn.textContent = "✅ 确认导入并归档";
+      }
+    }
+
+    /* ---------- 导出 / 模板 ---------- */
+    var HEADERS = ["统计日期", "车牌号", "车型", "挂车牌号", "国籍", "进出场区", "贸易方式", "货物名称", "车次（辆）", "重量(T)", "入场时间", "入场日期(原文)", "滞留时长(h)", "状态", "滞留原因", "跟进人", "报表标题", "来源文件"];
+    function toCSVRow(r) {
+      return [r.rdate, r.plate, r.vehicle_type, r.trailer_plate, r.nation, r.direction, r.trade_mode, r.goods,
+        r.car_cnt, r.weight, r.entry_at, r.entry_label, r.dwell_hours, r.status, r.reason, r.contact,
+        r.report_title, r.source];
+    }
+    function exportRows(rows, name) {
+      if (!rows.length) { App.toast("暂无可导出的数据", "warn"); return; }
+      App.exportCSV(name, HEADERS, rows.map(toCSVRow));
+    }
+
+    function currentRows() {
+      var b = null;
+      batches.forEach(function (x) { if (x.date === curDate) b = x; });
+      return b ? b.rows : [];
+    }
+
+    /* ---------- 事件 ---------- */
+    $("#stChooseBtn").addEventListener("click", function () { $("#stFile").click(); });
+    $("#stDrop").addEventListener("click", function (e) {
+      if (!e.target.closest("button")) $("#stFile").click();
+    });
+    $("#stFile").addEventListener("change", function (e) { handleFile(e.target.files[0]); });
+    ["dragenter", "dragover"].forEach(function (t) {
+      $("#stDrop").addEventListener(t, function (e) { e.preventDefault(); this.classList.add("dragover"); });
+    });
+    ["dragleave", "drop"].forEach(function (t) {
+      $("#stDrop").addEventListener(t, function (e) { e.preventDefault(); this.classList.remove("dragover"); });
+    });
+    $("#stDrop").addEventListener("drop", function (e) {
+      if (e.dataTransfer && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+    $("#stConfirmBtn").addEventListener("click", commit);
+    $("#stCancelBtn").addEventListener("click", function () {
+      pending = null; $("#stFile").value = "";
+      $("#stPreview").style.display = "none"; $("#stActions").style.display = "none";
+      $("#stSummary").textContent = "";
+    });
+    $("#stDate").addEventListener("change", function () { curDate = this.value; renderBatch(); });
+    $("#stRefreshBtn").addEventListener("click", function () { loadCloud(); App.toast("已重新载入云端数据", "ok"); });
+    $("#stExportBtn").addEventListener("click", function () { exportRows(cloudRows, "滞留重车台账_全部.csv"); });
+    $("#stExportDayBtn").addEventListener("click", function () { exportRows(currentRows(), "滞留重车台账_" + curDate + ".csv"); });
+    $("#stDownloadListTpl").addEventListener("click", function () {
+      SR.downloadTemplate("", threshold);
+    });
+    $("#stDownloadTpl").addEventListener("click", function () {
+      App.exportCSV("滞留72小时中国出口重车_标准台账模板.csv", HEADERS, []);
+      App.toast("标准台账模板已下载，按表头填写即可（表头顺序可调整）", "ok");
+    });
+    $("#stDeleteBtn").addEventListener("click", async function () {
+      if (!curDate || !window.confirm("确认删除 " + curDate + " 的全部归档记录？该操作不可撤销。")) return;
+      var rows = currentRows(), n = 0;
+      for (var i = 0; i < rows.length; i++) {
+        var d = await C.tableRemove(TABLE, rows[i].id);
+        if (d && d.error) { App.toast("删除失败：" + (d.error.message || "权限不足"), "warn"); break; }
+        n++;
+      }
+      C.logAction("滞留重车", "删除归档批次", curDate + " / " + n + " 条");
+      curDate = "";
+      await loadCloud();
+      App.toast("已删除 " + n + " 条记录", "ok");
+    });
+
+    var timer = null;
+    C.onChange(function () { clearTimeout(timer); timer = setTimeout(loadCloud, 250); });
+
+    (async function init() {
+      await loadThreshold();
+      await loadCloud();
+    })();
+  })();
+  </script>
+</body>
+</html>
