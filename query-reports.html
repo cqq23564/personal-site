@@ -194,6 +194,20 @@
         </div>
       </div>
 
+      <!-- 覆盖前快照 · 一键回滚 -->
+      <div class="card mb-24" id="rpSnapCard">
+        <div class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">日报 / 货物统计覆盖与删除前自动存档 · 回滚本身也可撤回</span></div>
+        <div class="card-bd">
+          <div class="snap-toolbar">
+            <span class="text-3">每次导入覆盖或手动删除前，旧数据会完整存档；快照写入失败会阻断本次覆盖，避免出现「以为能回滚其实没有」。</span>
+            <div class="grow"></div>
+            <button class="btn btn-line btn-sm" id="rpSnapRefresh">↺ 刷新</button>
+            <button class="btn btn-line btn-sm" id="rpBackupAll">⬇ 全量备份 JSON</button>
+          </div>
+          <div id="rpSnapList" class="snap-list"></div>
+        </div>
+      </div>
+
       <!-- 报表趋势 -->
       <div class="card mb-24">
         <div class="card-hd">近 7 日报警趋势 <span class="sub">入区 / 出卡 / 边民申报</span></div>
@@ -239,12 +253,14 @@
   <script src="js/admin-crud.js"></script>
   <script src="js/vendor/xlsx.full.min.js"></script>
   <script src="js/report-template.js"></script>
+  <script src="js/snapshot.js"></script>
   <script>
     (function () {
       "use strict";
       var $ = function (s) { return document.querySelector(s); };
       var C = window.Cloud;
       var App = window.App;
+      var Snap = window.Snapshot;
       /* 当前导入流程对应 B卡看板；多卡口样例到齐后改为按所选卡口写入 */
       var CURRENT_GATE = "bcard";
 
@@ -733,11 +749,38 @@
           $("#importSummary").textContent = "";
         }
       }
+      /* ---- 覆盖前快照：把涉及日期的旧日报行完整存档，失败则阻断本次写入 ---- */
+      async function snapDailyBefore(dates, source) {
+        var all = rpCrud.rows() || [], seen = {};
+        for (var k = 0; k < (dates || []).length; k++) {
+          var d = String(dates[k] || "").slice(0, 10);
+          if (!d || seen[d]) continue;
+          seen[d] = 1;
+          var old = all.filter(function (r) {
+            return String(r.rdate || "").slice(0, 10) === d &&
+              (r.gate || CURRENT_GATE) === CURRENT_GATE;
+          });
+          var res = await Snap.capture(C, {
+            module: "daily", table: "site_reports", rdate: d, gate: CURRENT_GATE,
+            rows: old, reason: "overwrite", source: source || ""
+          });
+          if (res.error) return res;
+        }
+        return { ok: true };
+      }
+
       /* 已汇总报表写入：更新 / 插入 site_reports（含重量、品种、来源、卡口），
          再按 rdate 整组替换写入 site_report_goods；写成功后数据看板即时联动。 */
       async function commitDaily() {
         var d = dailyState, t = d.totals, btn = $("#confirmImportBtn");
         btn.disabled = true; btn.textContent = "正在写入…";
+        var pre = await snapDailyBefore([d.date], d.source);
+        if (pre.error) {
+          btn.disabled = false; btn.textContent = "✅ 确认导入报表数据";
+          App.toast("日报未写入：覆盖前快照生成失败（" + (pre.error.message || "权限不足") + "）", "warn");
+          $("#importSummary").textContent = "已取消：覆盖前快照生成失败";
+          return;
+        }
         var patch = {
           in_total: t.inCars, in_heavy: t.inHeavy, in_empty: t.inEmpty,
           out_total: t.outCars, out_heavy: t.outHeavy, out_empty: t.outEmpty,
@@ -783,6 +826,17 @@
           return;
         }
         btn.disabled = true; btn.textContent = "正在生成…";
+        var snapDates = [];
+        pending.forEach(function (r) { if (snapDates.indexOf(r.rdate) < 0) snapDates.push(r.rdate); });
+        if (snapDates.length) {
+          var pre2 = await snapDailyBefore(snapDates, "Excel 逐车明细导入");
+          if (pre2.error) {
+            btn.disabled = false; btn.textContent = label;
+            App.toast("日报未写入：覆盖前快照生成失败（" + (pre2.error.message || "权限不足") + "）", "warn");
+            $("#importSummary").textContent = "已取消：覆盖前快照生成失败";
+            return;
+          }
+        }
         var existing = {};
         rpCrud.rows().forEach(function (r) { existing[r.rdate] = r.id; });
         var ok = 0, fail = 0;
@@ -1206,6 +1260,15 @@
         var old = (ex.data || []).filter(function (r) {
           return r.rdate === date && (r.gate || CURRENT_GATE) === CURRENT_GATE;
         });
+        var pre = await Snap.capture(C, {
+          module: "goods", table: "site_report_goods", rdate: date, gate: CURRENT_GATE,
+          rows: old, reason: "overwrite", source: goodsState.filename || ""
+        });
+        if (pre.error) {
+          writingGoods = false;
+          App.toast("货物统计未写入：覆盖前快照生成失败（" + (pre.error.message || "权限不足") + "）", "warn");
+          return;
+        }
         for (var j = 0; j < old.length; j++) await C.tableRemove("site_report_goods", old[j].id);
         var ok = 0, fail = 0;
         for (var i = 0; i < rows.length; i++) {
@@ -1421,8 +1484,16 @@
       $("#histDeleteBtn").addEventListener("click", async function () {
         var d = histDate;
         if (!d || !C.isAdmin()) return;
-        if (!confirm("确定删除 " + d + " 的全部导入数据？此操作不可恢复。")) return;
+        if (!confirm("确定删除 " + d + " 的全部导入数据？删除前会自动存档，可在下方「覆盖前快照」一键恢复。")) return;
         var rows = goodsRowsByDate(d);
+        var snap = await Snap.capture(C, {
+          module: "goods", table: "site_report_goods", rdate: d, gate: "",
+          rows: rows, reason: "delete", source: "手动删除导入数据"
+        });
+        if (snap.error) {
+          App.toast("已取消删除：快照生成失败（" + (snap.error.message || "权限不足") + "）", "warn");
+          return;
+        }
         var btn = this;
         btn.disabled = true;
         writingGoods = true;
@@ -1432,7 +1503,7 @@
         if (goodsState && goodsState.date === d) { goodsState = null; $("#goodsCard").style.display = "none"; }
         histDate = "";
         C.logAction("每日报表", "删除某日导入数据", d + " / " + rows.length + " 条");
-        App.toast("已删除 " + d + " 的导入数据", "ok");
+        App.toast("已删除 " + d + " 的导入数据（可用快照恢复）", "ok");
         await loadGoodsCloud();
       });
 
@@ -1441,6 +1512,11 @@
       (async function initReport() {
         await loadTemplateCloud();
         await loadGoodsCloud();
+        Snap.mount({
+          Cloud: C, App: App, listEl: $("#rpSnapList"), modules: ["daily", "goods"],
+          refreshBtn: $("#rpSnapRefresh"), backupBtn: $("#rpBackupAll"),
+          onRestored: function () { loadGoodsCloud(); if (rpCrud && rpCrud.load) rpCrud.load(); }
+        });
       })();
       C.onChange(function () {
         if (!tplState) loadTemplateCloud();

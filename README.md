@@ -33,6 +33,7 @@ personal-site/
 ├── js/dashboard-gates.js 5 个卡口看板注册表 / 切换条 / 未接入卡口空态与占位 KPI
 ├── js/stranded.js        滞留重车专题：清单式报表解析 / 表头别名识别 / 同版式报表生成 / 日期归一 / 按日期归类 / 指标聚合（纯逻辑层，可在 Node 下单测）
 ├── js/stranded-report.js 清单式报表渲染 / CSV 导出 / 空白模板（不含示意数据）
+├── js/snapshot.js       覆盖前快照 / 一键回滚 / 全量备份（纯函数可在 Node 下单测）
 ├── js/vendor/xlsx.full.min.js  本地 SheetJS（Excel 解析，不依赖 CDN）
 └── assets/img/           AI 生成配图（banner/gallery/avatar）
 ```
@@ -74,6 +75,7 @@ python -m http.server 8899        # 或 npx serve .
 - **滞留 72 小时中国出口重车专题（清单式报表）**：`import-stranded.html` 每日下班导入 Excel/CSV。首选识别**无表头清单式报表**：首行标题「2026年10月8日中国车出口滞留72小时」（提供统计日期与阈值），每行「车牌　重车　M月D日」，末行「合计：14车」；三列、空格、Tab、整行连写、多工作表混合均可识别（`js/stranded.js` 的 `parseStrandedList`）。导入后在预览与看板**按原版式自动生成同款报表**（标题 / 车牌 / 车型 / 入场日期 / 合计），并核对合计车数与实际识别行数，可导出 CSV；`js/stranded-report.js` 负责渲染、导出与空白模板（模板不含任何示意业务数据）。
 - **清单口径与不编造原则**：标题已声明「滞留 72 小时」，每行按 1 辆计入滞留与达阈值车辆；统计日期取自标题（中文纯文本，无 Excel 整日日期偏移），国籍 / 方向取自标题文字。明细只有「M月D日」、无年份与时刻，**不足以推算精确滞留小时数，故 `dwell_hours=0` / `dwell_basis='declared'`，不计算、不展示、不编造时长**；看板在该模式下把 KPI 切换为重车 / 空车 / 明细条数 / 归档批次，时长分布保持空态、构成图改看车型、业务维度改看入场日期分布。入场月日晚于统计日期时给出提示但不改写原文。需要精确时长请用带「滞留时长(h)」列的标准台账模板。
 - **兼容旧格式与持久化**：带中文表头的逐车明细清单 / 汇总统计表仍按别名识别（≥3 字段且含「车牌」或「货物」列，避免误收 B卡入区/出区统计表），统计日期优先取文件名。同日重导按 `rdate` 整组替换写入 `site_stranded_trucks`（含 `vehicle_type / entry_label / report_title / dwell_basis` 四列），历史批次可切换日期 / 导出 / 删除。阈值由 `site_params.stranded.threshold.hours`（默认 72）控制。逻辑层 `js/stranded.js` 为纯函数，可在 Node 下直接单测。该专题是独立业务口径，不并入 5 卡口切换条。
+- **覆盖前快照 / 一键回滚 / 全量备份**：`js/snapshot.js` + 云端 `site_import_snapshots`。每日报表、货物统计、滞留台账在「按 `rdate` 整组覆盖」或「手动删除批次」前，先由 `capture()` 把该批次旧行完整存入 JSONB 快照（含 `module / table_name / rdate / gate / reason / source / row_count`）；覆盖前原本无数据也会留一份空快照，以便撤销误导入。**快照写入失败会阻断本次覆盖**，避免出现「以为能恢复其实没有」。两个导入页均有「覆盖前快照」面板：按模块列出最近 20 份、可下载单份存档、`restore()` 一键回滚；回滚前会先给当前状态再拍一张 `before_restore` 快照，所以回滚本身也能撤回。回滚按 `rdate`（有 `gate` 时再加 gate）隔离，不误伤其它日期或其它卡口，且表名走白名单校验。管理员可一键导出全量备份 JSON（15 张表，含 `profiles` 账号资料，需自行妥善保管）。快照表 RLS：登录可读、仅 `profiles.role='admin'` 可写。快照仅用于本站误操作恢复，**不是异地容灾**，请定期下载归档。
 - 首页「成长经历」不再写死 4 条：条目由云端 `site_params` 的 `home.timeline.N.*`（date / title / text）聚合，编号 N 决定顺序，任意条数均可；在「参数管理 → 成长经历」专用管理区增删改排序后整组保存，首页即时生效，无需改代码或重新发布。
 - 导出为浏览器端生成：CSV（带 BOM，Excel 可直接打开）或 Excel 工作簿（SpreadsheetML `.xls`）；模板统计报表含模板货物统计表及「按模板归类 / 货物统计明细 / 数据来源说明」附表，无需后端。
 

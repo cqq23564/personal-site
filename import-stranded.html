@@ -149,6 +149,20 @@
           <div class="text-3 hist-note" id="stNote"></div>
         </div>
       </div>
+
+      <!-- 覆盖前快照 · 一键回滚 -->
+      <div class="card mb-24" id="stSnapCard">
+        <div class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">同日覆盖 / 删除前自动存档 · 回滚本身也可撤回</span></div>
+        <div class="card-bd">
+          <div class="snap-toolbar">
+            <span class="text-3">每次覆盖或删除该日期前，旧数据会完整存档；回滚前也会先存档当前状态，因此误操作可恢复。快照保存在本站云端账号下，仅登录用户可读、仅管理员可回滚。</span>
+            <div class="grow"></div>
+            <button class="btn btn-line btn-sm" id="stSnapRefresh">↺ 刷新</button>
+            <button class="btn btn-line btn-sm" id="stBackupAll">⬇ 全量备份 JSON</button>
+          </div>
+          <div id="stSnapList" class="snap-list"></div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -169,11 +183,12 @@
   <script src="js/vendor/xlsx.full.min.js"></script>
   <script src="js/stranded.js"></script>
   <script src="js/stranded-report.js"></script>
+  <script src="js/snapshot.js"></script>
   <script>
   (function () {
     "use strict";
     var $ = function (s) { return document.querySelector(s); };
-    var C = window.Cloud, App = window.App, S = window.Stranded, SR = window.StrandedReport;
+    var C = window.Cloud, App = window.App, S = window.Stranded, SR = window.StrandedReport, Snap = window.Snapshot;
     var TABLE = "site_stranded_trucks";
     var cloudRows = [], pending = null, batches = [], curDate = "", threshold = 72, busy = false;
 
@@ -382,6 +397,12 @@
       try {
         var date = pending.date;
         var old = cloudRows.filter(function (r) { return String(r.rdate || "").slice(0, 10) === date; });
+        /* 覆盖前先存档：快照写入失败则阻断本次导入，避免出现「以为可回滚其实没有」 */
+        var snap = await Snap.capture(C, {
+          module: "stranded", table: TABLE, rdate: date, rows: old,
+          reason: "overwrite", source: (pending.rows[0] && pending.rows[0].source) || ""
+        });
+        if (snap.error) throw new Error("覆盖前快照生成失败，已取消导入：" + (snap.error.message || "权限不足"));
         for (var i = 0; i < old.length; i++) {
           var del = await C.tableRemove(TABLE, old[i].id);
           if (del && del.error) throw new Error("清理旧批次失败：" + (del.error.message || "权限不足"));
@@ -401,7 +422,7 @@
         App.toast("已归档 " + date + " 批次：" + (old.length ? "覆盖旧数据，" : "") + "写入成功", "ok");
       } catch (e) {
         App.toast(e.message, "warn");
-        $("#stSummary").textContent = e.message;
+        $("#stSummary").textContent = e.message + "（若已有部分写入，可在下方快照区一键回滚）";
       } finally {
         busy = false; btn.disabled = false; btn.textContent = "✅ 确认导入并归档";
       }
@@ -458,8 +479,17 @@
       App.toast("标准台账模板已下载，按表头填写即可（表头顺序可调整）", "ok");
     });
     $("#stDeleteBtn").addEventListener("click", async function () {
-      if (!curDate || !window.confirm("确认删除 " + curDate + " 的全部归档记录？该操作不可撤销。")) return;
+      if (!curDate || !C.isAdmin()) return;
+      if (!window.confirm("确认删除 " + curDate + " 的全部归档记录？删除前会自动存档，可在下方「覆盖前快照」一键恢复。")) return;
       var rows = currentRows(), n = 0;
+      var snap = await Snap.capture(C, {
+        module: "stranded", table: TABLE, rdate: curDate, rows: rows,
+        reason: "delete", source: "手动删除批次"
+      });
+      if (snap.error) {
+        App.toast("已取消删除：快照生成失败（" + (snap.error.message || "权限不足") + "）", "warn");
+        return;
+      }
       for (var i = 0; i < rows.length; i++) {
         var d = await C.tableRemove(TABLE, rows[i].id);
         if (d && d.error) { App.toast("删除失败：" + (d.error.message || "权限不足"), "warn"); break; }
@@ -468,7 +498,7 @@
       C.logAction("滞留重车", "删除归档批次", curDate + " / " + n + " 条");
       curDate = "";
       await loadCloud();
-      App.toast("已删除 " + n + " 条记录", "ok");
+      App.toast("已删除 " + n + " 条记录（可用快照恢复）", "ok");
     });
 
     var timer = null;
@@ -477,6 +507,11 @@
     (async function init() {
       await loadThreshold();
       await loadCloud();
+      Snap.mount({
+        Cloud: C, App: App, listEl: $("#stSnapList"), modules: ["stranded"],
+        refreshBtn: $("#stSnapRefresh"), backupBtn: $("#stBackupAll"),
+        onRestored: function () { loadCloud(); }
+      });
     })();
   })();
   </script>
