@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>每日报表 · 查询统计</title>
   <link rel="stylesheet" href="css/style.css">
@@ -121,6 +123,7 @@
             </div>
           </div>
           <div id="importPreview" class="import-preview" style="display:none"></div>
+          <div id="rpQuality" class="iv-box" style="display:none"></div>
           <div class="import-actions" id="importActions" style="display:none">
             <button class="btn btn-primary" id="confirmImportBtn">✅ 确认导入并生成日报</button>
             <button class="btn btn-line" id="exportImportedBtn" disabled>📥 导出本次日报</button>
@@ -247,13 +250,15 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script src="js/admin-crud.js"></script>
   <script src="js/vendor/xlsx.full.min.js"></script>
   <script src="js/report-template.js"></script>
   <script src="js/snapshot.js"></script>
+  <script src="js/import-validate.js"></script>
   <script>
     (function () {
       "use strict";
@@ -261,6 +266,22 @@
       var C = window.Cloud;
       var App = window.App;
       var Snap = window.Snapshot;
+      var V = window.ImportValidate, quality = null, ack = false;
+
+      /* 质量闸门：汇总报表预览后先校验，阻断项禁用提交、异常项须勾选确认 */
+      function setQuality(result) {
+        quality = result; ack = false;
+        V.render($("#rpQuality"), result, function (v) { ack = v; syncConfirm(); });
+        syncConfirm();
+      }
+      function syncConfirm() {
+        var btn = $("#confirmImportBtn");
+        if (!btn) return;
+        var ok = V.canCommit(quality, ack);
+        btn.disabled = !ok;
+        btn.title = ok ? "" : (quality && quality.blockers.length ?
+          "存在阻断项：请修正源文件后重新选择" : "请先勾选异常确认");
+      }
       /* 当前导入流程对应 B卡看板；多卡口样例到齐后改为按所选卡口写入 */
       var CURRENT_GATE = "bcard";
 
@@ -674,6 +695,7 @@
         $("#importSummary").textContent = "已汇总报表 · 待写入日报与货物统计";
         $("#exportImportedBtn").disabled = true;
         $("#confirmImportBtn").textContent = "✅ 确认导入报表数据";
+        setQuality(V.daily(d));
       }
       async function handleFile(file) {
         var name = String(file.name || "").toLowerCase();
@@ -682,6 +704,7 @@
         $("#importPreview").style.display = "none";
         $("#exportImportedBtn").disabled = true;
         $("#confirmImportBtn").textContent = "✅ 确认导入并生成日报";
+        setQuality(null);
         $("#importSummary").textContent = "正在解析 " + file.name + " …";
         try {
           /* 0) 工作簿只读一次，供汇总报表识别 / 货物统计 / 明细解析共用 */
@@ -772,11 +795,17 @@
       /* 已汇总报表写入：更新 / 插入 site_reports（含重量、品种、来源、卡口），
          再按 rdate 整组替换写入 site_report_goods；写成功后数据看板即时联动。 */
       async function commitDaily() {
+        /* 提交兜底：质量闸门未通过绝不写库（含绕过 UI 直接触发的情况） */
+        if (!V.canCommit(quality, ack)) {
+          App.toast(quality && quality.blockers.length ?
+            "存在阻断项，已取消写入；请修正源文件后重新选择" : "请先勾选异常确认后再导入", "err");
+          return;
+        }
         var d = dailyState, t = d.totals, btn = $("#confirmImportBtn");
         btn.disabled = true; btn.textContent = "正在写入…";
         var pre = await snapDailyBefore([d.date], d.source);
         if (pre.error) {
-          btn.disabled = false; btn.textContent = "✅ 确认导入报表数据";
+          btn.textContent = "✅ 确认导入报表数据"; syncConfirm();
           App.toast("日报未写入：覆盖前快照生成失败（" + (pre.error.message || "权限不足") + "）", "warn");
           $("#importSummary").textContent = "已取消：覆盖前快照生成失败";
           return;
@@ -792,7 +821,7 @@
         var res = existing[d.date]
           ? await C.tableUpdate("site_reports", existing[d.date], patch)
           : await C.tableInsert("site_reports", Object.assign({ rdate: d.date }, patch));
-        btn.disabled = false; btn.textContent = "✅ 确认导入报表数据";
+        btn.textContent = "✅ 确认导入报表数据"; syncConfirm();
         if (res.error) {
           App.toast("日报写入失败：" + (res.error.message || "请检查权限"), "err");
           $("#importSummary").textContent = "日报写入失败";
@@ -805,6 +834,7 @@
         $("#importSummary").textContent = "已写入 " + d.date + " 日报与 " + t.goodsKinds + " 种货物统计";
         App.toast("已导入 " + d.date + "：入区 " + t.inCars + " 车 / 出区 " + t.outCars +
           " 车 / " + t.goodsKinds + " 种货物，数据看板已同步", "ok");
+        dailyState = null; setQuality(null);   /* 防止重复点击造成二次写入 */
       }
 
       async function commitImport() {

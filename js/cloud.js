@@ -37,7 +37,10 @@
     return /^1\d{10}$/.test(d) ? d : "";
   }
   function nowISO() { return new Date().toISOString(); }
-  function emit() { listeners.forEach(function (fn) { try { fn(state); } catch (e) { /* 忽略监听器异常 */ } }); }
+  function emit() {
+    listeners.forEach(function (fn) { try { fn(state); } catch (e) { /* 忽略监听器异常 */ } });
+    try { syncAccessGuard(); } catch (e) { /* 提示条不影响主流程 */ }
+  }
 
   var REASON_TEXT = {
     config: "云服务未配置",
@@ -239,10 +242,15 @@
     Object.keys(row || {}).forEach(function (k) { if (row[k] !== undefined && row[k] !== "") data[k] = row[k]; });
     try {
       var c = await cloud.database.from(name).insert(data).select();
-      if (c && c.error) return { error: c.error };
+      if (c && c.error) { auditWrite("新增", name, "", null, null, false, c.error); return { error: c.error }; }
+      var created = (c && c.data && c.data[0]) || null;
+      auditWrite("新增", name, created && created.id, null, data, true);
       emit();
-      return { data: (c && c.data && c.data[0]) || null };
-    } catch (e) { return { error: { message: "网络异常，保存失败" } }; }
+      return { data: created };
+    } catch (e) {
+      auditWrite("新增", name, "", null, null, false, e);
+      return { error: { message: "网络异常，保存失败" } };
+    }
   }
 
   async function tableUpdate(name, id, patch) {
@@ -250,26 +258,46 @@
     var data = {};
     Object.keys(patch || {}).forEach(function (k) { if (patch[k] !== undefined) data[k] = patch[k]; });
     data.updated_at = nowISO();
+    /* 审计：先读旧值；取旧值失败不阻断写入（RLS 或网络问题） */
+    var before = null;
+    try {
+      var b = await cloud.database.from(name).select("*").eq("id", id).maybeSingle();
+      if (b && !b.error && b.data) before = b.data;
+    } catch (e) { /* 忽略取旧值异常 */ }
     try {
       var u = await cloud.database.from(name).update(data).eq("id", id).select();
-      if (u && u.error) return { error: u.error };
+      if (u && u.error) { auditWrite("修改", name, id, before, data, false, u.error); return { error: u.error }; }
       var rows = (u && u.data) || [];
-      if (!rows.length) return { error: { message: "操作失败：没有权限（仅管理员可修改）或记录不存在" } };
+      if (!rows.length) {
+        auditWrite("修改", name, id, before, data, false, "没有权限或记录不存在");
+        return { error: { message: "操作失败：没有权限（仅管理员可修改）或记录不存在" } };
+      }
+      auditWrite("修改", name, id, before, data, true);
       emit();
       return { data: rows[0] };
-    } catch (e) { return { error: { message: "网络异常，操作失败" } }; }
+    } catch (e) {
+      auditWrite("修改", name, id, before, data, false, e);
+      return { error: { message: "网络异常，操作失败" } };
+    }
   }
 
   async function tableRemove(name, id) {
     if (!state.ready) return { error: { message: unavailableText() } };
     try {
       var d = await cloud.database.from(name).delete().eq("id", id).select();
-      if (d && d.error) return { error: d.error };
+      if (d && d.error) { auditWrite("删除", name, id, null, null, false, d.error); return { error: d.error }; }
       var rows = (d && d.data) || [];
-      if (!rows.length) return { error: { message: "删除失败：权限不足" } };
+      if (!rows.length) {
+        auditWrite("删除", name, id, null, null, false, "没有权限或记录不存在");
+        return { error: { message: "删除失败：权限不足" } };
+      }
+      auditWrite("删除", name, id, rows[0], null, true);
       emit();
       return { data: rows };
-    } catch (e) { return { error: { message: "网络异常，删除失败" } }; }
+    } catch (e) {
+      auditWrite("删除", name, id, null, null, false, e);
+      return { error: { message: "网络异常，删除失败" } };
+    }
   }
 
   /** 清空整表（仅管理员，RLS 控制）——用于操作日志等可重置数据 */
@@ -277,30 +305,83 @@
     if (!state.ready) return { error: { message: unavailableText() } };
     try {
       var d = await cloud.database.from(name).delete().gte("id", 0).select();
-      if (d && d.error) return { error: d.error };
-      return { data: (d && d.data) || [] };
-    } catch (e) { return { error: { message: "网络异常，清空失败" } }; }
+      if (d && d.error) { auditWrite("清空", name, "", null, null, false, d.error); return { error: d.error }; }
+      var rows = (d && d.data) || [];
+      auditWrite("清空", name, "", null, { cleared_rows: rows.length }, true);
+      return { data: rows };
+    } catch (e) {
+      auditWrite("清空", name, "", null, null, false, e);
+      return { error: { message: "网络异常，清空失败" } };
+    }
   }
 
-  /** 记录操作日志（失败静默，不阻塞主流程） */
-  async function logAction(module, action, detail) {
-    if (!state.ready || !state.user) return;
+  /* ---------- 操作审计 ---------- */
+  var auditFailures = [];
+
+  /** 约束审计载荷：截断超大对象、防止循环引用把日志写挂 */
+  function auditValue(v) {
+    if (v === undefined || v === null) return null;
     try {
-      var who = state.profile ? (state.profile.nickname || state.profile.name || "") : "";
-      var d = new Date();
-      var pad = function (n) { return String(n).padStart(2, "0"); };
-      var lid = "L" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
-      await cloud.database.from("site_logs").insert({
-        log_id: lid,
-        user_name: who || "用户",
-        module: module,
-        action: detail ? action + "[" + detail + "]" : action,
-        ip: "",
-        result: "成功",
-        cost: 0,
-        happened_at: d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds())
-      });
-    } catch (e) { /* 日志失败不影响主流程 */ }
+      var s = JSON.stringify(v);
+      if (s === undefined) return null;
+      if (s.length > 6000) return { _truncated: true, _bytes: s.length };
+      return JSON.parse(s);
+    } catch (e) { return { _error: "序列化失败" }; }
+  }
+  function auditErr(e) {
+    if (!e) return "";
+    if (typeof e === "string") return e.slice(0, 400);
+    return String(e.message || e.error_description || e).slice(0, 400);
+  }
+
+  /**
+   * 记录操作日志。兼容旧签名 logAction(module, action, detail)。
+   * ctx = { target, before, after, ok:false, error }
+   * 写入失败不再静默：控制台告警 + 内存队列，便于现场排查。
+   */
+  async function logAction(module, action, detail, ctx) {
+    if (!state.ready || !state.user) return;
+    ctx = ctx || {};
+    var ok = ctx.ok !== false;
+    var who = state.profile ? (state.profile.nickname || state.profile.name || "") : "";
+    var d = new Date();
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    var ymd = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    var hms = pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+    var row = {
+      log_id: "L" + ymd + hms + pad(d.getMilliseconds() % 100),
+      user_name: who || "用户",
+      module: String(module || "").slice(0, 60),
+      action: String(detail ? action + "[" + detail + "]" : action).slice(0, 500),
+      ip: "",
+      result: ok ? "成功" : "失败",
+      cost: 0,
+      happened_at: d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " +
+        pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()),
+      operator_id: String((state.user && state.user.id) || ""),
+      target: String(ctx.target || "").slice(0, 200),
+      error_msg: ok ? "" : auditErr(ctx.error),
+      before_json: auditValue(ctx.before),
+      after_json: auditValue(ctx.after)
+    };
+    try {
+      var res = await cloud.database.from("site_logs").insert(row);
+      if (res && res.error) throw res.error;
+    } catch (e) {
+      var msg = auditErr(e);
+      console.warn("[audit] 操作日志写入失败：", msg, row.module, row.action);
+      auditFailures.push({ at: d.toISOString(), module: row.module, action: row.action, error: msg });
+      if (auditFailures.length > 50) auditFailures.shift();
+    }
+  }
+
+  /** 通用 CRUD 自动审计（不记录 site_logs 自身，避免噪音） */
+  function auditWrite(op, name, id, before, after, ok, error) {
+    if (name === "site_logs") return;
+    return logAction("数据写入", op, name + (id ? " #" + id : ""), {
+      target: name + (id ? "#" + id : ""),
+      before: before, after: after, ok: ok !== false, error: error
+    });
   }
 
   /* ---------- 站点参数（驱动首页展示数据；仅管理员可写） ---------- */
@@ -332,16 +413,26 @@
     data.updated_at = nowISO();
     try {
       if (row.id) {
+        var before = null;
+        try {
+          var b = await cloud.database.from("site_params").select("*").eq("id", row.id).maybeSingle();
+          if (b && !b.error && b.data) before = b.data;
+        } catch (e) { /* 忽略取旧值异常 */ }
         var u = await cloud.database.from("site_params").update(data).eq("id", row.id).select();
-        if (u && u.error) return { error: u.error };
+        if (u && u.error) { auditWrite("修改参数", "site_params", row.id, before, data, false, u.error); return { error: u.error }; }
         var rows = (u && u.data) || [];
-        if (!rows.length) return { error: { message: "保存失败：没有权限（仅管理员可修改）或记录不存在" } };
+        if (!rows.length) {
+          auditWrite("修改参数", "site_params", row.id, before, data, false, "没有权限或记录不存在");
+          return { error: { message: "保存失败：没有权限（仅管理员可修改）或记录不存在" } };
+        }
+        auditWrite("修改参数", "site_params", row.id, before, rows[0], true);
         homeParamsCache = null;
         emit();
         return { data: rows[0] };
       }
       var c = await cloud.database.from("site_params").insert(data).select();
-      if (c && c.error) return { error: c.error };
+      if (c && c.error) { auditWrite("新增参数", "site_params", "", null, data, false, c.error); return { error: c.error }; }
+      auditWrite("新增参数", "site_params", c && c.data && c.data[0] && c.data[0].id, null, data, true);
       homeParamsCache = null;
       emit();
       return { data: (c && c.data && c.data[0]) || null };
@@ -353,9 +444,10 @@
     if (!state.ready) return { error: { message: unavailableText() } };
     try {
       var d = await cloud.database.from("site_params").delete().eq("id", id).select();
-      if (d && d.error) return { error: d.error };
+      if (d && d.error) { auditWrite("删除参数", "site_params", id, null, null, false, d.error); return { error: d.error }; }
       var rows = (d && d.data) || [];
-      if (!rows.length) return { error: { message: "删除失败：权限不足" } };
+      if (!rows.length) { auditWrite("删除参数", "site_params", id, null, null, false, "没有权限或记录不存在"); return { error: { message: "删除失败：权限不足" } }; }
+      auditWrite("删除参数", "site_params", id, rows[0], null, true);
       homeParamsCache = null;
       emit();
       return { data: rows };
@@ -607,6 +699,7 @@
           phone: info.phone || "",
           email: info.email || "",
           status: "pending",
+          role: "user",
           updated_at: nowISO()
         }).select();
         state.profile = (c && c.data && c.data[0]) || null;
@@ -643,11 +736,41 @@
   /* ---------- 状态判断 ---------- */
   function isReady() { return state.ready; }
   function isLoggedIn() { return !!(state.ready && state.user); }
-  function isAdmin() { return !!(state.profile && state.profile.role === "admin"); }
-  function isSuperAdmin() { return !!(state.profile && (state.profile.is_super === true || state.profile.role === "admin")); }
+  /* 角色分级：仅「已激活 + 角色在白名单」的账号可读取业务数据；
+     pending（新注册）/ disabled / rejected 一律无数据权限，避免开放注册即全库可见。 */
+  var DATA_ROLES = ["admin", "operator", "viewer"];
+  function isActiveMember() {
+    return !!(state.profile && state.profile.status === "active" &&
+      DATA_ROLES.indexOf(String(state.profile.role || "")) >= 0);
+  }
+  function isAdmin() { return !!(state.profile && state.profile.status === "active" && state.profile.role === "admin"); }
+  function isSuperAdmin() { return isAdmin(); }
+  function canWrite() { return isAdmin(); }
   function profileStatus() { return state.profile ? state.profile.status : ""; }
   var STATUS_TEXT = { pending: "待审核", active: "正常", disabled: "已禁用", rejected: "已驳回" };
-  var ROLE_TEXT = { admin: "超级管理员", user: "普通用户" };
+  var ROLE_TEXT = { admin: "超级管理员", operator: "数据录入", viewer: "只读访客", user: "待分配角色" };
+
+  /* ---------- 数据访问守卫 ----------
+   * 收紧 RLS 后，pending / disabled / 未分配角色账号读不到业务数据。
+   * 与其让页面显示一堆空表格让人误以为故障，不如明确说明原因。 */
+  function syncAccessGuard() {
+    var bar = document.getElementById("siteAccessGuard");
+    var blocked = state.ready && state.user && !isActiveMember();
+    if (!blocked) { if (bar && bar.parentNode) bar.parentNode.removeChild(bar); return; }
+    if (bar) return;
+    var host = document.querySelector("main.main") || document.querySelector("main");
+    if (!host) return;
+    bar = document.createElement("div");
+    bar.id = "siteAccessGuard";
+    bar.className = "page-notice warn";
+    bar.style.marginBottom = "16px";
+    var st = state.profile ? state.profile.status : "pending";
+    var label = STATUS_TEXT[st] || "未激活";
+    bar.innerHTML = '🔒 当前账号状态为「<b>' + label + '</b>」，尚未分配数据角色。' +
+      '按数据安全策略，该账号<strong>不能读取或写入业务数据</strong>，页面显示空数据属正常现象。' +
+      '请联系站点管理员在「系统管理 → 用户管理」完成审核，并分配「只读成员」或「超级管理员」角色。';
+    host.insertBefore(bar, host.firstChild);
+  }
 
   /* ---------- 静态镜像提示条 ---------- */
   function mountBanner() {
@@ -839,6 +962,10 @@
     isLoggedIn: isLoggedIn,
     isAdmin: isAdmin,
     isSuperAdmin: isSuperAdmin,
+    isActiveMember: isActiveMember,
+    canWrite: canWrite,
+    DATA_ROLES: DATA_ROLES,
+    auditFailures: auditFailures,
     profileStatus: profileStatus,
     /** 底层 SDK 客户端（storage 等模块用）；未就绪返回 null */
     client: function () { return state.ready ? cloud : null; },
@@ -873,7 +1000,8 @@
     validPhone: validPhone,
     validEmail: validEmail,
     mountBanner: mountBanner,
-    mountNav: mountNav
+    mountNav: mountNav,
+    syncAccessGuard: syncAccessGuard
   };
   window.Cloud = Cloud;
 
@@ -882,5 +1010,6 @@
   mountBanner();
   mountNav();
   mountIdentity();
+  syncAccessGuard();
   restore().then(function () { mountNav(); mountIdentity(); mountMenus(); });
 })();

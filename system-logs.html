@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>操作日志 · 系统管理</title>
   <link rel="stylesheet" href="css/style.css">
@@ -122,7 +124,8 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script>
@@ -140,7 +143,7 @@
 
       const table = new App.DataTable({
         el: "#logTable", data: [], pageSize: 10, pager: "#logPager",
-        keywordEl: "#logKw", searchKeys: ["user", "action", "ip", "id"],
+        keywordEl: "#logKw", searchKeys: ["user", "action", "ip", "id", "target", "change", "error"],
         filters: [{ key: "module", el: "#logModule" }, { key: "result", el: "#logResult" }],
         columns: [
           { key: "id", title: "日志编号", render: v => `<span class="mono text-2">${App.esc(v)}</span>` },
@@ -148,6 +151,9 @@
           { key: "user", title: "操作人", sortable: true, render: v => `<b>${App.esc(v)}</b>` },
           { key: "module", title: "模块", sortable: true, render: v => `<span class="tag">${App.esc(v)}</span>` },
           { key: "action", title: "动作", wrap: true },
+          { key: "target", title: "操作对象", render: v => `<span class="mono text-2">${App.esc(v || "—")}</span>` },
+          { key: "change", title: "变更摘要", wrap: true, render: (v, r) => `<span class="text-2" title="${App.esc(r.detail || "")}">${App.esc(v || "—")}</span>` },
+          { key: "error", title: "失败原因", wrap: true, render: v => v ? `<span style="color:var(--danger)">${App.esc(v)}</span>` : "—" },
           { key: "ip", title: "IP 地址", render: v => `<span class="mono">${App.esc(v || "—")}</span>` },
           { key: "cost", title: "耗时", sortable: true, align: "right", render: v => (v ? v + " ms" : "—") },
           {
@@ -167,6 +173,25 @@
           <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-value">${new Set(logs.map(l => l.user)).size}</div><div class="stat-label">涉及用户</div></div></div>`;
       }
 
+      /* 审计详情：把改前/改后值压成一行摘要，完整 JSON 放在 title 中 */
+      function brief(v) {
+        if (v === null || v === undefined) return "空";
+        var s = typeof v === "string" ? v : JSON.stringify(v);
+        return String(s).length > 36 ? String(s).slice(0, 36) + "…" : String(s);
+      }
+      function changeBrief(l) {
+        var b = l.before, a = l.after, keys;
+        if (b && a) {
+          keys = Object.keys(a).filter(k => ["id", "owner_id", "created_at", "updated_at"].indexOf(k) < 0 && String(b[k]) !== String(a[k]));
+          if (!keys.length) return "无字段变化";
+          return keys.slice(0, 3).map(k => k + ": " + brief(b[k]) + " → " + brief(a[k])).join("；") +
+            (keys.length > 3 ? " 等 " + keys.length + " 项" : "");
+        }
+        if (a) return "新增 " + Object.keys(a).length + " 字段：" + brief(a);
+        if (b) return "删除记录（" + Object.keys(b).length + " 字段）";
+        return "—";
+      }
+
       async function loadData() {
         if (!C.isReady()) { showNotice("当前站点为静态镜像，操作日志需在 WorkBuddy 托管域名使用。", true); return; }
         if (!C.isLoggedIn()) {
@@ -177,19 +202,25 @@
         var res = await C.tableList("site_logs", { order: "happened_at", asc: false });
         if (res.error) { showNotice("读取失败：" + App.esc(res.error.message), true); return; }
         rawLogs = (res.data || []).map(function (l) {
-          return { id: l.log_id || ("L" + l.id), time: l.happened_at, user: l.user_name, module: l.module, action: l.action, ip: l.ip, cost: l.cost, result: l.result, _nid: l.id };
+          var x = { id: l.log_id || ("L" + l.id), time: l.happened_at, user: l.user_name, module: l.module,
+            action: l.action, ip: l.ip, cost: l.cost, result: l.result, _nid: l.id,
+            before: l.before_json || null, after: l.after_json || null,
+            target: l.target || "", error: l.error_msg || "" };
+          x.change = changeBrief(x);
+          x.detail = "改前：" + JSON.stringify(x.before) + "\n改后：" + JSON.stringify(x.after);
+          return x;
         });
         table.setData(rawLogs);
         renderStats(rawLogs);
-        showNotice("共 <b>" + rawLogs.length + "</b> 条日志。参数、用户、菜单、车辆、核放、报表等模块的新增/修改/删除操作都会自动记录在这里。");
+        showNotice("共 <b>" + rawLogs.length + "</b> 条日志。所有云端写入（参数、菜单、车辆、报表、快照等）自动记录<strong>操作对象、改前改后值与失败原因</strong>；鼠标悬停「变更摘要」可看完整 JSON。");
       }
 
       loadData();
       C.onChange(function () { if (C.isReady()) loadData(); });
 
       document.getElementById("exportLogs").addEventListener("click", () => {
-        App.exportCSV("操作日志.csv", ["编号", "时间", "操作人", "模块", "动作", "IP", "耗时(ms)", "结果"],
-          table.filtered.map(l => [l.id, l.time, l.user, l.module, l.action, l.ip, l.cost, l.result]));
+        App.exportCSV("操作日志.csv", ["编号", "时间", "操作人", "模块", "动作", "操作对象", "变更摘要", "失败原因", "IP", "耗时(ms)", "结果"],
+          table.filtered.map(l => [l.id, l.time, l.user, l.module, l.action, l.target, l.change, l.error, l.ip, l.cost, l.result]));
       });
 
       document.getElementById("clearLogs").addEventListener("click", async () => {

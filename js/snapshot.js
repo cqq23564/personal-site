@@ -102,7 +102,9 @@
     return C.tableInsert(TABLE, payload).then(function (res) {
       if (res && res.error) return { error: res.error };
       if (C.logAction) C.logAction("数据备份", "生成覆盖前快照",
-        payload.batch_key + " / " + payload.row_count + " 条 / " + REASON_LABEL[payload.reason]);
+        payload.batch_key + " / " + payload.row_count + " 条 / " + REASON_LABEL[payload.reason],
+        { target: payload.batch_key, before: { rows: payload.row_count, source: payload.source },
+          after: { snapshot_id: (res && res.data && res.data.id) || null, reason: payload.reason } });
       return { data: (res && res.data) || null, payload: payload };
     }).catch(function (e) {
       return { error: { message: (e && e.message) || "快照写入失败" } };
@@ -163,12 +165,17 @@
           });
           return chain.then(function () {
             if (C.logAction) C.logAction("数据备份", "回滚批次",
-              snap.batch_key + " / 恢复 " + ok + " 条 / 移除 " + current.length + " 条");
+              snap.batch_key + " / 恢复 " + ok + " 条 / 移除 " + current.length + " 条",
+              { target: snap.batch_key,
+                before: { rows: current.length, ids: current.slice(0, 5).map(function (x) { return x.id; }) },
+                after: { restored: ok, removed: current.length, snapshot_id: snap.id } });
             return { data: { restored: ok, removed: current.length, batch: snap.batch_key } };
           });
         });
       });
     }).catch(function (e) {
+      if (C.logAction) C.logAction("数据备份", "回滚批次", "快照 #" + id + " 回滚未完成",
+        { target: "snapshot#" + id, ok: false, error: e });
       return { error: { message: (e && e.message) || "回滚失败" } };
     });
   }

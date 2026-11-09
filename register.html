@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>注册 · 陈庆棋个人主页</title>
   <link rel="stylesheet" href="css/style.css">
@@ -115,7 +117,7 @@
         </form>
 
         <div class="field-msg" id="regNotice" style="margin-top:12px"></div>
-        <div class="auth-tip">📝 注册后需管理员审核（系统管理 → 用户管理 → 注册审核），审核通过即可登录使用。</div>
+        <div class="auth-tip">📝 注册后需管理员审核<strong>并分配数据角色</strong>（系统管理 → 用户管理）。未激活账号可以登录，但按数据安全策略<strong>无法查看或修改业务数据</strong>；审核通过后由管理员分配「只读成员」或「超级管理员」。</div>
       </div>
     </div>
     <div class="auth-visual">
@@ -138,7 +140,8 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script>

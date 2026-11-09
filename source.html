@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>数据来源与声明 · 陈庆棋个人主页</title>
   <meta name="description" content="本站数据来源、公开资料引用出处与免责声明：个人技术作品集，站内业务数据均为演示用示意数据。">
@@ -189,7 +191,29 @@
       <div class="card-bd">
         <p>本站按「现状」提供，不保证内容的完整性、准确性与时效性。若您认为本站内容涉及您的合法权益（著作权、商标权、名誉权、数据权益等），
           请通过页脚联系方式告知，我们将第一时间核实并予以处理或删除。</p>
-        <p class="text-3">本页面最后更新：2026-11-08</p>
+        <p class="text-3">本页面最后更新：2026-11-09</p>
+      </div>
+    </section>
+
+    <!-- 7. 数据安全与导入质量 -->
+    <section class="card source-card">
+      <div class="card-hd">七、数据安全与导入质量</div>
+      <div class="card-bd">
+        <p><strong>访问控制</strong>：本站业务数据存放在站点自有云端账号下，由数据库行级安全策略控制——
+          仅「已审核激活且已分配数据角色」的账号可以读取，写入仅超级管理员可用。新注册账号默认「待审核」，
+          在管理员审核并分配「只读成员」等角色之前，不能读取或修改业务数据；页面会明确提示账号状态，不会用空白表格伪装成「没有数据」。
+          角色、审核状态与账号归属由数据库触发器保护，普通账号无法自行提权。</p>
+        <p><strong>导入质量闸门</strong>：每日报表与滞留重车台账在导入预览阶段即做质量校验。
+          合计与明细不符、统计日期缺失、明细为空、车牌缺失、数值为负、日报数值全 0 等属于<strong>阻断项</strong>，修正源文件前禁止写入；
+          重复车牌、可疑车牌格式、入场日期晚于统计日期、单位疑似混用、重空车与总车数不勾稽等属于<strong>需确认项</strong>，
+          必须逐项核对并显式勾选后才能导入，异常内容照实保留、不自动改写原文。仅在提示层面说明的口径
+          （如清单明细无年份与时刻、不推算滞留时长）不影响导入。</p>
+        <p><strong>操作留痕与可恢复性</strong>：云端写入自动记录操作人、操作对象、改前改后值与失败原因；
+          覆盖与删除前生成快照，可一键回滚，回滚本身亦可撤回。快照与业务数据位于同一云端账号内，
+          <strong>不是异地容灾</strong>，请定期下载全量备份归档。</p>
+        <p><strong>传输与脚本边界</strong>：全站设置内容安全策略（CSP），并把云 SDK 锁定为固定版本 + SRI 完整性校验，
+          静态镜像另配安全响应头。CSP 目前为缓解型——为兼容站内既有内联脚本仍允许 <code>'unsafe-inline'</code>，
+          属于纵深防御措施，不等同于彻底消除所有注入风险。本站不加载第三方统计、广告或追踪脚本。</p>
       </div>
     </section>
 
@@ -240,7 +264,8 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
 </body>

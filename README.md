@@ -79,6 +79,14 @@ python -m http.server 8899        # 或 npx serve .
 - 首页「成长经历」不再写死 4 条：条目由云端 `site_params` 的 `home.timeline.N.*`（date / title / text）聚合，编号 N 决定顺序，任意条数均可；在「参数管理 → 成长经历」专用管理区增删改排序后整组保存，首页即时生效，无需改代码或重新发布。
 - 导出为浏览器端生成：CSV（带 BOM，Excel 可直接打开）或 Excel 工作簿（SpreadsheetML `.xls`）；模板统计报表含模板货物统计表及「按模板归类 / 货物统计明细 / 数据来源说明」附表，无需后端。
 
+## 安全加固（2026-11-09）
+
+- **CSP + SDK 供应链**：21 个 HTML 均在 `<head>` 加 `Content-Security-Policy` meta（`base-uri` / `object-src` / `form-action` 锁定、`script-src` 仅本站与 jsdelivr、`img-src` / `connect-src` 白名单），CF Pages 另用 `_headers` 下发 `frame-ancestors 'self'`、`X-Frame-Options`、`X-Content-Type-Options`、`Referrer-Policy`、`Permissions-Policy`。云 SDK 由浮动 `@dev` 锁为 `0.1.4-dev.ca27990.202610161713` + `integrity=sha384-…`（与 @dev 内容字节一致）、`crossorigin="anonymous"`。**升级 SDK 必须同步更新 21 页 SRI**，否则浏览器会拒绝加载。CSP 目前保留 `'unsafe-inline'`（站内 19 段内联脚本 + 25 处内联事件属性），属**缓解型**防护而非彻底消除注入；`connect-src 'self' https: wss:` 较宽是为避免误挡云 SDK 请求。
+- **审计增强**：`site_logs` 新增 `target / before_json / after_json / error_msg / operator_id / updated_at`。`js/cloud.js` 的 `tableInsert / tableUpdate / tableRemove / tableClear / saveParam / deleteParam` 自动记录改前改后值，失败也落日志（失败原因 + `console.warn` + `auditFailures` 内存队列），不再静默；写日志表自身不产生递归日志。`system-logs.html` 新增「操作对象 / 变更摘要 / 失败原因」列，悬停可看完整 JSON，导出 CSV 同步带出。
+- **权限分级与防提权**：新增 `public.site_active_member()` / `public.site_is_admin()`（`SECURITY DEFINER`、固定 `search_path`）。14 张 `site_*` 表 + `gallery_items` + `profiles` 的 59 条 RLS 策略统一改为「激活且在角色白名单才可读、仅激活管理员可写」；`profiles_read_all` 不再是 `USING (true)`，匿名访客读不到任何账号资料。`profiles_guard_sensitive` 触发器强制非管理员 INSERT 只能得到 `role='user' / status='pending' / is_super=false`，并禁止其 UPDATE 角色、状态、超管标记与账号归属——堵住「注册即提权 / 自助改管理员」。前端 `isAdmin()` 同步要求 `status='active'`，新增 `isActiveMember()` 与未激活账号提示条。新注册账号默认无数据权限，须管理员在「系统管理 → 用户管理」审核并分配 `viewer`（只读成员）/ `operator`（预留）/ `admin`（超级管理员）。**写权限仍仅 admin**，避免误放权。
+- **导入质量闸门**：`js/import-validate.js`（纯逻辑，可 Node 单测）把校验分为 blockers / confirms / warnings。`import-stranded.html` 与 `query-reports.html` 在预览阶段渲染质量卡片、提交入口再兜底：阻断项直接禁用按钮，异常项须勾选确认，绕过 UI 直接触发 commit 也写不进库。硬阻断：空批次、统计日期缺失/非法、合计与明细不符、车牌缺失、数值为负、日报全 0；需确认：重复/可疑车牌、入场日期晚于统计日、单位疑似混用、日报重空车不勾稽、货物名称兜底分类。所有异常文字渲染前均转义。
+- **已知残留（不装作已解决）**：CSP 为缓解型而非严格 nonce/hash；无应用侧发码/注册速率限制；快照与业务数据同库，非异地容灾；主站依赖 `?sharecode=…` 与托管域名，CF 镜像仅静态降级；`operator` 角色数据库层已预留，但前端管理按钮仍按 `isAdmin()` 控制，暂不开放写权限。
+
 ## 数据来源与合规声明
 
 - 本站为**个人技术作品集与功能演示站点**，非任何政府机关、海关、国有企业或业务平台的官方网站，与相关单位无隶属、授权、合作或数据对接关系。

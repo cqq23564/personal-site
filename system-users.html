@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>用户管理 · 系统管理</title>
   <link rel="stylesheet" href="css/style.css">
@@ -95,7 +97,7 @@
               <input class="input" id="userKw" placeholder="🔍 姓名 / 电话 / 邮箱">
               <select class="select" id="userRole">
                 <option value="">全部角色</option>
-                <option value="admin">系统管理员</option><option value="user">普通用户</option>
+                <option value="admin">超级管理员</option><option value="viewer">只读成员</option><option value="operator">数据录入（预留）</option><option value="user">待分配（无数据权限）</option>
               </select>
               <select class="select" id="userStatus">
                 <option value="">全部状态</option>
@@ -150,7 +152,7 @@
           </div>
           <div class="form-row">
             <div class="field"><label>角色</label>
-              <select class="select" id="ufRole"><option value="user">普通用户</option><option value="admin">系统管理员</option></select>
+              <select class="select" id="ufRole"><option value="user">待分配角色（无数据权限）</option><option value="viewer">只读成员</option><option value="operator">数据录入（预留）</option><option value="admin">超级管理员</option></select>
               <div class="field-msg"></div></div>
             <div class="field"><label>部门</label>
               <select class="select" id="ufDept">
@@ -179,7 +181,8 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script>

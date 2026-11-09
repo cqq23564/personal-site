@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>滞留重车导入 · 陈庆棋个人主页</title>
   <link rel="stylesheet" href="css/style.css">
@@ -124,6 +126,7 @@
             </div>
           </div>
           <div id="stPreview" class="import-preview" style="display:none"></div>
+          <div id="stQuality" class="iv-box" style="display:none"></div>
           <div class="import-actions" id="stActions" style="display:none">
             <button class="btn btn-primary" id="stConfirmBtn">✅ 确认导入并归档</button>
             <button class="btn btn-line" id="stCancelBtn">取消</button>
@@ -177,13 +180,15 @@
 
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@0.1.4-dev.ca27990.202610161713/lib/index.global.js"
+          integrity="sha384-6yxnkOdsYedUWX/Z+ulluqqMcfvl4EimVdKA7jFGD8P8a6yUWNPqK+du0PSKiGWJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/cloud-config.js"></script>
   <script src="js/cloud.js"></script>
   <script src="js/vendor/xlsx.full.min.js"></script>
   <script src="js/stranded.js"></script>
   <script src="js/stranded-report.js"></script>
   <script src="js/snapshot.js"></script>
+  <script src="js/import-validate.js"></script>
   <script>
   (function () {
     "use strict";
@@ -191,6 +196,22 @@
     var C = window.Cloud, App = window.App, S = window.Stranded, SR = window.StrandedReport, Snap = window.Snapshot;
     var TABLE = "site_stranded_trucks";
     var cloudRows = [], pending = null, batches = [], curDate = "", threshold = 72, busy = false;
+    var V = window.ImportValidate, quality = null, ack = false;
+
+    /* 质量闸门：阻断项直接禁用提交，异常项须勾选确认后才能写入 */
+    function setQuality(result) {
+      quality = result; ack = false;
+      V.render($("#stQuality"), result, function (v) { ack = v; syncConfirm(); });
+      syncConfirm();
+    }
+    function syncConfirm() {
+      var btn = $("#stConfirmBtn");
+      if (!btn || busy) return;
+      var ok = V.canCommit(quality, ack);
+      btn.disabled = !ok;
+      btn.title = ok ? "" : (quality && quality.blockers.length ?
+        "存在阻断项：请修正源文件后重新选择" : "请先勾选异常确认");
+    }
 
     function esc(s) { return App.esc(s); }
     function fmt(n) { return Number(n || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 }); }
@@ -320,6 +341,7 @@
     async function handleFile(file) {
       if (!file) return;
       $("#stSummary").textContent = "正在解析…";
+      setQuality(null);
       try {
         var sheets = await readSheets(file);
         var d = S.parseWorkbook(sheets, file.name, { threshold: threshold });
@@ -332,14 +354,17 @@
             '</span><br>提示：请确认含「2026年10月8日中国车出口滞留72小时」这类标题行，或含「车牌号」「货物名称」等至少 3 个可识别字段的中文表头；B卡报表的入区/出区统计表不会计入。</div>';
           $("#stActions").style.display = "none";
           pending = null;
+          setQuality(V.stranded(d));
           return;
         }
         pending = d;
+        setQuality(V.stranded(d));
         renderPreview(d, file.name);
       } catch (e) {
         App.toast("解析失败：" + e.message, "warn");
         $("#stSummary").textContent = "解析失败";
         pending = null;
+        setQuality(null);
       }
     }
 
@@ -392,6 +417,12 @@
     /* ---------- 写入：按统计日期整组替换 ---------- */
     async function commit() {
       if (!pending || busy) return;
+      /* 提交兜底：即使绕过 UI 直接触发，未通过质量闸门也绝不写库 */
+      if (!V.canCommit(quality, ack)) {
+        App.toast(quality && quality.blockers.length ?
+          "存在阻断项，已取消写入；请修正源文件后重新选择" : "请先勾选异常确认后再导入", "err");
+        return;
+      }
       busy = true;
       var btn = $("#stConfirmBtn"); btn.disabled = true; btn.textContent = "正在写入…";
       try {
@@ -415,7 +446,9 @@
           date + " / " + pending.rows.length + " 条 / " + pending.stats.cars + " 辆 / " + (pending.rows[0].source || "—"));
         curDate = date;
         pending = null;
+        setQuality(null);
         $("#stPreview").style.display = "none";
+        $("#stQuality").style.display = "none";
         $("#stActions").style.display = "none";
         $("#stFile").value = "";
         await loadCloud();
@@ -424,7 +457,7 @@
         App.toast(e.message, "warn");
         $("#stSummary").textContent = e.message + "（若已有部分写入，可在下方快照区一键回滚）";
       } finally {
-        busy = false; btn.disabled = false; btn.textContent = "✅ 确认导入并归档";
+        busy = false; btn.textContent = "✅ 确认导入并归档"; syncConfirm();
       }
     }
 
@@ -464,6 +497,7 @@
     $("#stConfirmBtn").addEventListener("click", commit);
     $("#stCancelBtn").addEventListener("click", function () {
       pending = null; $("#stFile").value = "";
+      setQuality(null);
       $("#stPreview").style.display = "none"; $("#stActions").style.display = "none";
       $("#stSummary").textContent = "";
     });
