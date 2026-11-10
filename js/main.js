@@ -1011,15 +1011,15 @@
     ? document.addEventListener("DOMContentLoaded", boot)
     : boot();
 
-  /* ================= 成效数据区：真实数据接入预留 ================= */
-  /* 当前首页「成效数据」展示的是示意值；后续接入真实数据（如统计 site_reports）后，
-     在查询得到结果时调用本函数即可覆盖数字并重放计数动画，无需改动页面结构。
-     调用示例：App.applyHomeMetrics({ clearanceMinutes: 38, inspectEffPct: 40, dailyPeak: 1200 })
-     未传参、缺少字段或数值非法时，保持页面原有示意值不变。 */
+  /* ================= 成效数据区：真实数据接入 ================= */
+  /* 首页「成效数据」默认展示示意值；登录后由 fetchHomeMetrics 查询 site_reports 聚合，
+     再调用本函数覆盖数字并重放计数动画。未传参、字段缺失或数值非法时保持示意值不变。
+     真实指标口径：dailyPeak=单日(入区+出区)车次峰值；releaseRate=Σ放行/Σ申报×100%；
+     totalVehicles=Σ(入区+出区)车次。调用示例：App.applyHomeMetrics({dailyPeak, releaseRate, totalVehicles}) */
   function applyHomeMetrics(real) {
     if (!real || typeof real !== "object") return;
-    const map = { clearanceMinutes: "mClearance", inspectEffPct: "mEff", dailyPeak: "mDaily" };
-    const labels = { clearanceMinutes: "单车平均通关时长", inspectEffPct: "查验效率提升", dailyPeak: "单日通行峰值" };
+    const map = { totalVehicles: "mClearance", releaseRate: "mEff", dailyPeak: "mDaily" };
+    const labels = { totalVehicles: "累计通行车次", releaseRate: "申报放行率", dailyPeak: "单日通行峰值" };
     Object.keys(map).forEach(function (k) {
       const el = document.getElementById(map[k]);
       const v = real[k];
@@ -1036,6 +1036,30 @@
     });
   }
 
+  /* 成效数据区：从数据看板真实导入日报（site_reports）聚合；需登录读取（RLS），
+     未登录或暂无数据则保留示意值。 */
+  async function fetchHomeMetrics() {
+    const C = window.Cloud;
+    if (!C || !C.tableList) return;
+    try {
+      const res = await C.tableList("site_reports", { order: "rdate", asc: false });
+      if (!res || res.error || !res.data || !res.data.length) return;
+      const rows = res.data;
+      let dailyPeak = 0, totalVehicles = 0, sumRelease = 0, sumDecl = 0;
+      rows.forEach(function (r) {
+        const inV = Number(r.in_total) || 0;
+        const outV = Number(r.out_total) || 0;
+        const day = inV + outV;
+        if (day > dailyPeak) dailyPeak = day;
+        totalVehicles += day;
+        sumRelease += Number(r.release_cnt) || 0;
+        sumDecl += Number(r.decl) || 0;
+      });
+      const releaseRate = sumDecl > 0 ? Math.round((sumRelease / sumDecl) * 100) : 0;
+      App.applyHomeMetrics({ dailyPeak: dailyPeak, releaseRate: releaseRate, totalVehicles: totalVehicles });
+    } catch (e) { /* 保留示意值 */ }
+  }
+
   /* ================= 对外暴露 ================= */
   window.App = {
     $, $$, toast, esc, exportCSV, downloadTextFile, sanitizeText,
@@ -1044,4 +1068,8 @@
     applyHomeMetrics,
     setTheme: applyTheme, getTheme: currentTheme
   };
+
+  /* 成效数据区：登录后拉取真实日报聚合（cloud.js 异步 restore 完成后读取更稳，故延后触发） */
+  if (document.readyState === "complete") setTimeout(fetchHomeMetrics, 800);
+  else window.addEventListener("load", function () { setTimeout(fetchHomeMetrics, 600); });
 })();

@@ -287,18 +287,18 @@
       <div class="title-bar ov-head reveal">
         <div class="ov-title">
           <span class="ov-eyebrow" data-param="home.metrics.eyebrow">成效数据</span>
-          <h2 class="section-title" data-param="home.metrics.title">平台运行成效（示意）</h2>
+          <h2 class="section-title" data-param="home.metrics.title">平台运行成效</h2>
         </div>
-        <span class="section-sub" data-param="home.metrics.sub">以下为演示用示意指标，后续将接入数据看板真实通关数据；实际运营数据请以数据看板为准</span>
+        <span class="section-sub" data-param="home.metrics.sub">以下指标接入数据看板真实导入日报（需登录查看）；未登录时显示示意值</span>
       </div>
 
-      <!-- 成效数据区：当前为示意值；真实数据接入预留钩子 App.applyHomeMetrics({clearanceMinutes, inspectEffPct, dailyPeak})，后续再接 -->
-      <div class="ov-stats reveal" style="margin-bottom:14px" data-bind-source="cloud:site_reports (预留，暂未接入)">
-        <div class="ov-stat"><div class="v"><span id="mClearance" data-metric="clearanceMinutes" data-count="38">0</span><span class="u">分钟</span></div><div class="k">单车平均通关时长（示意）</div></div>
-        <div class="ov-stat"><div class="v"><span id="mEff" data-metric="inspectEffPct" data-count="40">0</span><span class="u">%</span></div><div class="k">查验效率提升（示意）</div></div>
+      <!-- 成效数据区：已接入真实数据。fetchHomeMetrics 聚合 site_reports 后调用 App.applyHomeMetrics({dailyPeak, releaseRate, totalVehicles})；未登录或暂无数据时保留示意值 -->
+      <div class="ov-stats reveal" style="margin-bottom:14px" data-bind-source="cloud:site_reports (已接入：需登录读取)">
+        <div class="ov-stat"><div class="v"><span id="mClearance" data-metric="totalVehicles" data-count="38">0</span><span class="u">车次</span></div><div class="k">累计通行车次（示意）</div></div>
+        <div class="ov-stat"><div class="v"><span id="mEff" data-metric="releaseRate" data-count="40">0</span><span class="u">%</span></div><div class="k">申报放行率（示意）</div></div>
         <div class="ov-stat"><div class="v"><span id="mDaily" data-metric="dailyPeak" data-count="1200">0</span><span class="u">+ 车次</span></div><div class="k">单日通行峰值（示意）</div></div>
       </div>
-      <p class="ov-note reveal">注：本站为个人技术作品集与功能演示站点，上述指标为示意数据，非真实业务统计；平台整体公开成效见首页 Hero 与 <a href="source.html">数据来源与声明</a>。</p>
+      <p class="ov-note reveal">注：登录状态下，以上指标取自数据看板每日导入的真实日报（单日峰值、申报放行率、累计通行车次）；未登录时显示示意值。平台整体公开成效见首页 Hero 与 <a href="source.html">数据来源与声明</a>。</p>
     </div>
   </section>
 
