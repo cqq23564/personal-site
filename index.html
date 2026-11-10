@@ -174,6 +174,8 @@
           <span class="ov-tag">北斗高精定位网络</span>
         </div>
       </div>
+
+      <p class="ov-src reveal">资料来源：凭祥市人民政府网、崇左市人民政府网等公开资料（业务背景与场站描述出处详见 <a href="source.html">数据来源与声明</a>）。</p>
     </div>
   </section>
 
@@ -287,13 +289,14 @@
           <span class="ov-eyebrow" data-param="home.metrics.eyebrow">成效数据</span>
           <h2 class="section-title" data-param="home.metrics.title">平台运行成效（示意）</h2>
         </div>
-        <span class="section-sub" data-param="home.metrics.sub">以下为演示用示意指标，实际运营数据请以数据看板为准</span>
+        <span class="section-sub" data-param="home.metrics.sub">以下为演示用示意指标，后续将接入数据看板真实通关数据；实际运营数据请以数据看板为准</span>
       </div>
 
-      <div class="ov-stats reveal" style="margin-bottom:14px">
-        <div class="ov-stat"><div class="v"><span data-count="38">0</span><span class="u">分钟</span></div><div class="k">单车平均通关时长（示意）</div></div>
-        <div class="ov-stat"><div class="v"><span data-count="40">0</span><span class="u">%</span></div><div class="k">查验效率提升（示意）</div></div>
-        <div class="ov-stat"><div class="v"><span data-count="1200">0</span><span class="u">+ 车次</span></div><div class="k">单日通行峰值（示意）</div></div>
+      <!-- 成效数据区：当前为示意值；真实数据接入预留钩子 App.applyHomeMetrics({clearanceMinutes, inspectEffPct, dailyPeak})，后续再接 -->
+      <div class="ov-stats reveal" style="margin-bottom:14px" data-bind-source="cloud:site_reports (预留，暂未接入)">
+        <div class="ov-stat"><div class="v"><span id="mClearance" data-metric="clearanceMinutes" data-count="38">0</span><span class="u">分钟</span></div><div class="k">单车平均通关时长（示意）</div></div>
+        <div class="ov-stat"><div class="v"><span id="mEff" data-metric="inspectEffPct" data-count="40">0</span><span class="u">%</span></div><div class="k">查验效率提升（示意）</div></div>
+        <div class="ov-stat"><div class="v"><span id="mDaily" data-metric="dailyPeak" data-count="1200">0</span><span class="u">+ 车次</span></div><div class="k">单日通行峰值（示意）</div></div>
       </div>
       <p class="ov-note reveal">注：本站为个人技术作品集与功能演示站点，上述指标为示意数据，非真实业务统计；平台整体公开成效见首页 Hero 与 <a href="source.html">数据来源与声明</a>。</p>
     </div>

@@ -1011,11 +1011,37 @@
     ? document.addEventListener("DOMContentLoaded", boot)
     : boot();
 
+  /* ================= 成效数据区：真实数据接入预留 ================= */
+  /* 当前首页「成效数据」展示的是示意值；后续接入真实数据（如统计 site_reports）后，
+     在查询得到结果时调用本函数即可覆盖数字并重放计数动画，无需改动页面结构。
+     调用示例：App.applyHomeMetrics({ clearanceMinutes: 38, inspectEffPct: 40, dailyPeak: 1200 })
+     未传参、缺少字段或数值非法时，保持页面原有示意值不变。 */
+  function applyHomeMetrics(real) {
+    if (!real || typeof real !== "object") return;
+    const map = { clearanceMinutes: "mClearance", inspectEffPct: "mEff", dailyPeak: "mDaily" };
+    const labels = { clearanceMinutes: "单车平均通关时长", inspectEffPct: "查验效率提升", dailyPeak: "单日通行峰值" };
+    Object.keys(map).forEach(function (k) {
+      const el = document.getElementById(map[k]);
+      const v = real[k];
+      if (!el || v == null || isNaN(v) || Number(v) < 0) return;
+      const stat = el.closest(".ov-stat");
+      el.setAttribute("data-count", v);
+      el.textContent = "0";
+      el.classList.add("is-real");
+      if (stat) {
+        const kEl = stat.querySelector(".k");
+        if (kEl && labels[k]) kEl.textContent = labels[k];
+      }
+      if (window.App && App.animateCount) App.animateCount(el);
+    });
+  }
+
   /* ================= 对外暴露 ================= */
   window.App = {
     $, $$, toast, esc, exportCSV, downloadTextFile, sanitizeText,
     DataTable, renderLineChart, renderBarChart, renderDonut, renderParkMap,
     initFileManager, openModal, closeModal, validateField, animateCount,
+    applyHomeMetrics,
     setTheme: applyTheme, getTheme: currentTheme
   };
 })();
