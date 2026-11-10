@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>个人中心 · 陈庆棋个人主页</title>
+  <meta name="description" content="个人中心：查看与修改账号展示资料、登录状态与我的文件。">
+  <meta name="keywords" content="陈庆棋,个人主页,园区数字化,数据可视化,凭祥,边境贸易,技术作品集">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://personal-site-5kh.pages.dev/profile">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陈庆棋 · 个人主页">
+  <meta property="og:title" content="个人中心 · 陈庆棋个人主页">
+  <meta property="og:description" content="个人中心：查看与修改账号展示资料、登录状态与我的文件。">
+  <meta property="og:url" content="https://personal-site-5kh.pages.dev/profile">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -42,7 +51,7 @@
     <div class="profile-head">
       <img src="assets/img/avatar.png" alt="头像">
       <div style="flex:1;min-width:220px">
-        <div class="nm" id="pfHeadName">我的账号 <span class="badge badge-info plain" id="pfHeadRole" style="background:rgba(255,255,255,.18);color:#fff"></span></div>
+        <h1 class="nm" id="pfHeadName">我的账号 <span class="badge badge-info plain" id="pfHeadRole" style="background:rgba(255,255,255,.18);color:#fff"></span></h1>
         <div class="rl" id="pfHeadDept">—</div>
         <div class="meta">
           <div>注册时间 <b id="pfHeadCreated">—</b></div>
@@ -69,9 +78,9 @@
       <!-- 基本资料 -->
       <div data-tab-pane="base">
         <div class="grid-2">
-          <div class="card"><div class="card-hd">基础信息</div><div class="card-bd">
+          <div class="card"><h2 class="card-hd">基础信息</h2><div class="card-bd">
             <div class="form-row">
-              <div class="field"><label>姓名</label><input class="input" id="pfName" placeholder="请输入姓名"></div>
+              <div class="field"><label>显示名称</label><input class="input" id="pfName" maxlength="30" placeholder="可用昵称，无需真实姓名"></div>
               <div class="field"><label>昵称</label><input class="input" id="pfNickname" placeholder="展示用昵称"></div>
             </div>
             <div class="form-row">
@@ -88,7 +97,7 @@
             </div>
             <button class="btn btn-primary" id="pfSaveBtn">保存修改</button>
           </div></div>
-          <div class="card"><div class="card-hd">账号信息</div><div class="card-bd">
+          <div class="card"><h2 class="card-hd">账号信息</h2><div class="card-bd">
             <table class="table">
               <tbody>
                 <tr><td class="text-3" style="width:110px">账号</td><td class="mono" id="pfAccount">—</td></tr>
@@ -108,7 +117,7 @@
       <!-- 账号安全 -->
       <div data-tab-pane="safe" class="hidden">
         <div class="grid-2">
-          <div class="card"><div class="card-hd">登录方式</div><div class="card-bd">
+          <div class="card"><h2 class="card-hd">登录方式</h2><div class="card-bd">
             <table class="table">
               <tbody>
                 <tr><td class="text-3" style="width:130px">登录方式</td><td>短信验证码 / 邮箱验证码</td></tr>
@@ -118,7 +127,7 @@
             </table>
             <p class="text-3" style="margin-top:12px;font-size:12.5px">修改绑定手机/邮箱请联系管理员。登录凭据由云服务托管，本站不存储密码。</p>
           </div></div>
-          <div class="card"><div class="card-hd">危险操作</div><div class="card-bd">
+          <div class="card"><h2 class="card-hd">危险操作</h2><div class="card-bd">
             <p class="text-2">退出当前账号的登录状态。下次访问需重新使用验证码登录。</p>
             <button class="btn btn-line" id="sfLogout" style="margin-top:12px">退出登录</button>
           </div></div>
@@ -127,7 +136,7 @@
 
       <!-- 我的文件（云端真实数据） -->
       <div data-tab-pane="files" class="hidden">
-        <div class="card"><div class="card-hd">我上传的文件 <span class="sub">云端实时数据 · 最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><h2 class="card-hd">我上传的文件 <span class="sub">云端实时数据 · 最近 10 条</span></h2><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>文件名</th><th>大小</th><th>时间</th><th class="num">下载次数</th><th>操作</th></tr></thead>
             <tbody id="myFilesBody"></tbody>
@@ -137,7 +146,7 @@
 
       <!-- 操作记录（云端真实数据） -->
       <div data-tab-pane="logs" class="hidden">
-        <div class="card"><div class="card-hd">我的操作记录 <span class="sub">云端实时数据 · 最近 10 条</span></div><div class="card-bd flush">
+        <div class="card"><h2 class="card-hd">我的操作记录 <span class="sub">云端实时数据 · 最近 10 条</span></h2><div class="card-bd flush">
           <div class="table-wrap"><table class="table">
             <thead><tr><th>时间</th><th>模块</th><th>动作</th><th>IP</th><th>结果</th></tr></thead>
             <tbody id="myLogsBody"></tbody>
@@ -151,7 +160,7 @@
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
         <span>© 2026 陈庆棋 · 个人主页 · 个人技术作品集（演示数据）</span>
-        <span><a href="source.html">数据来源与声明</a> · <a href="index.html">返回首页</a></span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="privacy.html">隐私政策</a> · <a href="terms.html">用户协议</a> · <a href="index.html">返回首页</a></span>
       </div>
     </div>
   </footer>

@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>滞留重车导入 · 陈庆棋个人主页</title>
+  <meta name="description" content="导入滞留 72 小时中国出口重车清单，自动识别清单式 / 表头式台账并生成同版式报表。">
+  <meta name="keywords" content="陈庆棋,个人主页,园区数字化,数据可视化,凭祥,边境贸易,技术作品集">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://personal-site-5kh.pages.dev/import-stranded">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陈庆棋 · 个人主页">
+  <meta property="og:title" content="滞留重车导入 · 陈庆棋个人主页">
+  <meta property="og:description" content="导入滞留 72 小时中国出口重车清单，自动识别清单式 / 表头式台账并生成同版式报表。">
+  <meta property="og:url" content="https://personal-site-5kh.pages.dev/import-stranded">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -77,7 +86,7 @@
     <main class="main">
       <div class="page-head">
         <div>
-          <div class="page-title">📥 滞留 72 小时中国出口重车 · 导入台账</div>
+          <h1 class="page-title">📥 滞留 72 小时中国出口重车 · 导入台账</h1>
           <div class="page-desc">每日下班导入当天滞留清单 · 按统计日期云端归档 · 刷新 / 换设备不丢失</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
@@ -94,7 +103,7 @@
 
       <!-- 导入 -->
       <div class="card mb-24 import-card" id="stImportCard">
-        <div class="card-hd">📥 导入滞留重车清单 <span class="sub">支持 .xlsx / .xls / .csv · 清单式 / 表头式自动识别</span></div>
+        <h2 class="card-hd">📥 导入滞留重车清单 <span class="sub">支持 .xlsx / .xls / .csv · 清单式 / 表头式自动识别</span></h2>
         <div class="card-bd">
           <div class="import-meta">
             <span class="import-label">预警阈值</span>
@@ -137,7 +146,7 @@
 
       <!-- 历史批次 -->
       <div class="card mb-24 hist-card" id="stHistoryCard">
-        <div class="card-hd">🗓 历史归档批次 · 按统计日期归类 <span class="sub">云端持久化 · 刷新自动读回</span></div>
+        <h2 class="card-hd">🗓 历史归档批次 · 按统计日期归类 <span class="sub">云端持久化 · 刷新自动读回</span></h2>
         <div class="card-bd">
           <div class="hist-toolbar">
             <label class="hist-label" for="stDate">统计日期</label>
@@ -155,7 +164,7 @@
 
       <!-- 覆盖前快照 · 一键回滚 -->
       <div class="card mb-24" id="stSnapCard">
-        <div class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">同日覆盖 / 删除前自动存档 · 回滚本身也可撤回</span></div>
+        <h2 class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">同日覆盖 / 删除前自动存档 · 回滚本身也可撤回</span></h2>
         <div class="card-bd">
           <div class="snap-toolbar">
             <span class="text-3">每次覆盖或删除该日期前，旧数据会完整存档；回滚前也会先存档当前状态，因此误操作可恢复。快照保存在本站云端账号下，仅登录用户可读、仅管理员可回滚。</span>
@@ -173,7 +182,7 @@
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
         <span>© 2026 陈庆棋 · 个人主页 · 个人技术作品集（演示数据）</span>
-        <span><a href="source.html">数据来源与声明</a> · <a href="index.html">返回首页</a></span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="privacy.html">隐私政策</a> · <a href="terms.html">用户协议</a> · <a href="index.html">返回首页</a></span>
       </div>
     </div>
   </footer>

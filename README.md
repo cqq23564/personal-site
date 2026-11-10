@@ -87,6 +87,14 @@ python -m http.server 8899        # 或 npx serve .
 - **导入质量闸门**：`js/import-validate.js`（纯逻辑，可 Node 单测）把校验分为 blockers / confirms / warnings。`import-stranded.html` 与 `query-reports.html` 在预览阶段渲染质量卡片、提交入口再兜底：阻断项直接禁用按钮，异常项须勾选确认，绕过 UI 直接触发 commit 也写不进库。硬阻断：空批次、统计日期缺失/非法、合计与明细不符、车牌缺失、数值为负、日报全 0；需确认：重复/可疑车牌、入场日期晚于统计日、单位疑似混用、日报重空车不勾稽、货物名称兜底分类。所有异常文字渲染前均转义。
 - **已知残留（不装作已解决）**：CSP 为缓解型而非严格 nonce/hash；无应用侧发码/注册速率限制；快照与业务数据同库，非异地容灾；主站依赖 `?sharecode=…` 与托管域名，CF 镜像仅静态降级；`operator` 角色数据库层已预留，但前端管理按钮仍按 `isAdmin()` 控制，暂不开放写权限。
 
+## 运行保障（2026-11-10）
+
+- **HTTPS**：主站与 CF 镜像均使用有效 TLS 证书，主站 HTTP 请求 302 跳 HTTPS；CF `_headers` 下发 `Strict-Transport-Security: max-age=31536000; includeSubDomains`、CSP、`X-Frame-Options`、`nosniff`、`Referrer-Policy`、`Permissions-Policy`。主站 HSTS 由托管平台控制，静态文件无法设置。站内无明文资源加载；`source.html` 两个公开报道出处的**出站链接**因目标站点不支持 HTTPS 而保留 `http://`（带 `rel="noopener noreferrer"`），出站链接不构成混合内容。
+- **定期备份**：云端数据每周一 09:00 自动全量导出到工作区 `backups/site-backup-YYYY-MM-DD.json`（15 张表）；该目录已被 `.gitignore` 排除，备份含账号资料需妥善保管。导入页「全量备份」按钮可随时手动导出；覆盖前快照与一键回滚仍保留。源码由 GitHub + CF Pages 镜像保证。
+- **表单与隐私**：`App.sanitizeText` 与 `Cloud.cleanRow` 双重输入净化（控制字符、零宽字符、长度上限），所有表单提交前统一清理；`App.exportCSV` 对 `= + - @` 开头的字段加 `'` 防 Excel / WPS 公式注入；输出仍统一 `App.esc`。注册页《用户协议》《隐私政策》改为静态页面 `terms.html` / `privacy.html`，全站 24 页页脚均有链接。注册姓名改为「显示名称（可用昵称）」、留言表单加长度限制与隐私提示；不收集身份证、位置、通讯录等无关信息，不接第三方统计与广告脚本。
+- **浏览器兼容**：移除 `??` 与 `globalThis`；`inset` 展开为 `top/right/bottom/left`；`backdrop-filter` 补 `-webkit-` 前缀；`100vh` 用 `@supports (height: 100dvh)` 兜底；`viewport-fit=cover` 适配刘海屏。CDP 用 Chrome / Edge / 微信 Android / 微信 iOS / Safari iOS / Safari macOS 六组 UA + 390 / 375 移动视口验证 70/0。**注意**：CDP 底层仍是 Chromium，Safari / 微信真机引擎差异靠静态降级覆盖，正式投用前建议再用真机过一遍。
+- **SEO 基础**：24 页均有唯一 `title` / `description` / `keywords` / `canonical` / OG / `robots`；公开页 `index,follow`，后台与登录注册 `noindex,nofollow`；每页恰 1 个 H1，卡片标题升为 H2（复杂结构补 `role="heading" aria-level="2"`）；新增 `robots.txt`、`sitemap.xml`（10 个规范 URL）与 `404.html`。canonical 与 sitemap 指向 CF Pages 干净 URL——主站需 `?sharecode=…` 才能访问，不适合作为规范地址；日后绑定自有域名时改这两处即可。**动态内容（云端菜单、首页项目、看板数据）由 JS 渲染，爬虫只能看到静态骨架**，这是本站 SEO 的固有限制。
+
 ## 数据来源与合规声明
 
 - 本站为**个人技术作品集与功能演示站点**，非任何政府机关、海关、国有企业或业务平台的官方网站，与相关单位无隶属、授权、合作或数据对接关系。

@@ -19,7 +19,7 @@
   var api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
   root.Stranded = api;
-})(typeof window !== "undefined" ? window : globalThis, function () {
+})(typeof window !== "undefined" ? window : (typeof global !== "undefined" ? global : this), function () {
   "use strict";
 
   /* 字段别名：按长度降序全局匹配，避免「挂车车牌号」被「车牌」抢走 */

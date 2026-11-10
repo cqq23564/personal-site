@@ -70,12 +70,26 @@
     }[c]));
   }
 
+  /** 输入净化：去控制字符与零宽字符、限制长度，保留中文与正常换行 */
+  function sanitizeText(v, maxLen) {
+    let s = v == null ? "" : String(v);
+    s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+         .replace(/[\u200B\u200C\u200D\uFEFF]/g, "");
+    const n = maxLen || 2000;
+    return s.length > n ? s.slice(0, n) : s;
+  }
+  /** 兼容旧内核的空值合并等价写法（保留 0 / false，不改用 ||） */
+  function nullish(v) { return v === null || v === undefined ? "" : v; }
+
+  /** CSV 单元格：防公式注入（Excel/WPS 会把 = + - @ 开头的单元格当公式执行） */
+  function csvCell(c) {
+    let v = sanitizeText(c, 4000);
+    if (/^[=+@\t\r]/.test(v) || (/^-/.test(v) && !/^-?\d+(\.\d+)?$/.test(v.trim()))) v = "'" + v;
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
   function exportCSV(filename, headers, rows) {
-    const csv = [headers.join(",")]
-      .concat(rows.map(r => r.map(c => {
-        const v = c == null ? "" : String(c);
-        return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-      })))
+    const csv = [headers.map(csvCell).join(",")]
+      .concat(rows.map(r => r.map(csvCell).join(",")))
       .join("\r\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -385,6 +399,16 @@
     return !msg;
   }
   function initForms() {
+    /* 所有表单提交前统一净化文本输入：捕获阶段执行，不拦截原有提交逻辑 */
+    $$("form").forEach(form => {
+      form.addEventListener("submit", () => {
+        $$("input, textarea", form).forEach(el => {
+          const t = (el.type || "").toLowerCase();
+          if (["password", "file", "checkbox", "radio", "submit", "button", "hidden"].indexOf(t) >= 0) return;
+          if (typeof el.value === "string") el.value = sanitizeText(el.value, 2000).trim();
+        });
+      }, true);
+    });
     $$("[data-rule]").forEach(input => {
       input.addEventListener("blur", () => validateField(input));
       input.addEventListener("input", () => { if (input.classList.contains("err")) validateField(input); });
@@ -459,7 +483,7 @@
       const kw = this.keyword;
       if (kw) {
         const keys = this.opt.searchKeys || [];
-        rows = rows.filter(r => keys.some(k => String(r[k] ?? "").toLowerCase().includes(kw)));
+        rows = rows.filter(r => keys.some(k => String(nullish(r[k])).toLowerCase().includes(kw)));
       }
       for (const [k, v] of Object.entries(this.filters)) {
         if (v) rows = rows.filter(r => String(r[k]) === v);
@@ -470,7 +494,7 @@
           const x = a[k], y = b[k];
           const nx = parseFloat(x), ny = parseFloat(y);
           const cmp = (!isNaN(nx) && !isNaN(ny) && String(x).match(/^[\d.\-]+$/))
-            ? nx - ny : String(x ?? "").localeCompare(String(y ?? ""), "zh");
+            ? nx - ny : String(nullish(x)).localeCompare(String(nullish(y)), "zh");
           return asc ? cmp : -cmp;
         });
       }
@@ -989,7 +1013,7 @@
 
   /* ================= 对外暴露 ================= */
   window.App = {
-    $, $$, toast, esc, exportCSV, downloadTextFile,
+    $, $$, toast, esc, exportCSV, downloadTextFile, sanitizeText,
     DataTable, renderLineChart, renderBarChart, renderDonut, renderParkMap,
     initFileManager, openModal, closeModal, validateField, animateCount,
     setTheme: applyTheme, getTheme: currentTheme

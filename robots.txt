@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /system-
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /import-
+Disallow: /query-
+Disallow: /files
+Disallow: /404
+Disallow: /_headers
+Disallow: /_redirects
+
+Sitemap: https://personal-site-5kh.pages.dev/sitemap.xml

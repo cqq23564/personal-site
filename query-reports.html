@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>每日报表 · 查询统计</title>
+  <meta name="description" content="每日报表 Excel 导入与导出：货物名称统一口径、按统计日期归档、覆盖前快照与一键回滚。">
+  <meta name="keywords" content="每日报表,Excel导入,货物名称统一,报表导出,陈庆棋,个人主页,园区数字化,数据可视化,凭祥,边境贸易,技术作品集">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://personal-site-5kh.pages.dev/query-reports">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陈庆棋 · 个人主页">
+  <meta property="og:title" content="每日报表 · 查询统计">
+  <meta property="og:description" content="每日报表 Excel 导入与导出：货物名称统一口径、按统计日期归档、覆盖前快照与一键回滚。">
+  <meta property="og:url" content="https://personal-site-5kh.pages.dev/query-reports">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -76,7 +85,7 @@
     <main class="main">
       <div class="page-head">
         <div>
-          <div class="page-title">📈 每日报表</div>
+          <h1 class="page-title">📈 每日报表</h1>
           <div class="page-desc">每日下班导入 Excel → 自动生成日报 → 报表可导出</div>
         </div>
         <div class="flex gap-8" style="flex-wrap:wrap">
@@ -92,7 +101,7 @@
 
       <!-- 每日下班 Excel 导入 → 自动生成每日报表 -->
       <div class="card mb-24 import-card" id="importCard">
-        <div class="card-hd">📥 每日下班导入 Excel · 自动生成每日报表 <span class="sub">支持 .xlsx / .xls / .csv</span></div>
+        <h2 class="card-hd">📥 每日下班导入 Excel · 自动生成每日报表 <span class="sub">支持 .xlsx / .xls / .csv</span></h2>
         <div class="card-bd">
           <div class="import-meta">
             <span class="import-label">数据来源</span>
@@ -135,7 +144,7 @@
 
       <!-- 报表模板：上传 / 解析 / 云端保存 -->
       <div class="card mb-24 import-card tpl-card" id="templateCard">
-        <div class="card-hd">🧩 报表模板 · 货物名称自动识别 <span class="sub">上传你的 Excel 模板，按模板口径统计导入的明细</span></div>
+        <h2 class="card-hd">🧩 报表模板 · 货物名称自动识别 <span class="sub">上传你的 Excel 模板，按模板口径统计导入的明细</span></h2>
         <div class="card-bd">
           <div class="import-meta tpl-meta">
             <span class="import-label">当前模板</span>
@@ -166,7 +175,7 @@
 
       <!-- 货物名称统计 -->
       <div class="card mb-24" id="goodsCard" style="display:none">
-        <div class="card-hd">📦 货物名称统计 <span class="sub">统一货物名称口径 / 按模板清单归类双视角</span></div>
+        <h2 class="card-hd">📦 货物名称统计 <span class="sub">统一货物名称口径 / 按模板清单归类双视角</span></h2>
         <div class="card-bd">
           <div class="goods-tabs" id="goodsTabs">
             <button class="goods-tab active" data-tab="byTemplate">按模板清单归类</button>
@@ -180,7 +189,7 @@
 
       <!-- 历史导入数据：按日期报表归类，云端持久化，刷新不丢失 -->
       <div class="card mb-24 hist-card" id="historyCard">
-        <div class="card-hd">🗓 历史导入数据 · 按日期报表归类 <span class="sub">云端持久化 · 刷新 / 换设备登录后自动读回</span></div>
+        <h2 class="card-hd">🗓 历史导入数据 · 按日期报表归类 <span class="sub">云端持久化 · 刷新 / 换设备登录后自动读回</span></h2>
         <div class="card-bd">
           <div class="hist-toolbar">
             <label class="hist-label" for="histDate">统计日期</label>
@@ -199,7 +208,7 @@
 
       <!-- 覆盖前快照 · 一键回滚 -->
       <div class="card mb-24" id="rpSnapCard">
-        <div class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">日报 / 货物统计覆盖与删除前自动存档 · 回滚本身也可撤回</span></div>
+        <h2 class="card-hd">🛟 覆盖前快照 · 一键回滚 <span class="sub">日报 / 货物统计覆盖与删除前自动存档 · 回滚本身也可撤回</span></h2>
         <div class="card-bd">
           <div class="snap-toolbar">
             <span class="text-3">每次导入覆盖或手动删除前，旧数据会完整存档；快照写入失败会阻断本次覆盖，避免出现「以为能回滚其实没有」。</span>
@@ -213,7 +222,7 @@
 
       <!-- 报表趋势 -->
       <div class="card mb-24">
-        <div class="card-hd">近 7 日报警趋势 <span class="sub">入区 / 出卡 / 边民申报</span></div>
+        <h2 class="card-hd">近 7 日报警趋势 <span class="sub">入区 / 出卡 / 边民申报</span></h2>
         <div class="card-bd"><div class="chart-box" id="reportChart"></div></div>
       </div>
 
@@ -243,7 +252,7 @@
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
         <span>© 2026 陈庆棋 · 个人主页 · 个人技术作品集（演示数据）</span>
-        <span><a href="source.html">数据来源与声明</a> · <a href="index.html">返回首页</a></span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="privacy.html">隐私政策</a> · <a href="terms.html">用户协议</a> · <a href="index.html">返回首页</a></span>
       </div>
     </div>
   </footer>

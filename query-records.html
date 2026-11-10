@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>核放记录查询 · 查询统计</title>
+  <meta name="description" content="核放记录查询统计：按日期与条件检索核放单。">
+  <meta name="keywords" content="陈庆棋,个人主页,园区数字化,数据可视化,凭祥,边境贸易,技术作品集">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://personal-site-5kh.pages.dev/query-records">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陈庆棋 · 个人主页">
+  <meta property="og:title" content="核放记录查询 · 查询统计">
+  <meta property="og:description" content="核放记录查询统计：按日期与条件检索核放单。">
+  <meta property="og:url" content="https://personal-site-5kh.pages.dev/query-records">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -76,7 +85,7 @@
     <main class="main">
       <div class="page-head">
         <div>
-          <div class="page-title">✅ 核放记录查询</div>
+          <h1 class="page-title">✅ 核放记录查询</h1>
           <div class="page-desc">总署一线放行（过驳）抬杆记录，支持按单号 / 车牌 / 货物检索</div>
         </div>
         <div class="flex gap-8">
@@ -90,11 +99,11 @@
 
       <div class="grid-2 mb-24">
         <div class="card">
-          <div class="card-hd">核放类型分布</div>
+          <h2 class="card-hd">核放类型分布</h2>
           <div class="card-bd"><div class="chart-box" id="rlChart"></div></div>
         </div>
         <div class="card">
-          <div class="card-hd">放行货物构成</div>
+          <h2 class="card-hd">放行货物构成</h2>
           <div class="card-bd"><div class="chart-box" id="rlGoods"></div></div>
         </div>
       </div>
@@ -127,7 +136,7 @@
     <div class="wrap-wide">
       <div class="copyright" style="border:none">
         <span>© 2026 陈庆棋 · 个人主页 · 个人技术作品集（演示数据）</span>
-        <span><a href="source.html">数据来源与声明</a> · <a href="index.html">返回首页</a></span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="privacy.html">隐私政策</a> · <a href="terms.html">用户协议</a> · <a href="index.html">返回首页</a></span>
       </div>
     </div>
   </footer>

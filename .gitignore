@@ -1,3 +1,7 @@
 .wrangler/
 node_modules/
 .DS_Store
+
+# 云端数据全量备份（含账号资料，禁止提交到仓库）
+backups/
+*.backup.json

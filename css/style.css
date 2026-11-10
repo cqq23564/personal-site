@@ -80,7 +80,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .site-header {
   position: sticky; top: 0; z-index: 100;
   background: var(--header-bg);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
 .nav { display: flex; align-items: center; gap: 28px; height: 62px; }
@@ -245,7 +245,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; display: inline-block; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch .sl {
-  position: absolute; inset: 0; border-radius: 22px; background: #cbd5e1; transition: 0.2s; cursor: pointer;
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 22px; background: #cbd5e1; transition: 0.2s; cursor: pointer;
 }
 .switch .sl::before {
   content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%;
@@ -336,9 +336,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 
 /* ---------- 弹窗 ---------- */
 .modal-mask {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 200;
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(15, 23, 42, 0.5); z-index: 200;
   display: grid; place-items: center; padding: 20px;
-  opacity: 0; visibility: hidden; transition: all 0.2s; backdrop-filter: blur(3px);
+  opacity: 0; visibility: hidden; transition: all 0.2s; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
 .modal-mask.show { opacity: 1; visibility: visible; }
 .modal {
@@ -403,7 +403,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s; }
 .gallery-item:hover img { transform: scale(1.07); }
 .gallery-item .cap {
-  position: absolute; inset: auto 0 0 0; padding: 26px 14px 12px;
+  position: absolute; top: auto; right: 0; bottom: 0; left: 0; padding: 26px 14px 12px;
   background: linear-gradient(transparent, rgba(8,15,40,0.8)); color: #fff;
   font-size: 13.5px; font-weight: 600; transform: translateY(6px); opacity: 0.92; transition: all 0.25s;
 }
@@ -439,7 +439,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .video-card { position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: #0b1226; }
 .video-card .poster { width: 100%; aspect-ratio: 16/9; object-fit: cover; opacity: 0.85; }
 .video-play {
-  position: absolute; inset: 0; display: grid; place-items: center;
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center;
 }
 .video-play .ring {
   width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.92);
@@ -489,15 +489,15 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 
 /* ---------- 首页 Hero ---------- */
 .hero { position: relative; min-height: 520px; display: grid; place-items: center; text-align: center; color: #fff; overflow: hidden; }
-.hero-bg { position: absolute; inset: 0; }
+.hero-bg { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
 .hero-bg img { width: 100%; height: 100%; object-fit: cover; }
-.hero-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(15,23,42,0.82), rgba(59,110,245,0.45)); }
+.hero-bg::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: linear-gradient(135deg, rgba(15,23,42,0.82), rgba(59,110,245,0.45)); }
 .hero-inner { position: relative; z-index: 2; padding: 90px 20px; max-width: 860px; }
 .hero h1 { font-size: 44px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 20px rgba(0,0,0,0.4); }
 .hero h1 .grad { background: linear-gradient(90deg, #ffd166, #ff8a8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p { font-size: 16.5px; opacity: 0.92; margin: 16px 0 30px; }
 .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.hero .btn-line { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.5); color: #fff; backdrop-filter: blur(6px); }
+.hero .btn-line { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.5); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .hero .btn-line:hover { background: rgba(255,255,255,0.26); color: #fff; }
 .hero-stats { display: flex; justify-content: center; gap: 44px; margin-top: 44px; flex-wrap: wrap; }
 .hero-stat .v { font-size: 26px; font-weight: 800; }
@@ -534,8 +534,8 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .auth-page { min-height: calc(100vh - 62px); display: grid; grid-template-columns: 1fr 1fr; }
 .auth-visual { position: relative; overflow: hidden; }
 .auth-visual img { width: 100%; height: 100%; object-fit: cover; }
-.auth-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(16,26,51,0.86), rgba(59,110,245,0.55)); }
-.auth-visual .slogan { position: absolute; z-index: 2; inset: auto 12% 12%; color: #fff; }
+.auth-visual::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: linear-gradient(160deg, rgba(16,26,51,0.86), rgba(59,110,245,0.55)); }
+.auth-visual .slogan { position: absolute; z-index: 2; top: auto; right: 12%; bottom: 12%; left: 12%; color: #fff; }
 .auth-visual .slogan h2 { font-size: 30px; font-weight: 800; }
 .auth-visual .slogan p { opacity: 0.85; margin-top: 10px; font-size: 14px; }
 .auth-panel { display: grid; place-items: center; padding: 40px 24px; background: #fff; }
@@ -840,7 +840,7 @@ button:focus-visible,
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, .34);
   background: rgba(255, 255, 255, .12);
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   font-size: 13px; font-weight: 600; letter-spacing: .08em;
   color: #fff;
 }
@@ -1612,4 +1612,26 @@ button:focus-visible,
 @media (max-width: 480px) {
   .iv-block, .iv-confirm, .iv-info { padding: 10px 12px; font-size: 12.5px; }
   .iv-box ul { padding-left: 17px; }
+}
+
+
+/* =====================================================================
+ * 28. 语义化标题与浏览器兼容兜底（追加覆盖层）
+ * ===================================================================== */
+h1.page-title { margin: 0; }
+h2.card-hd { margin: 0; font-size: inherit; }
+div.card-hd[role="heading"] { margin: 0; }
+
+/* iOS Safari / 微信内置浏览器：100vh 会被底部工具栏遮挡 */
+}
+
+/* flex gap 在现代 Chrome / Edge / Safari / 微信内置浏览器均受支持；
+   极旧内核会忽略 gap，元素退化为紧贴但不会破坏布局结构，此处不做激进覆盖。 */
+
+h1.nm { margin: 0; }
+
+/* Safari / 微信内置浏览器：地址栏会遮挡 100vh，支持动态视口单位时改用 dvh */
+@supports (height: 100dvh) {
+  .layout, .auth-page { min-height: calc(100dvh - 62px); }
+  .sidebar { height: calc(100dvh - 62px); }
 }

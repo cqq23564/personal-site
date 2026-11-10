@@ -4,9 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://www.workbuddy.cn; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>陈庆棋 · 个人主页 | 园区数字化 / 数据可视化</title>
-  <meta name="description" content="陈庆棋的个人主页：园区数字化系统建设、数据可视化与全栈实践。">
+  <meta name="description" content="陈庆棋的个人主页：园区数字化系统建设、数据可视化与全栈实践，含项目经历、成长经历与生活相册。">
+  <meta name="keywords" content="陈庆棋,个人主页,园区数字化,数据可视化,技术作品集,成长经历,凭祥,边境贸易">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://personal-site-5kh.pages.dev/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陈庆棋 · 个人主页">
+  <meta property="og:title" content="陈庆棋 · 个人主页 | 园区数字化 / 数据可视化">
+  <meta property="og:description" content="陈庆棋的个人主页：园区数字化系统建设、数据可视化与全栈实践，含项目经历、成长经历与生活相册。">
+  <meta property="og:url" content="https://personal-site-5kh.pages.dev/">
   <meta name="theme-color" content="#f4f6fb">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -237,18 +245,18 @@
     <div class="wrap-wide">
       <div class="title-bar reveal"><h2 class="section-title" data-param="home.section.message">留言板</h2></div>
       <div class="grid-2 reveal">
-        <div class="card"><div class="card-hd">写下你的想法</div><div class="card-bd">
+        <div class="card"><h2 class="card-hd">写下你的想法</h2><div class="card-bd">
           <form id="msgForm" novalidate>
             <div class="form-row">
-              <div class="field"><label>昵称<span class="req">*</span></label><input class="input" id="msgName" data-rule="required|min:2" placeholder="怎么称呼你"><div class="field-msg"></div></div>
-              <div class="field"><label>邮箱</label><input class="input" id="msgMail" data-rule="email" placeholder="选填，方便回复"><div class="field-msg"></div></div>
+              <div class="field"><label>昵称<span class="req">*</span></label><input class="input" id="msgName" data-rule="required|min:2" maxlength="30" placeholder="怎么称呼你（可用昵称）"><div class="field-msg"></div></div>
+              <div class="field"><label>邮箱</label><input class="input" id="msgMail" data-rule="email" maxlength="64" placeholder="选填，方便回复"><div class="field-msg"></div></div>
             </div>
-            <div class="field"><label>留言内容<span class="req">*</span></label><textarea class="textarea" id="msgText" data-rule="required|min:5" placeholder="想说的话……（至少 5 个字）"></textarea><div class="field-msg"></div></div>
+            <div class="field"><label>留言内容<span class="req">*</span></label><textarea class="textarea" id="msgText" data-rule="required|min:5" maxlength="500" placeholder="想说的话……（至少 5 个字，请勿填写身份证号等隐私信息）"></textarea><div class="field-msg"></div></div>
             <div class="field-msg" id="msgNotice" style="margin-bottom:8px"></div>
             <button class="btn btn-primary" type="submit">提交留言</button>
           </form>
         </div></div>
-        <div class="card"><div class="card-hd">最新留言 <span class="sub" id="msgCount"></span></div><div class="card-bd" id="msgList" style="max-height:380px;overflow-y:auto"></div></div>
+        <div class="card"><h2 class="card-hd">最新留言 <span class="sub" id="msgCount"></span></h2><div class="card-bd" id="msgList" style="max-height:380px;overflow-y:auto"></div></div>
       </div>
     </div>
   </section>
@@ -328,7 +336,7 @@
       </div>
       <div class="copyright">
         <span>© 2026 <span data-site-copyright>陈庆棋 · 个人主页</span> · 个人技术作品集（演示数据）</span>
-        <span><a href="source.html">数据来源与声明</a> · <span data-param="home.footer.icp">本站由 WorkBuddy 云服务托管 · 业务数据均为示意数据</span></span>
+        <span><a href="source.html">数据来源与声明</a> · <a href="privacy.html">隐私政策</a> · <a href="terms.html">用户协议</a> · <span data-param="home.footer.icp">本站由 WorkBuddy 云服务托管 · 业务数据均为示意数据</span></span>
       </div>
     </div>
   </footer>

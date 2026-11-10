@@ -151,6 +151,7 @@
     await loadProfile();
     var row = {};
     Object.keys(patch || {}).forEach(function (k) { if (patch[k] !== undefined) row[k] = patch[k]; });
+    row = cleanRow(row);
     row.updated_at = nowISO();
     try {
       if (state.profile) {
@@ -196,6 +197,7 @@
     if (!state.ready) return { error: { message: unavailableText() } };
     var row = {};
     Object.keys(patch || {}).forEach(function (k) { if (patch[k] !== undefined) row[k] = patch[k]; });
+    row = cleanRow(row);
     row.updated_at = nowISO();
     try {
       var u = await cloud.database.from("profiles").update(row).eq("id", id).select();
@@ -240,6 +242,7 @@
     if (!state.ready) return { error: { message: unavailableText() } };
     var data = {};
     Object.keys(row || {}).forEach(function (k) { if (row[k] !== undefined && row[k] !== "") data[k] = row[k]; });
+    data = cleanRow(data);
     try {
       var c = await cloud.database.from(name).insert(data).select();
       if (c && c.error) { auditWrite("新增", name, "", null, null, false, c.error); return { error: c.error }; }
@@ -257,6 +260,7 @@
     if (!state.ready) return { error: { message: unavailableText() } };
     var data = {};
     Object.keys(patch || {}).forEach(function (k) { if (patch[k] !== undefined) data[k] = patch[k]; });
+    data = cleanRow(data);
     data.updated_at = nowISO();
     /* 审计：先读旧值；取旧值失败不阻断写入（RLS 或网络问题） */
     var before = null;
@@ -313,6 +317,21 @@
       auditWrite("清空", name, "", null, null, false, e);
       return { error: { message: "网络异常，清空失败" } };
     }
+  }
+
+  /** 写入前统一净化：去控制字符 / 零宽字符、限制字符串长度，保留中文与业务数值 */
+  function cleanRow(row) {
+    var out = {};
+    Object.keys(row || {}).forEach(function (k) {
+      var v = row[k];
+      if (typeof v === "string") {
+        v = v.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+             .replace(/[\u200B\u200C\u200D\uFEFF]/g, "");
+        if (v.length > 4000) v = v.slice(0, 4000);
+      }
+      out[k] = v;
+    });
+    return out;
   }
 
   /* ---------- 操作审计 ---------- */
@@ -410,6 +429,7 @@
     ["pname", "pkey", "pvalue", "unit", "pgroup", "remark", "ptarget"].forEach(function (k) {
       if (row[k] !== undefined) data[k] = row[k];
     });
+    data = cleanRow(data);
     data.updated_at = nowISO();
     try {
       if (row.id) {

@@ -11,7 +11,7 @@
   var api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
   root.StrandedReport = api;
-})(typeof window !== "undefined" ? window : globalThis, function () {
+})(typeof window !== "undefined" ? window : (typeof global !== "undefined" ? global : this), function () {
   "use strict";
 
   function esc(s) {
